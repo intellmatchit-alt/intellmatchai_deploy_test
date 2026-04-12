@@ -1,0 +1,32 @@
+{
+  "title": "Scan Business Card",
+  "subtitle": "Position the card within the frame",
+  "instructions": "Hold steady for best results",
+  "capture": "Capture",
+  "retake": "Retake",
+  "processing": "Extracting information...",
+  "confirm": {
+    "title": "Confirm Details",
+    "subtitle": "Review and edit the extracted information",
+    "lowConfidence": "Low confidence - please verify",
+    "save": "Save Contact",
+    "saving": "Saving..."
+  },
+  "success": {
+    "title": "Contact Saved!",
+    "matchFound": "Match Found!",
+    "matchScore": "{score}% Match",
+    "viewContact": "View Contact",
+    "scanAnother": "Scan Another"
+  },
+  "errors": {
+    "cameraAccess": "Camera access is required to scan cards",
+    "noText": "Could not extract text from the image",
+    "tryAgain": "Please try again with better lighting"
+  },
+  "permissions": {
+    "title": "Camera Permission Required",
+    "description": "We need camera access to scan business cards",
+    "allow": "Allow Camera Access"
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "app": {
+    "name": "IntellMatch",
+    "tagline": "شبكات مهنية ذكية",
+    "description": "حوّل شبكتك المهنية إلى علاقات قابلة للتنفيذ"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "dashboard": "لوحة التحكم",
+    "contacts": "جهات الاتصال",
+    "scan": "مسح البطاقة",
+    "map": "خريطة الشبكة",
+    "profile": "الملف الشخصي",
+    "settings": "الإعدادات",
+    "logout": "تسجيل الخروج"
+  },
+  "actions": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "search": "بحث",
+    "filter": "تصفية",
+    "clear": "مسح",
+    "submit": "إرسال",
+    "continue": "متابعة",
+    "back": "رجوع",
+    "next": "التالي",
+    "skip": "تخطي",
+    "done": "تم",
+    "close": "إغلاق",
+    "retry": "إعادة المحاولة",
+    "confirm": "تأكيد",
+    "add": "إضافة",
+    "remove": "إزالة",
+    "view": "عرض",
+    "viewAll": "عرض الكل",
+    "seeMore": "المزيد",
+    "seeLess": "أقل",
+    "loading": "جاري التحميل...",
+    "processing": "جاري المعالجة..."
+  },
+  "status": {
+    "success": "نجاح",
+    "error": "خطأ",
+    "warning": "تحذير",
+    "info": "معلومات",
+    "pending": "قيد الانتظار",
+    "completed": "مكتمل",
+    "active": "نشط",
+    "inactive": "غير نشط"
+  },
+  "time": {
+    "today": "اليوم",
+    "yesterday": "أمس",
+    "thisWeek": "هذا الأسبوع",
+    "thisMonth": "هذا الشهر",
+    "daysAgo": "منذ {count} يوم",
+    "hoursAgo": "منذ {count} ساعة",
+    "minutesAgo": "منذ {count} دقيقة",
+    "justNow": "الآن"
+  },
+  "validation": {
+    "required": "هذا الحقل مطلوب",
+    "email": "يرجى إدخال بريد إلكتروني صحيح",
+    "minLength": "يجب أن يكون {min} أحرف على الأقل",
+    "maxLength": "يجب ألا يزيد عن {max} حرف",
+    "pattern": "صيغة غير صحيحة"
+  },
+  "empty": {
+    "noData": "لا توجد بيانات",
+    "noResults": "لم يتم العثور على نتائج",
+    "noContacts": "لا توجد جهات اتصال بعد",
+    "startAdding": "ابدأ بإضافة أول جهة اتصال"
+  },
+  "language": {
+    "en": "English",
+    "ar": "العربية",
+    "switchTo": "التبديل إلى {language}"
+  },
+  "footer": {
+    "copyright": "© {year} IntellMatch. جميع الحقوق محفوظة.",
+    "privacy": "سياسة الخصوصية",
+    "terms": "شروط الخدمة",
+    "help": "المساعدة والدعم"
+  }
+}

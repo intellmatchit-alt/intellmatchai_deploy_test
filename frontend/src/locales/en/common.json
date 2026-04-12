@@ -1,0 +1,87 @@
+{
+  "app": {
+    "name": "IntellMatch",
+    "tagline": "Smart Professional Networking",
+    "description": "Transform your professional network into actionable relationships"
+  },
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "contacts": "Contacts",
+    "scan": "Scan Card",
+    "map": "Network Map",
+    "profile": "Profile",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "search": "Search",
+    "filter": "Filter",
+    "clear": "Clear",
+    "submit": "Submit",
+    "continue": "Continue",
+    "back": "Back",
+    "next": "Next",
+    "skip": "Skip",
+    "done": "Done",
+    "close": "Close",
+    "retry": "Retry",
+    "confirm": "Confirm",
+    "add": "Add",
+    "remove": "Remove",
+    "view": "View",
+    "viewAll": "View All",
+    "seeMore": "See More",
+    "seeLess": "See Less",
+    "loading": "Loading...",
+    "processing": "Processing..."
+  },
+  "status": {
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Info",
+    "pending": "Pending",
+    "completed": "Completed",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "time": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "daysAgo": "{count} days ago",
+    "hoursAgo": "{count} hours ago",
+    "minutesAgo": "{count} minutes ago",
+    "justNow": "Just now"
+  },
+  "validation": {
+    "required": "This field is required",
+    "email": "Please enter a valid email address",
+    "minLength": "Must be at least {min} characters",
+    "maxLength": "Must be no more than {max} characters",
+    "pattern": "Invalid format"
+  },
+  "empty": {
+    "noData": "No data available",
+    "noResults": "No results found",
+    "noContacts": "No contacts yet",
+    "startAdding": "Start by adding your first contact"
+  },
+  "language": {
+    "en": "English",
+    "ar": "العربية",
+    "switchTo": "Switch to {language}"
+  },
+  "footer": {
+    "copyright": "© 2026 IntellMatch. Made within Saudi Arabia.",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "help": "Help & Support"
+  }
+}

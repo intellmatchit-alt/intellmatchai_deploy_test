@@ -1,0 +1,22 @@
+{
+  "components\\deals\\BuyForm.tsx -> @/components/ui/Toast": {
+    "id": 71085,
+    "files": []
+  },
+  "components\\deals\\BuyForm.tsx -> @/lib/api/deals": {
+    "id": 94251,
+    "files": []
+  },
+  "components\\deals\\SellForm.tsx -> @/components/ui/Toast": {
+    "id": 71085,
+    "files": []
+  },
+  "components\\deals\\SellForm.tsx -> @/lib/api/deals": {
+    "id": 94251,
+    "files": []
+  },
+  "lib\\api\\bug-reports.ts -> ./client": {
+    "id": 26305,
+    "files": []
+  }
+}

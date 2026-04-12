@@ -1,0 +1,41 @@
+{
+  "title": "Recommendations",
+  "subtitle": "AI-powered matches for your network",
+  "daily": {
+    "title": "Today's Top Matches",
+    "subtitle": "Contacts you should connect with today"
+  },
+  "followUp": {
+    "title": "Follow-up Reminders",
+    "subtitle": "Contacts that need your attention",
+    "overdue": "Overdue",
+    "dueToday": "Due Today",
+    "upcoming": "Upcoming"
+  },
+  "score": {
+    "excellent": "Excellent Match",
+    "good": "Good Match",
+    "fair": "Fair Match",
+    "low": "Low Match"
+  },
+  "reasons": {
+    "title": "Why This Match",
+    "sectors": "Shared sectors: {sectors}",
+    "skills": "Common skills: {skills}",
+    "interests": "Similar interests: {interests}",
+    "company": "Works at {company}",
+    "goals": "Aligns with your {goal} goals"
+  },
+  "action": {
+    "connect": "Connect",
+    "message": "Send Message",
+    "schedule": "Schedule Meeting",
+    "dismiss": "Not Interested",
+    "remind": "Remind Me Later"
+  },
+  "empty": {
+    "title": "No recommendations yet",
+    "description": "Add more contacts to get personalized recommendations",
+    "cta": "Add Contacts"
+  }
+}

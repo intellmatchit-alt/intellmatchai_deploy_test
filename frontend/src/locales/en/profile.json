@@ -1,0 +1,70 @@
+{
+  "title": "Profile",
+  "edit": "Edit Profile",
+  "view": "View Profile",
+  "sections": {
+    "basic": "Basic Information",
+    "sectors": "Industry Sectors",
+    "skills": "Skills",
+    "interests": "Interests",
+    "goals": "Networking Goals",
+    "privacy": "Privacy & Consent"
+  },
+  "fields": {
+    "fullName": "Full Name",
+    "email": "Email",
+    "phone": "Phone",
+    "jobTitle": "Job Title",
+    "company": "Company",
+    "bio": "Bio",
+    "location": "Location",
+    "website": "Website",
+    "linkedin": "LinkedIn",
+    "avatar": "Profile Photo"
+  },
+  "goals": {
+    "mentorship": "Mentorship",
+    "investment": "Investment",
+    "partnership": "Partnership",
+    "hiring": "Hiring",
+    "jobSeeking": "Job Seeking",
+    "collaboration": "Collaboration",
+    "learning": "Learning",
+    "sales": "Sales",
+    "other": "Other"
+  },
+  "privacy": {
+    "title": "Privacy Settings",
+    "enrichment": {
+      "label": "Profile Enrichment",
+      "description": "Allow us to enrich your profile with public professional data"
+    },
+    "contacts": {
+      "label": "Contact Suggestions",
+      "description": "Allow us to suggest connections based on your network"
+    },
+    "analytics": {
+      "label": "Usage Analytics",
+      "description": "Help us improve by sharing anonymous usage data"
+    }
+  },
+  "onboarding": {
+    "title": "Complete Your Profile",
+    "subtitle": "Help us personalize your experience",
+    "step": "Step {current} of {total}",
+    "steps": {
+      "basic": "Basic Info",
+      "sectors": "Your Sectors",
+      "skills": "Your Skills",
+      "interests": "Your Interests",
+      "goals": "Your Goals",
+      "privacy": "Privacy"
+    },
+    "complete": "Complete Setup"
+  },
+  "stats": {
+    "contacts": "Total Contacts",
+    "thisWeek": "Added This Week",
+    "topSector": "Top Sector"
+  }
+}

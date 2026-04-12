@@ -1,0 +1,4018 @@
+generator client {
+  provider        = "prisma-client-js"
+  binaryTargets = ["native", "windows"]
+  previewFeatures = ["fullTextIndex", "fullTextSearch"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+/// User account model
+/// Stores core user information and authentication data
+model User {
+  id                    String              @id @default(uuid())
+  email                 String              @unique
+  passwordHash          String              @map("password_hash")
+  fullName              String              @map("full_name")
+  title                 String?             @db.VarChar(20)
+  firstName             String?             @map("first_name") @db.VarChar(100)
+  middleName            String?             @map("middle_name") @db.VarChar(100)
+  lastName              String?             @map("last_name") @db.VarChar(100)
+  jobTitle              String?             @map("job_title")
+  company               String?
+  bio                   String?             @db.Text
+  avatarUrl             String?             @map("avatar_url") @db.MediumText
+  linkedinUrl           String?             @map("linkedin_url")
+  websiteUrl            String?             @map("website_url")
+  phone                 String?
+  phoneCountryCode      String?             @map("phone_country_code") @db.VarChar(5)
+  location              String?
+  timezone              String?             @default("UTC")
+  consentEnrichment     Boolean             @default(false) @map("consent_enrichment")
+  consentContacts       Boolean             @default(false) @map("consent_contacts")
+  consentAnalytics      Boolean             @default(false) @map("consent_analytics")
+  emailVerified         Boolean             @default(false) @map("email_verified")
+  isActive              Boolean             @default(true) @map("is_active")
+  isAdmin               Boolean             @default(false) @map("is_admin")
+  createdAt             DateTime            @default(now()) @map("created_at")
+  updatedAt             DateTime            @updatedAt @map("updated_at")
+  lastLoginAt           DateTime?           @map("last_login_at")
+  twitterUrl            String?             @map("twitter_url")
+  invitationToken       String?             @unique @map("invitation_token")
+  invitedAt             DateTime?           @map("invited_at")
+  invitedById           String?             @map("invited_by_id")
+  status                UserStatus          @default(ACTIVE)
+  onboardingCompletedAt DateTime?           @map("onboarding_completed_at")
+  onboardingData        Json?               @map("onboarding_data")
+  onboardingStep        Int                 @default(0) @map("onboarding_step")
+  consentLogs           ConsentLog[]
+  introducedContacts    Contact[]           @relation("IntroducedContacts")
+  contacts              Contact[]
+  interactions          Interaction[]
+  matchHistory          MatchHistory[]
+  matchResults          MatchResult[]
+  opportunityIntents    OpportunityIntent[]
+  projectMatches        ProjectMatch[]      @relation("ProjectMatchedUser")
+  projects              Project[]
+  refreshTokens         RefreshToken[]
+  userGoals             UserGoal[]
+  userHobbies           UserHobby[]
+  userInterests         UserInterest[]
+  userSectors           UserSector[]
+  userSkills            UserSkill[]
+  invitedBy             User?               @relation("UserInvites", fields: [invitedById], references: [id])
+  invitedUsers          User[]              @relation("UserInvites")
+  verificationTokens    VerificationToken[]
+  // Messaging relations
+  conversationsAsOne    Conversation[]      @relation("ConversationParticipantOne")
+  conversationsAsTwo    Conversation[]      @relation("ConversationParticipantTwo")
+  sentMessages          Message[]           @relation("MessageSender")
+  messageReactions      MessageReaction[]   @relation("MessageReactionUser")
+  // Collaboration relations
+  collabRequestsFrom    CollaborationRequest[]  @relation("CollabRequestFromUser")
+  collabRequestsTo      CollaborationRequest[]  @relation("CollabRequestToUser")
+  introductionsAsCollab Introduction[]          @relation("IntroductionCollaborator")
+  collabLedgerFrom      CollaborationLedger[]   @relation("CollabLedgerFromUser")
+  collabLedgerTo        CollaborationLedger[]   @relation("CollabLedgerToUser")
+  collaborationSettings CollaborationSettings?
+  // Team member relations
+  projectMembers        ProjectMember[]         @relation("ProjectMemberUser")
+  opportunityMembers    OpportunityMember[]     @relation("OpportunityMemberUser")
+  pitchMembers          PitchMember[]           @relation("PitchMemberUser")
+  dealMembers           DealMember[]            @relation("DealMemberUser")
+  // Other relations
+  pitches               Pitch[]
+  dealRequests          DealRequest[]
+  events                Event[]
+  eventAttendees        EventAttendee[]         @relation("EventAttendeeUser")
+  collabTasksCreated    CollaborationTask[]     @relation("CollabTaskCreatedBy")
+  collabTasksAssigned   CollaborationTask[]     @relation("CollabTaskAssignedTo")
+  platformInvitations   PlatformInvitation[]
+  orgMembers            OrganizationMember[]
+  orgInvitations        OrgInvitation[]         @relation("OrgInvitedBy")
+  orgActivityLogs       OrgActivityLog[]        @relation("OrgActivityUser")
+  contactSharingPrefs   ContactSharingPreference[]
+  sharedContacts        SharedContact[]         @relation("SharedContactBy")
+  warmIntroRequester    WarmIntroRequest[]      @relation("WarmIntroRequester")
+  warmIntroConnector    WarmIntroRequest[]      @relation("WarmIntroConnector")
+  meetings              Meeting[]
+  meetingAttendees      MeetingAttendee[]       @relation("MeetingAttendeeUser")
+  contactReminders      ContactReminder[]
+  contactNotes          ContactNote[]
+  contactTasksOwned     ContactTask[]
+  assignedTasks         ContactTask[]           @relation("AssignedTasks")
+  taskCategories        TaskCategory[]
+  taskRecurrences       TaskRecurrence[]
+  taskSharesBy          TaskShare[]             @relation("TaskSharedBy")
+  taskSharesWith        TaskShare[]             @relation("TaskSharedWith")
+  taskComments          TaskComment[]
+  taskActivities        TaskActivity[]
+  notifications         Notification[]
+  pushSubscriptions     PushSubscription[]
+  sdaiaRecords          SdaiaProcessingRecord[]
+  productProfile        ProductProfile?
+  productMatchRuns      ProductMatchRun[]
+  subscription          Subscription?
+  wallet                Wallet?
+  opportunityMatchesAsUser OpportunityMatch[]   @relation("OpportunityMatchedUser")
+  pointPackPurchases       PointPackPurchase[]
+  bugReports               BugReport[]
+  // Affiliate relations
+  referralCodeUsed         String?                     @map("referral_code_used") @db.VarChar(50)
+  affiliate                Affiliate?
+  affiliateReferrals       AffiliateReferral[]         @relation("ReferredByAffiliate")
+  // Job Matching v3 relations
+  hiringProfiles           HiringProfile[]             @relation("UserHiringProfiles")
+  candidateProfiles        CandidateProfile[]          @relation("UserCandidateProfiles")
+
+  @@index([email])
+  @@index([company])
+  @@index([invitedById])
+  @@map("users")
+}
+
+/// Refresh token for JWT authentication
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  token     String    @unique @db.VarChar(500)
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  userAgent String?   @map("user_agent") @db.VarChar(500)
+  ipAddress String?   @map("ip_address") @db.VarChar(45)
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([revokedAt])
+  @@map("refresh_tokens")
+}
+
+/// Email verification and password reset tokens
+model VerificationToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  token     String    @unique @db.VarChar(500)
+  type      TokenType @default(EMAIL_VERIFICATION)
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([type])
+  @@map("verification_tokens")
+}
+
+/// Industry sectors
+/// Supports hierarchy with parent_id for sub-sectors
+model Sector {
+  id             String          @id @default(uuid())
+  name           String          @db.VarChar(255)
+  nameAr         String?         @map("name_ar") @db.VarChar(255)
+  parentId       String?         @map("parent_id")
+  icon           String?         @db.VarChar(100)
+  displayOrder   Int             @default(0) @map("display_order")
+  isActive       Boolean         @default(true) @map("is_active")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  contactSectors            ContactSector[]
+  projectSectors            ProjectSector[]
+  pitchSectors              PitchSector[]
+  parent                    Sector?         @relation("SectorHierarchy", fields: [parentId], references: [id])
+  children                  Sector[]        @relation("SectorHierarchy")
+  userSectors               UserSector[]
+  opportunityIntentSectors  OpportunityIntentSector[]
+
+  @@index([parentId])
+  @@index([isActive])
+  @@map("sectors")
+}
+
+/// Professional skills
+model Skill {
+  id            String         @id @default(uuid())
+  name          String         @unique @db.VarChar(255)
+  nameAr        String?        @map("name_ar") @db.VarChar(255)
+  category      String?        @db.VarChar(100)
+  isActive      Boolean        @default(true) @map("is_active")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  contactSkills          ContactSkill[]
+  projectSkills          ProjectSkill[]
+  pitchSkills            PitchSkill[]
+  userSkills             UserSkill[]
+  opportunityIntentSkills OpportunityIntentSkill[]
+
+  @@index([category])
+  @@index([isActive])
+  @@map("skills")
+}
+
+/// Personal/professional interests
+model Interest {
+  id               String            @id @default(uuid())
+  name             String            @unique @db.VarChar(255)
+  nameAr           String?           @map("name_ar") @db.VarChar(255)
+  category         String?           @db.VarChar(100)
+  icon             String?           @db.VarChar(100)
+  isActive         Boolean           @default(true) @map("is_active")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  contactInterests ContactInterest[]
+  userInterests    UserInterest[]
+
+  @@index([category])
+  @@index([isActive])
+  @@map("interests")
+}
+
+/// User-Sector relationship
+model UserSector {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  sectorId        String   @map("sector_id")
+  isPrimary       Boolean  @default(false) @map("is_primary")
+  experienceYears Int?     @map("experience_years")
+  createdAt       DateTime @default(now()) @map("created_at")
+  sector          Sector   @relation(fields: [sectorId], references: [id])
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sectorId])
+  @@index([userId])
+  @@index([sectorId])
+  @@map("user_sectors")
+}
+
+/// User-Skill relationship
+model UserSkill {
+  id               String            @id @default(uuid())
+  userId           String            @map("user_id")
+  skillId          String            @map("skill_id")
+  proficiencyLevel ProficiencyLevel? @map("proficiency_level")
+  isVerified       Boolean           @default(false) @map("is_verified")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  skill            Skill             @relation(fields: [skillId], references: [id])
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillId])
+  @@index([userId])
+  @@index([skillId])
+  @@map("user_skills")
+}
+
+/// User-Interest relationship
+model UserInterest {
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  interestId String    @map("interest_id")
+  intensity  Intensity @default(MODERATE)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  interest   Interest  @relation(fields: [interestId], references: [id])
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, interestId])
+  @@index([userId])
+  @@index([interestId])
+  @@map("user_interests")
+}
+
+/// Hobbies for personal interests
+model Hobby {
+  id             String         @id @default(uuid())
+  name           String         @unique @db.VarChar(255)
+  nameAr         String?        @map("name_ar") @db.VarChar(255)
+  category       String?        @db.VarChar(100)
+  icon           String?        @db.VarChar(100)
+  isActive       Boolean        @default(true) @map("is_active")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  contactHobbies ContactHobby[]
+  userHobbies    UserHobby[]
+
+  @@index([category])
+  @@index([isActive])
+  @@map("hobbies")
+}
+
+/// User-Hobby relationship
+model UserHobby {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  hobbyId   String   @map("hobby_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  hobby     Hobby    @relation(fields: [hobbyId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, hobbyId])
+  @@index([userId])
+  @@index([hobbyId])
+  @@map("user_hobbies")
+}
+
+/// User networking goals
+model UserGoal {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  goalType    GoalType @map("goal_type")
+  description String?  @db.Text
+  priority    Int      @default(1)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([goalType])
+  @@map("user_goals")
+}
+
+/// External contact/connection
+model Contact {
+  id                     String              @id @default(uuid())
+  ownerId                String              @map("owner_id")
+  fullName               String              @map("full_name") @db.VarChar(255)
+  title                  String?             @db.VarChar(20)
+  firstName              String?             @map("first_name") @db.VarChar(100)
+  middleName             String?             @map("middle_name") @db.VarChar(100)
+  lastName               String?             @map("last_name") @db.VarChar(100)
+  email                  String?             @db.VarChar(255)
+  phone                  String?             @db.VarChar(50)
+  phoneCountryCode       String?             @map("phone_country_code") @db.VarChar(5)
+  company                String?             @db.VarChar(255)
+  jobTitle               String?             @map("job_title") @db.VarChar(255)
+  website                String?             @db.VarChar(500)
+  linkedinUrl            String?             @map("linkedin_url") @db.VarChar(500)
+  notes                  String?             @db.Text
+  source                 ContactSource       @default(MANUAL)
+  rawOcrText             String?             @map("raw_ocr_text") @db.Text
+  cardImageUrl           String?             @map("card_image_url") @db.VarChar(500)
+  isEnriched             Boolean             @default(false) @map("is_enriched")
+  enrichmentData         Json?               @map("enrichment_data")
+  matchScore             Decimal?            @map("match_score") @db.Decimal(5, 2)
+  lastInteractionAt      DateTime?           @map("last_interaction_at")
+  createdAt              DateTime            @default(now()) @map("created_at")
+  updatedAt              DateTime            @updatedAt @map("updated_at")
+  bio                    String?             @db.Text
+  enrichedAt             DateTime?           @map("enriched_at")
+  location               String?             @db.VarChar(255)
+  avatarUrl              String?             @map("avatar_url") @db.MediumText
+  dataConfidence         DataConfidence      @default(LOW) @map("data_confidence")
+  identityKey            String?             @map("identity_key") @db.VarChar(255)
+  importBatchId          String?             @map("import_batch_id")
+  importSource           ImportSource?       @map("import_source")
+  normalizedEmail        String?             @map("normalized_email") @db.VarChar(255)
+  normalizedPhone        String?             @map("normalized_phone") @db.VarChar(20)
+  rawContactJson         Json?               @map("raw_contact_json")
+  rawSources             Json                @map("raw_sources")
+  bioFull                String?             @map("bio_full") @db.Text
+  bioSummary             String?             @map("bio_summary") @db.VarChar(500)
+  collaborationMissionId String?             @map("collaboration_mission_id")
+  introducedByUserId     String?             @map("introduced_by_user_id")
+  introductionId         String?             @map("introduction_id")
+  isFavorite             Boolean             @default(false) @map("is_favorite")
+  organizationId         String?             @map("organization_id")
+  organization           Organization?       @relation(fields: [organizationId], references: [id])
+  contactHobbies         ContactHobby[]
+  contactInterests       ContactInterest[]
+  contactNotes           ContactNote[]
+  reminders              ContactReminder[]
+  contactSectors         ContactSector[]
+  contactSkills          ContactSkill[]
+  suggestions            ContactSuggestion[]
+  tasks                  ContactTask[]
+  importBatch            ContactImportBatch? @relation("ImportedContacts", fields: [importBatchId], references: [id])
+  introducedByUser       User?               @relation("IntroducedContacts", fields: [introducedByUserId], references: [id])
+  owner                  User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  interactions           Interaction[]
+  matchHistory           MatchHistory[]
+  matchResults           MatchResult[]
+  projectMatches         ProjectMatch[]
+  collaborationRequests  CollaborationRequest[]
+  collaborationMatchResults CollaborationMatchResult[]
+  opportunityMatchesAsContact OpportunityMatch[]  @relation("OpportunityMatchedContact")
+  meetingContacts        Meeting[]               @relation("MeetingContact")
+  meetingAttendeeContacts MeetingAttendee[]      @relation("MeetingAttendeeContact")
+  platformInvitationsFor PlatformInvitation[]
+  sdaiaSubjectRecords    SdaiaProcessingRecord[] @relation("SdaiaSubjectContact")
+  sharedContacts         SharedContact[]
+  warmIntroTargets       WarmIntroRequest[]
+  dealMatchResults       DealMatchResult[]
+  pitchMatches           PitchMatch[]
+  productMatchResults    ProductMatchResult[]
+  taskAssignments        TaskAssignee[]
+
+  @@index([ownerId])
+  @@index([ownerId, createdAt(sort: Desc)])
+  @@index([ownerId, matchScore(sort: Desc)])
+  @@index([email])
+  @@index([company])
+  @@index([source])
+  @@index([createdAt])
+  @@index([lastInteractionAt])
+  @@index([ownerId, normalizedPhone])
+  @@index([ownerId, normalizedEmail])
+  @@index([ownerId, identityKey])
+  @@index([ownerId, dataConfidence])
+  @@index([importBatchId])
+  @@index([introducedByUserId], map: "contacts_introduced_by_user_id_fkey")
+  @@index([organizationId])
+  @@index([ownerId, isFavorite])
+  @@fulltext([fullName, firstName, lastName, company, notes])
+  @@map("contacts")
+}
+
+/// Contact-Sector relationship
+model ContactSector {
+  id         String       @id @default(uuid())
+  contactId  String       @map("contact_id")
+  sectorId   String       @map("sector_id")
+  confidence Decimal      @default(1.00) @db.Decimal(3, 2)
+  source     SectorSource @default(USER)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  contact    Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  sector     Sector       @relation(fields: [sectorId], references: [id])
+
+  @@unique([contactId, sectorId])
+  @@index([contactId])
+  @@index([sectorId])
+  @@map("contact_sectors")
+}
+
+/// Contact-Skill relationship
+model ContactSkill {
+  id         String       @id @default(uuid())
+  contactId  String       @map("contact_id")
+  skillId    String       @map("skill_id")
+  confidence Decimal      @default(1.00) @db.Decimal(3, 2)
+  source     SectorSource @default(USER)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  contact    Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  skill      Skill        @relation(fields: [skillId], references: [id])
+
+  @@unique([contactId, skillId])
+  @@index([contactId])
+  @@index([skillId])
+  @@map("contact_skills")
+}
+
+/// Contact-Interest relationship
+model ContactInterest {
+  id         String       @id @default(uuid())
+  contactId  String       @map("contact_id")
+  interestId String       @map("interest_id")
+  confidence Decimal      @default(1.00) @db.Decimal(3, 2)
+  source     SectorSource @default(USER)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  contact    Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  interest   Interest     @relation(fields: [interestId], references: [id])
+
+  @@unique([contactId, interestId])
+  @@index([contactId])
+  @@index([interestId])
+  @@map("contact_interests")
+}
+
+/// Contact-Hobby relationship
+model ContactHobby {
+  id         String       @id @default(uuid())
+  contactId  String       @map("contact_id")
+  hobbyId    String       @map("hobby_id")
+  confidence Decimal      @default(1.00) @db.Decimal(3, 2)
+  source     SectorSource @default(USER)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  contact    Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  hobby      Hobby        @relation(fields: [hobbyId], references: [id])
+
+  @@unique([contactId, hobbyId])
+  @@index([contactId])
+  @@index([hobbyId])
+  @@map("contact_hobbies")
+}
+
+/// AI suggestions for contact fields
+model ContactSuggestion {
+  id         String   @id @default(uuid())
+  contactId  String   @map("contact_id")
+  field      String   @db.VarChar(100)
+  value      String   @db.Text
+  confidence Decimal  @db.Decimal(3, 2)
+  source     String   @db.VarChar(100)
+  isAccepted Boolean? @map("is_accepted")
+  createdAt  DateTime @default(now()) @map("created_at")
+  contact    Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([contactId])
+  @@map("contact_suggestions")
+}
+
+/// Interaction between user and contact
+model Interaction {
+  id              String          @id @default(uuid())
+  userId          String          @map("user_id")
+  contactId       String          @map("contact_id")
+  interactionType InteractionType @map("interaction_type")
+  metadata        Json?
+  occurredAt      DateTime        @default(now()) @map("occurred_at")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  contact         Contact         @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, contactId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, occurredAt(sort: Desc)])
+  @@index([interactionType])
+  @@index([occurredAt])
+  @@index([createdAt])
+  @@index([contactId], map: "interactions_contact_id_fkey")
+  @@map("interactions")
+}
+
+/// Cached match results
+model MatchResult {
+  id               String    @id @default(uuid())
+  userId           String    @map("user_id")
+  contactId        String    @map("contact_id")
+  recombeeScore    Decimal?  @map("recombee_score") @db.Decimal(5, 4)
+  cohereScore      Decimal?  @map("cohere_score") @db.Decimal(5, 4)
+  finalScore       Decimal   @map("final_score") @db.Decimal(5, 2)
+  intersectionTags Json?     @map("intersection_tags")
+  aiReasons        Json?     @map("ai_reasons")
+  suggestedMessage String?   @map("suggested_message") @db.Text
+  expiresAt        DateTime? @map("expires_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  contact          Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contactId])
+  @@index([userId, finalScore(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([contactId])
+  @@index([createdAt])
+  @@index([finalScore])
+  @@map("match_results")
+}
+
+/// Match History - tracks historical match scores over time
+/// Used for analytics, trend analysis, and ML model improvement
+model MatchHistory {
+  id                       String   @id @default(uuid())
+  userId                   String   @map("user_id")
+  contactId                String   @map("contact_id")
+  matchType                String   @default("contact") @map("match_type")
+  totalScore               Int      @map("total_score")
+  goalAlignmentScore       Int?     @map("goal_alignment_score")
+  sectorScore              Int?     @map("sector_score")
+  skillScore               Int?     @map("skill_score")
+  semanticSimilarityScore  Int?     @map("semantic_similarity_score")
+  networkProximityScore    Int?     @map("network_proximity_score")
+  complementarySkillsScore Int?     @map("complementary_skills_score")
+  recencyScore             Int?     @map("recency_score")
+  interactionScore         Int?     @map("interaction_score")
+  interestScore            Int?     @map("interest_score")
+  hobbyScore               Int?     @map("hobby_score")
+  networkDegree            Int?     @map("network_degree")
+  calculationMethod        String   @default("deterministic") @map("calculation_method")
+  intersections            Json?
+  reasons                  Json?
+  calculatedAt             DateTime @default(now()) @map("calculated_at")
+  contact                  Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  user                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, calculatedAt(sort: Desc)])
+  @@index([userId, contactId])
+  @@index([contactId])
+  @@index([totalScore(sort: Desc)])
+  @@index([calculatedAt])
+  @@index([matchType])
+  @@map("match_history")
+}
+
+/// Consent audit log (GDPR compliance)
+model ConsentLog {
+  id          String        @id @default(uuid())
+  userId      String        @map("user_id")
+  consentType ConsentType   @map("consent_type")
+  action      ConsentAction
+  ipAddress   String?       @map("ip_address") @db.VarChar(45)
+  userAgent   String?       @map("user_agent") @db.Text
+  createdAt   DateTime      @default(now()) @map("created_at")
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, consentType])
+  @@map("consent_logs")
+}
+
+/// Business project for collaboration matching
+model Project {
+  id              String            @id @default(uuid())
+  userId          String            @map("user_id")
+  title           String            @db.VarChar(200)
+  summary         String            @db.Text
+  detailedDesc    String?           @map("detailed_desc") @db.Text
+  category        String?           @db.VarChar(100)
+  stage           ProjectStage      @default(IDEA)
+  investmentRange String?           @map("investment_range") @db.VarChar(255)
+  timeline        String?           @db.Text
+  lookingFor      Json              @map("looking_for")
+  keywords        Json
+  metadata        Json?
+  // New structured fields
+  needs                    Json?               @map("needs")
+  markets                  Json?               @map("markets")
+  fundingAskMin            Int?                @map("funding_ask_min")
+  fundingAskMax            Int?                @map("funding_ask_max")
+  tractionSignals          Json?               @map("traction_signals")
+  advisoryTopics           Json?               @map("advisory_topics")
+  partnerTypeNeeded        Json?               @map("partner_type_needed")
+  commitmentLevelNeeded    String?             @map("commitment_level_needed") @db.VarChar(50)
+  idealCounterpartProfile  String?             @map("ideal_counterpart_profile") @db.Text
+  targetCustomerTypes      Json?               @map("target_customer_types")
+  engagementModel          Json?               @map("engagement_model")
+  strictLookingFor         Boolean             @default(false) @map("strict_looking_for")
+  // v2 matching fields
+  fieldEmbeddings          Json?               @map("field_embeddings")
+  normalizedNeedSignals    Json?               @map("normalized_need_signals")
+  dataQualityScore         Int?                @map("data_quality_score")
+  visibility      ProjectVisibility @default(PUBLIC)
+  isActive        Boolean           @default(true) @map("is_active")
+  organizationId  String?           @map("organization_id")
+  isTeamShared    Boolean           @default(false) @map("is_team_shared")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+  matches         ProjectMatch[]
+  sectors         ProjectSector[]
+  skillsNeeded    ProjectSkill[]
+  organization    Organization?     @relation(fields: [organizationId], references: [id])
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  members         ProjectMember[]
+  collaborationRequests CollaborationRequest[]
+  collaborationTasks    CollaborationTask[]
+
+  @@index([userId])
+  @@index([isActive])
+  @@index([visibility])
+  @@index([createdAt(sort: Desc)])
+  @@index([organizationId, isTeamShared])
+  @@map("projects")
+}
+
+/// Project-Sector relationship
+model ProjectSector {
+  id        String   @id @default(uuid())
+  projectId String   @map("project_id")
+  sectorId  String   @map("sector_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sector    Sector   @relation(fields: [sectorId], references: [id])
+
+  @@unique([projectId, sectorId])
+  @@index([projectId])
+  @@index([sectorId])
+  @@map("project_sectors")
+}
+
+/// Project-Skill relationship (skills needed for the project)
+model ProjectSkill {
+  id         String          @id @default(uuid())
+  projectId  String          @map("project_id")
+  skillId    String          @map("skill_id")
+  importance SkillImportance @default(REQUIRED)
+  createdAt  DateTime        @default(now()) @map("created_at")
+  project    Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  skill      Skill           @relation(fields: [skillId], references: [id])
+
+  @@unique([projectId, skillId])
+  @@index([projectId])
+  @@index([skillId])
+  @@map("project_skills")
+}
+
+/// Project match result (matched users or contacts)
+model ProjectMatch {
+  id               String             @id @default(uuid())
+  projectId        String             @map("project_id")
+  matchedUserId    String?            @map("matched_user_id")
+  matchedContactId String?            @map("matched_contact_id")
+  matchScore       Float              @map("match_score")
+  matchType        String             @map("match_type")
+  reasons          Json
+  suggestedAction  String?            @map("suggested_action")
+  suggestedMessage       String?            @map("suggested_message") @db.Text
+  suggestedMessageEdited String?            @map("suggested_message_edited") @db.Text
+  sharedSectors          Json               @map("shared_sectors")
+  sharedSkills           Json               @map("shared_skills")
+  sharedInterests        Json               @map("shared_interests")
+  // v2 matching engine fields
+  deterministicScore     Float?             @map("deterministic_score")
+  aiScore                Float?             @map("ai_score")
+  finalScore             Float?             @map("final_score")
+  confidence             Float?
+  matchLevel             String?            @map("match_level") @db.VarChar(30)
+  hardFilterStatus       String?            @map("hard_filter_status") @db.VarChar(20)
+  hardFilterReason       String?            @map("hard_filter_reason") @db.VarChar(100)
+  scoreBreakdown         Json?              @map("score_breakdown")
+  explanation            Json?
+  intent                 String?            @db.VarChar(50)
+  rank                   Int?
+  expiresAt              DateTime?          @map("expires_at")
+  status                 ProjectMatchStatus @default(PENDING)
+  archivedAt       DateTime?          @map("archived_at")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+  sharedHobbies    Json               @map("shared_hobbies")
+  matchedContact   Contact?           @relation(fields: [matchedContactId], references: [id])
+  matchedUser      User?              @relation("ProjectMatchedUser", fields: [matchedUserId], references: [id])
+  project          Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, matchedUserId])
+  @@unique([projectId, matchedContactId])
+  @@index([projectId])
+  @@index([matchedUserId])
+  @@index([matchedContactId])
+  @@index([matchScore(sort: Desc)])
+  @@index([status])
+  @@map("project_matches")
+}
+
+/// Contact reminder for notes
+/// Allows users to set reminders that appear on dashboard
+model ContactReminder {
+  id          String    @id @default(uuid())
+  contactId   String?   @map("contact_id")
+  userId      String    @map("user_id")
+  title       String    @db.VarChar(255)
+  description String?   @db.Text
+  reminderAt  DateTime  @map("reminder_at")
+  isCompleted Boolean   @default(false) @map("is_completed")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  imageUrls   Json?     @map("image_urls")
+  contact     Contact?  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([contactId])
+  @@index([userId])
+  @@index([reminderAt])
+  @@index([isCompleted])
+  @@index([userId, reminderAt])
+  @@index([userId, isCompleted, reminderAt])
+  @@map("contact_reminders")
+}
+
+/// Contact note with rich media support
+/// Allows text, image, or voice notes attached to contacts
+model ContactNote {
+  id        String   @id @default(uuid())
+  contactId String   @map("contact_id")
+  userId    String   @map("user_id")
+  type      NoteType @default(TEXT)
+  content   String?  @db.Text
+  mediaUrl  String?  @map("media_url") @db.VarChar(500)
+  mimeType  String?  @map("mime_type") @db.VarChar(100)
+  fileName  String?  @map("file_name") @db.VarChar(255)
+  fileSize  Int?     @map("file_size")
+  duration  Int?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([contactId])
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt(sort: Desc)])
+  @@map("contact_notes")
+}
+
+/// Contact task
+/// Tasks associated with contacts (optional) that appear on dashboard
+model ContactTask {
+  id           String       @id @default(uuid())
+  contactId    String?      @map("contact_id")
+  userId       String       @map("user_id")
+  title        String       @db.VarChar(255)
+  description  String?      @db.Text
+  voiceNoteUrl String?      @map("voice_note_url") @db.VarChar(500)
+  dueDate      DateTime?    @map("due_date")
+  reminderAt   DateTime?    @map("reminder_at")
+  priority     TaskPriority @default(MEDIUM)
+  status       TaskStatus   @default(PENDING)
+  completedAt  DateTime?    @map("completed_at")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  imageUrls    Json?        @map("image_urls")
+  category     String?      @db.VarChar(100)
+  categoryColor String?     @map("category_color") @db.VarChar(20)
+  recurrenceId  String?      @map("recurrence_id")
+  assignedToId  String?      @map("assigned_to_id")
+  contact       Contact?     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedTo    User?        @relation("AssignedTasks", fields: [assignedToId], references: [id], onDelete: SetNull)
+  meeting       Meeting?
+  recurrence    TaskRecurrence? @relation(fields: [recurrenceId], references: [id], onDelete: SetNull)
+  reminders     TaskReminder[]
+  shares        TaskShare[]
+  comments      TaskComment[]
+  activities    TaskActivity[]
+  assignees     TaskAssignee[]
+
+  @@index([contactId])
+  @@index([userId])
+  @@index([dueDate])
+  @@index([reminderAt])
+  @@index([status])
+  @@index([priority])
+  @@index([userId, status])
+  @@index([userId, dueDate])
+  @@index([userId, reminderAt])
+  @@index([category])
+  @@index([recurrenceId])
+  @@index([assignedToId])
+  @@fulltext([title, description])
+  @@map("contact_tasks")
+}
+
+model TaskAssignee {
+  id        String      @id @default(uuid())
+  taskId    String      @map("task_id")
+  contactId String      @map("contact_id")
+  createdAt DateTime    @default(now()) @map("created_at")
+  task      ContactTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  contact   Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, contactId])
+  @@index([taskId])
+  @@index([contactId])
+  @@map("task_assignees")
+}
+
+/// User's opportunity intents (multiple per user supported)
+/// Enables Job Opportunities feature: Intent → Match → Action
+model OpportunityIntent {
+  id            String                    @id @default(uuid())
+  userId        String                    @map("user_id")
+  title         String                    @default("Untitled Opportunity") @db.VarChar(200)
+  intentType    OpportunityIntentType     @map("intent_type")
+  roleArea      String?                   @map("role_area") @db.VarChar(255)
+  seniority     SeniorityLevel?
+  locationPref  String?                   @map("location_pref") @db.VarChar(255)
+  remoteOk      Boolean                   @default(true) @map("remote_ok")
+  minExperienceYears Int?                  @map("min_experience_years")
+  notes         String?                   @db.Text
+  workMode              String?           @map("work_mode") @db.VarChar(50)
+  employmentType        String?           @map("employment_type") @db.VarChar(255)
+  urgencyOrAvailability String?           @map("urgency_or_availability") @db.VarChar(50)
+  visibility      OpportunityVisibility     @default(PRIVATE)
+  isActive        Boolean                   @default(true) @map("is_active")
+  lastMatchedAt   DateTime?                 @map("last_matched_at")
+  organizationId  String?                   @map("organization_id")
+  organization    Organization?             @relation(fields: [organizationId], references: [id])
+  // Advanced / AI-enriched fields
+  languages             Json?               @map("languages")
+  certifications        Json?               @map("certifications")
+  educationLevels       Json?               @map("education_levels")
+  industries            Json?               @map("industries")
+  salaryMin             Int?                @map("salary_min")
+  salaryMax             Int?                @map("salary_max")
+  salaryCurrency        String?             @map("salary_currency") @db.VarChar(3)
+  noticePeriod          String?             @map("notice_period") @db.VarChar(100)
+  relevantExperience    String?             @map("relevant_experience") @db.Text
+  createdAt       DateTime                  @default(now()) @map("created_at")
+  updatedAt       DateTime                  @updatedAt @map("updated_at")
+  sectorPrefs           OpportunityIntentSector[]
+  skillPrefs            OpportunityIntentSkill[]
+  user                  User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collaborationRequests CollaborationRequest[]
+  matches               OpportunityMatch[]
+  opportunityMembers    OpportunityMember[]
+
+  @@index([userId])
+  @@index([intentType])
+  @@index([isActive])
+  @@index([visibility])
+  @@index([organizationId])
+  @@index([createdAt(sort: Desc)])
+  @@map("opportunity_intents")
+}
+
+/// Opportunity Intent-Sector preference relationship
+model OpportunityIntentSector {
+  id        String            @id @default(uuid())
+  intentId  String            @map("intent_id")
+  sectorId  String            @map("sector_id")
+  createdAt DateTime          @default(now()) @map("created_at")
+  intent    OpportunityIntent @relation(fields: [intentId], references: [id], onDelete: Cascade)
+  sector    Sector            @relation(fields: [sectorId], references: [id])
+
+  @@unique([intentId, sectorId])
+  @@index([intentId])
+  @@index([sectorId])
+  @@map("opportunity_intent_sectors")
+}
+
+/// Opportunity Intent-Skill preference relationship
+model OpportunityIntentSkill {
+  id         String            @id @default(uuid())
+  intentId   String            @map("intent_id")
+  skillId    String            @map("skill_id")
+  isRequired Boolean           @default(false) @map("is_required")
+  createdAt  DateTime          @default(now()) @map("created_at")
+  intent     OpportunityIntent @relation(fields: [intentId], references: [id], onDelete: Cascade)
+  skill      Skill             @relation(fields: [skillId], references: [id])
+
+  @@unique([intentId, skillId])
+  @@index([intentId])
+  @@index([skillId])
+  @@index([isRequired])
+  @@map("opportunity_intent_skills")
+}
+
+/// Opportunity match result (matched users or contacts)
+model OpportunityMatch {
+  id               String                 @id @default(uuid())
+  intentId         String                 @map("intent_id")
+  matchedUserId    String?                @map("matched_user_id")
+  matchedContactId String?                @map("matched_contact_id")
+  matchScore       Float                  @map("match_score")
+  matchType        String                 @map("match_type")
+
+  // v2: Enhanced classification
+  matchLevel       MatchLevel?            @map("match_level")
+  confidence       ConfidenceLevel?
+  confidenceScore  Int?                   @map("confidence_score")
+  hardFilterStatus HardFilterStatus?      @map("hard_filter_status")
+  levelCappedReason String?               @map("level_capped_reason") @db.VarChar(500)
+  isSparseProfile  Boolean                @default(false) @map("is_sparse_profile")
+
+  // v2: Detailed breakdown (JSON)
+  scoreBreakdown   Json?                  @map("score_breakdown")
+
+  // v3: Enhanced matching fields
+  deterministicScore Float?               @map("deterministic_score")
+  aiScore            Float?               @map("ai_score")
+  finalScore         Float?               @map("final_score")
+  hardFilterReason   String?              @map("hard_filter_reason") @db.VarChar(100)
+  explanationV3      Json?                @map("explanation_v3")
+  rank               Int?
+
+  // Insights
+  reasons          Json
+  risks            Json?
+  missingSkills    Json?                  @map("missing_skills")
+
+  // Actionable outputs
+  suggestedAction  String?                @map("suggested_action")
+  suggestedMessage       String?                @map("suggested_message") @db.Text
+  suggestedMessageEdited String?                @map("suggested_message_edited") @db.Text
+  nextSteps              Json?                  @map("next_steps")
+
+  // Shared attributes
+  sharedSectors    Json                   @map("shared_sectors")
+  sharedSkills     Json                   @map("shared_skills")
+  intentAlignment  String?                @map("intent_alignment")
+  explanation      String?                @db.Text
+
+  // AI validation
+  aiValidated      Boolean                @default(false) @map("ai_validated")
+  aiNotes          String?                @map("ai_notes") @db.Text
+
+  // User actions
+  status           OpportunityMatchStatus @default(PENDING)
+  notes            String?                @db.Text
+  viewedAt         DateTime?              @map("viewed_at")
+  contactedAt      DateTime?              @map("contacted_at")
+  archivedAt       DateTime?              @map("archived_at")
+  createdAt        DateTime               @default(now()) @map("created_at")
+  updatedAt        DateTime               @updatedAt @map("updated_at")
+  intent           OpportunityIntent      @relation(fields: [intentId], references: [id], onDelete: Cascade)
+  matchedUser      User?                  @relation("OpportunityMatchedUser", fields: [matchedUserId], references: [id])
+  matchedContact   Contact?               @relation("OpportunityMatchedContact", fields: [matchedContactId], references: [id])
+
+  @@unique([intentId, matchedUserId])
+  @@unique([intentId, matchedContactId])
+  @@index([intentId])
+  @@index([matchedUserId])
+  @@index([matchedContactId])
+  @@index([matchScore(sort: Desc)])
+  @@index([intentId, matchLevel])
+  @@index([intentId, status])
+  @@index([status])
+  @@map("opportunity_matches")
+}
+
+/// Meeting model for calendar integration
+model Meeting {
+  id               String         @id @default(uuid())
+  title            String         @db.VarChar(255)
+  description      String?        @db.Text
+  startTime        DateTime       @map("start_time")
+  endTime          DateTime       @map("end_time")
+  location         String?        @db.VarChar(500)
+  videoLink        String?        @map("video_link") @db.VarChar(500)
+  videoProvider    VideoProvider? @map("video_provider")
+  createdById      String         @map("created_by_id")
+  contactId        String?        @map("contact_id")
+  taskId           String?        @unique @map("task_id")
+  externalEventId  String?        @map("external_event_id") @db.VarChar(255)
+  externalProvider String?        @map("external_provider") @db.VarChar(50)
+  isAllDay         Boolean        @default(false) @map("is_all_day")
+  reminderMinutes  Int?           @map("reminder_minutes")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+  createdBy        User           @relation(fields: [createdById], references: [id])
+  contact          Contact?       @relation("MeetingContact", fields: [contactId], references: [id])
+  task             ContactTask?   @relation(fields: [taskId], references: [id])
+  attendees        MeetingAttendee[]
+
+  @@index([createdById])
+  @@index([contactId])
+  @@index([startTime])
+  @@index([endTime])
+  @@map("meetings")
+}
+
+/// Meeting attendee
+model MeetingAttendee {
+  id        String         @id @default(uuid())
+  meetingId String         @map("meeting_id")
+  email     String         @db.VarChar(255)
+  name      String?        @db.VarChar(255)
+  status    AttendeeStatus @default(PENDING)
+  userId    String?        @map("user_id")
+  contactId String?        @map("contact_id")
+  createdAt DateTime       @default(now()) @map("created_at")
+  meeting   Meeting        @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user      User?          @relation("MeetingAttendeeUser", fields: [userId], references: [id])
+  contact   Contact?       @relation("MeetingAttendeeContact", fields: [contactId], references: [id])
+
+  @@unique([meetingId, email])
+  @@index([meetingId])
+  @@map("meeting_attendees")
+}
+
+/// Contact search request log
+/// Stores search queries with hashed PII for privacy
+model ContactSearchRequest {
+  id               String          @id @default(uuid())
+  userId           String          @map("user_id")
+  queryHash        String          @map("query_hash") @db.VarChar(64)
+  inputType        SearchInputType @map("input_type")
+  intent           SearchIntent
+  intentNote       String?         @map("intent_note") @db.VarChar(500)
+  imageUploadId    String?         @map("image_upload_id")
+  imageMode        String?         @map("image_mode") @db.VarChar(20)
+  consentFaceMatch Boolean         @default(false) @map("consent_face_match")
+  status           SearchStatus
+  processingTimeMs Int?            @map("processing_time_ms")
+  ocrJobId         String?         @map("ocr_job_id")
+  enrichJobId      String?         @map("enrich_job_id")
+  expiresAt        DateTime        @map("expires_at")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([queryHash])
+  @@index([userId, queryHash])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@index([expiresAt])
+  @@map("contact_search_requests")
+}
+
+/// Search result candidate
+/// Stores each matched candidate with score and reasons
+model ContactSearchResult {
+  id            String        @id @default(uuid())
+  requestId     String        @map("request_id")
+  candidateType CandidateType @map("candidate_type")
+  candidateId   String        @map("candidate_id")
+  score         Int           @db.SmallInt
+  confidence    Decimal       @db.Decimal(3, 2)
+  reasons       Json
+  snapshot      Json
+  rank          Int           @db.SmallInt
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  @@unique([requestId, candidateType, candidateId])
+  @@index([requestId])
+  @@index([candidateType, candidateId])
+  @@index([score(sort: Desc)])
+  @@map("contact_search_results")
+}
+
+/// User feedback on search results
+/// Used to improve future ranking
+model ContactSearchFeedback {
+  id                   String         @id @default(uuid())
+  requestId            String         @unique @map("request_id")
+  confirmedCandidateId String?        @map("confirmed_candidate_id")
+  confirmedType        CandidateType? @map("confirmed_type")
+  rejectedCandidates   Json?          @map("rejected_candidates")
+  notes                String?        @db.Text
+  createdAt            DateTime       @default(now()) @map("created_at")
+
+  @@index([requestId])
+  @@index([confirmedCandidateId])
+  @@map("contact_search_feedback")
+}
+
+/// Historical search pattern for ranking boost
+/// Aggregated from confirmed feedback per user
+model SearchPatternBoost {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  patternType  String   @map("pattern_type") @db.VarChar(50)
+  patternValue String   @map("pattern_value") @db.VarChar(255)
+  boostScore   Int      @default(0) @map("boost_score")
+  confirmCount Int      @default(0) @map("confirm_count")
+  lastUsedAt   DateTime @map("last_used_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, patternType, patternValue])
+  @@index([userId])
+  @@index([patternType])
+  @@index([boostScore(sort: Desc)])
+  @@map("search_pattern_boosts")
+}
+
+/// Match feedback record
+/// Used to improve future match scoring
+model MatchFeedback {
+  id                   String              @id @default(uuid())
+  userId               String              @map("user_id")
+  contactId            String              @map("contact_id")
+  matchType            String              @default("contact") @map("match_type")
+  action               MatchFeedbackAction
+  matchScoreAtFeedback Int?                @map("match_score_at_feedback")
+  rating               Int?                @db.TinyInt
+  feedbackNote         String?             @map("feedback_note") @db.Text
+  feedbackSource       String?             @map("feedback_source") @db.VarChar(50)
+  createdAt            DateTime            @default(now()) @map("created_at")
+
+  @@index([userId, contactId])
+  @@index([userId, action])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([contactId])
+  @@index([action])
+  @@index([matchType])
+  @@map("match_feedback")
+}
+
+/// Aggregated feedback stats per user-contact pair
+/// Pre-computed for fast lookup during matching
+model MatchFeedbackStats {
+  id             String    @id @default(uuid())
+  userId         String    @map("user_id")
+  contactId      String    @map("contact_id")
+  acceptCount    Int       @default(0) @map("accept_count")
+  rejectCount    Int       @default(0) @map("reject_count")
+  saveCount      Int       @default(0) @map("save_count")
+  connectCount   Int       @default(0) @map("connect_count")
+  messageCount   Int       @default(0) @map("message_count")
+  hideCount      Int       @default(0) @map("hide_count")
+  feedbackScore  Int       @default(0) @map("feedback_score")
+  avgRating      Decimal?  @map("avg_rating") @db.Decimal(2, 1)
+  ratingCount    Int       @default(0) @map("rating_count")
+  lastFeedbackAt DateTime? @map("last_feedback_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@unique([userId, contactId])
+  @@index([userId, feedbackScore(sort: Desc)])
+  @@index([feedbackScore(sort: Desc)])
+  @@index([lastFeedbackAt])
+  @@map("match_feedback_stats")
+}
+
+/// Main pitch deck record
+/// Stores uploaded pitch files and processing state
+model Pitch {
+  id             String        @id @default(uuid())
+  userId         String        @map("user_id")
+  fileKey        String?       @map("file_key") @db.VarChar(500)
+  fileName       String?       @map("file_name") @db.VarChar(255)
+  fileType       PitchFileType @default(PDF) @map("file_type")
+  fileSize       Int?          @map("file_size")
+  language       String        @default("en") @db.VarChar(10)
+  status         PitchStatus   @default(PENDING)
+  title          String?       @db.VarChar(255)
+  companyName    String?       @map("company_name") @db.VarChar(255)
+  summary         String?           @db.Text
+  detailedDesc    String?           @map("detailed_desc") @db.Text
+  category        String?           @db.VarChar(100)
+  stage           ProjectStage      @default(IDEA)
+  investmentRange String?           @map("investment_range") @db.VarChar(255)
+  timeline        String?           @db.Text
+  lookingFor      Json?             @map("looking_for")
+  keywords        Json?
+  visibility      ProjectVisibility @default(PUBLIC)
+  problemStatement String?      @map("problem_statement") @db.Text
+  whatYouNeed      String?      @map("what_you_need") @db.Text
+  metadata         Json?
+  // v8 matching fields
+  supportNeededTags Json?      @map("support_needed_tags")
+  needEmbedding     Json?      @map("need_embedding")
+  rawText        String?       @map("raw_text") @db.LongText
+  organizationId String?       @map("organization_id")
+  isActive       Boolean       @default(true) @map("is_active")
+  isTeamShared   Boolean       @default(false) @map("is_team_shared")
+  uploadedAt     DateTime      @default(now()) @map("uploaded_at")
+  processedAt    DateTime?     @map("processed_at")
+  expiresAt      DateTime?     @map("expires_at")
+  lastError      String?       @map("last_error") @db.Text
+  deletedAt      DateTime?     @map("deleted_at")
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sections       PitchSection[]
+  pitchSectors   PitchSector[]
+  pitchSkills    PitchSkill[]
+  needs          PitchNeed[]
+  pitchJobs      PitchJob[]
+  pitchMembers   PitchMember[]
+  collaborationRequests CollaborationRequest[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([uploadedAt(sort: Desc)])
+  @@index([userId, status])
+  @@index([expiresAt])
+  @@index([organizationId, isTeamShared])
+  @@map("pitches")
+}
+
+/// Pitch-Sector relationship
+model PitchSector {
+  id        String   @id @default(uuid())
+  pitchId   String   @map("pitch_id")
+  sectorId  String   @map("sector_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  pitch     Pitch    @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+  sector    Sector   @relation(fields: [sectorId], references: [id])
+
+  @@unique([pitchId, sectorId])
+  @@index([pitchId])
+  @@index([sectorId])
+  @@map("pitch_sectors")
+}
+
+/// Pitch-Skill relationship
+model PitchSkill {
+  id         String          @id @default(uuid())
+  pitchId    String          @map("pitch_id")
+  skillId    String          @map("skill_id")
+  importance SkillImportance @default(REQUIRED)
+  createdAt  DateTime        @default(now()) @map("created_at")
+  pitch      Pitch           @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+  skill      Skill           @relation(fields: [skillId], references: [id])
+
+  @@unique([pitchId, skillId])
+  @@index([pitchId])
+  @@index([skillId])
+  @@map("pitch_skills")
+}
+
+/// Classified sections of the pitch deck
+/// Each section corresponds to a slide group or content block
+model PitchSection {
+  id              String           @id @default(uuid())
+  pitchId         String           @map("pitch_id")
+  type            PitchSectionType
+  order           Int              @db.SmallInt
+  title           String           @db.VarChar(255)
+  content         String           @db.Text
+  rawContent      String?          @map("raw_content") @db.Text
+  confidence      Float            @default(0)
+  embedding       Json?
+  embeddingModel  String?          @default("text-embedding-ada-002") @map("embedding_model") @db.VarChar(100)
+  inferredSectors Json?            @map("inferred_sectors")
+  inferredSkills  Json?            @map("inferred_skills")
+  keywords        Json?
+  createdAt       DateTime         @default(now()) @map("created_at")
+  pitch           Pitch            @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+  pitchMatches    PitchMatch[]
+
+  @@index([pitchId])
+  @@index([type])
+  @@index([pitchId, order])
+  @@map("pitch_sections")
+}
+
+/// Extracted needs from the pitch
+/// Structured representation of what the startup needs
+model PitchNeed {
+  id                String            @id @default(uuid())
+  pitchId           String            @map("pitch_id")
+  key               PitchNeedKey
+  label             String            @db.VarChar(255)
+  description       String?           @db.Text
+  confidence        Float             @default(0)
+  sourceSectionType PitchSectionType? @map("source_section_type")
+  amount            String?           @db.VarChar(100)
+  timeline          String?           @db.VarChar(100)
+  priority          Int               @default(1) @db.SmallInt
+  createdAt         DateTime          @default(now()) @map("created_at")
+  pitch             Pitch             @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+
+  @@index([pitchId])
+  @@index([key])
+  @@index([pitchId, key])
+  @@map("pitch_needs")
+}
+
+/// Match between a pitch section and a contact
+/// Core output of the PNME system
+model PitchMatch {
+  id                String              @id @default(uuid())
+  pitchSectionId    String              @map("pitch_section_id")
+  contactId         String              @map("contact_id")
+  score             Int                 @default(0) @db.SmallInt
+  relevanceScore    Float               @default(0) @map("relevance_score")
+  expertiseScore    Float               @default(0) @map("expertise_score")
+  strategicScore    Float               @default(0) @map("strategic_score")
+  relationshipScore Float               @default(0) @map("relationship_score")
+  breakdownJson     Json                @map("breakdown_json")
+  reasonsJson       Json                @map("reasons_json")
+  angleCategory     MatchAngleCategory? @map("angle_category")
+  outreachDraft     String?             @map("outreach_draft") @db.Text
+  outreachEdited    String?             @map("outreach_edited") @db.Text
+  // v8 matching engine fields
+  effectiveRankScore Float?             @map("effective_rank_score")
+  selectedIntent     String?            @map("selected_intent") @db.VarChar(50)
+  aiReasoning        String?            @map("ai_reasoning") @db.Text
+  aiGreenFlags       Json?              @map("ai_green_flags")
+  aiRedFlags         Json?              @map("ai_red_flags")
+  matchLevel         String?            @map("match_level") @db.VarChar(30)
+  hardFilterStatus   String?            @map("hard_filter_status") @db.VarChar(20)
+  confidence         Float?
+  rank               Int?
+  status            PitchMatchStatus    @default(PENDING)
+  savedAt           DateTime?           @map("saved_at")
+  ignoredAt         DateTime?           @map("ignored_at")
+  contactedAt       DateTime?           @map("contacted_at")
+  archivedAt        DateTime?           @map("archived_at")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  pitchSection      PitchSection        @relation(fields: [pitchSectionId], references: [id], onDelete: Cascade)
+  contact           Contact             @relation(fields: [contactId], references: [id])
+
+  @@unique([pitchSectionId, contactId])
+  @@index([pitchSectionId])
+  @@index([contactId])
+  @@index([score(sort: Desc)])
+  @@index([status])
+  @@index([pitchSectionId, score(sort: Desc)])
+  @@map("pitch_matches")
+}
+
+/// Job tracking for pipeline steps
+/// Enables resilient processing with retry and progress tracking
+model PitchJob {
+  id          String         @id @default(uuid())
+  pitchId     String         @map("pitch_id")
+  step        PitchJobStep
+  status      PitchJobStatus @default(PENDING)
+  progress    Int            @default(0) @db.SmallInt
+  error       String?        @db.Text
+  attempts    Int            @default(0) @db.SmallInt
+  maxAttempts Int            @default(3) @map("max_attempts") @db.SmallInt
+  startedAt   DateTime?      @map("started_at")
+  completedAt DateTime?      @map("completed_at")
+  bullJobId   String?        @map("bull_job_id") @db.VarChar(100)
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+  pitch       Pitch          @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+
+  @@unique([pitchId, step])
+  @@index([pitchId])
+  @@index([status])
+  @@index([pitchId, step])
+  @@map("pitch_jobs")
+}
+
+/// Contact profile cache for matching
+/// Pre-computed profiles from IntellMatch data for fast matching
+model ContactProfileCache {
+  id                   String   @id @default(uuid())
+  contactId            String   @unique @map("contact_id")
+  userId               String   @map("user_id")
+  profileSummary       String   @map("profile_summary") @db.Text
+  sectors              Json
+  skills               Json
+  interests            Json
+  keywords             Json?
+  investorType         String?  @map("investor_type") @db.VarChar(50)
+  investmentStage      String?  @map("investment_stage") @db.VarChar(50)
+  checkSize            String?  @map("check_size") @db.VarChar(100)
+  geography            String?  @db.VarChar(255)
+  previousInvestments  Json?    @map("previous_investments")
+  expertise            Json?
+  embedding            Json?
+  embeddingModel       String?  @map("embedding_model") @db.VarChar(100)
+  relationshipStrength Float    @default(0) @map("relationship_strength")
+  lastInteractionDays  Int?     @map("last_interaction_days")
+  interactionCount     Int      @default(0) @map("interaction_count")
+  isStale              Boolean  @default(false) @map("is_stale")
+  builtAt              DateTime @default(now()) @map("built_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([isStale])
+  @@index([userId, isStale])
+  @@map("contact_profile_cache")
+}
+
+/// User preferences for PNME feature
+/// Configurable matching weights and settings
+model UserPNMEPreferences {
+  id                     String    @id @default(uuid())
+  userId                 String    @unique @map("user_id")
+  relevanceWeight        Float     @default(0.4) @map("relevance_weight")
+  expertiseWeight        Float     @default(0.3) @map("expertise_weight")
+  strategicWeight        Float     @default(0.2) @map("strategic_weight")
+  relationshipWeight     Float     @default(0.1) @map("relationship_weight")
+  autoDeletePitchDays    Int       @default(30) @map("auto_delete_pitch_days")
+  enableWhatsAppMetadata Boolean   @default(false) @map("enable_whatsapp_metadata")
+  defaultLanguage        String    @default("en") @map("default_language") @db.VarChar(10)
+  minMatchScore          Int       @default(50) @map("min_match_score") @db.SmallInt
+  maxMatchesPerSection   Int       @default(10) @map("max_matches_per_section") @db.SmallInt
+  consentGivenAt         DateTime? @map("consent_given_at")
+  consentVersion         String?   @map("consent_version") @db.VarChar(20)
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  @@map("user_pnme_preferences")
+}
+
+/// Deal Request model
+/// Stores user's deal request with mode (SELL/BUY)
+model DealRequest {
+  id                String                @id @default(uuid())
+  userId            String                @map("user_id")
+  mode              DealMode
+  title             String?               @db.VarChar(255)
+  domain            String?               @db.VarChar(100)
+  solutionType      String?               @map("solution_type") @db.VarChar(100)
+  companySize       DealCompanySize?      @map("company_size")
+  problemStatement  String?               @map("problem_statement") @db.Text
+  targetEntityType  DealTargetEntityType? @map("target_entity_type")
+  productName       String?               @map("product_name") @db.VarChar(255)
+  targetDescription String?               @map("target_description") @db.Text
+  metadata          Json?
+  // v4 matching fields
+  dataQualityScore  Int?                  @map("data_quality_score")
+  embedding         Json?
+  tags              Json?
+  buyerRole         String?               @map("buyer_role") @db.VarChar(50)
+  status            DealStatus            @default(DRAFT)
+  matchCount        Int                   @default(0) @map("match_count")
+  avgScore          Int                   @default(0) @map("avg_score")
+  isActive          Boolean               @default(true) @map("is_active")
+  organizationId    String?               @map("organization_id")
+  isTeamShared      Boolean               @default(false) @map("is_team_shared")
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matchResults      DealMatchResult[]
+  dealJobs          DealJob[]
+  dealMembers       DealMember[]
+  collaborationRequests CollaborationRequest[]
+
+  @@index([userId])
+  @@index([userId, mode])
+  @@index([status])
+  @@index([organizationId, isTeamShared])
+  @@map("deal_requests")
+}
+
+/// Deal Match Result model
+/// Stores computed matches for a deal request
+model DealMatchResult {
+  id            String            @id @default(uuid())
+  dealRequestId String            @map("deal_request_id")
+  contactId     String            @map("contact_id")
+  score         Int               @db.SmallInt
+  category      DealMatchCategory
+  reasonsJson   Json              @map("reasons_json")
+  breakdownJson Json              @map("breakdown_json")
+  openerMessage String?           @map("opener_message") @db.Text
+  openerEdited  String?           @map("opener_edited") @db.Text
+  // v4 matching engine fields
+  surfacedStatus  String?           @map("surfaced_status") @db.VarChar(20)
+  hardFilterStatus String?          @map("hard_filter_status") @db.VarChar(20)
+  hardFilterReason String?          @map("hard_filter_reason") @db.VarChar(100)
+  scoreBreakdownV4 Json?            @map("score_breakdown_v4")
+  explanationV4    Json?            @map("explanation_v4")
+  confidence       Float?
+  rank             Int?
+  status        DealMatchStatus   @default(NEW)
+  savedAt       DateTime?         @map("saved_at")
+  ignoredAt     DateTime?         @map("ignored_at")
+  contactedAt   DateTime?         @map("contacted_at")
+  archivedAt    DateTime?         @map("archived_at")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+  dealRequest   DealRequest       @relation(fields: [dealRequestId], references: [id], onDelete: Cascade)
+  contact       Contact           @relation(fields: [contactId], references: [id])
+
+  @@unique([dealRequestId, contactId])
+  @@index([dealRequestId])
+  @@index([contactId])
+  @@index([dealRequestId, score])
+  @@map("deal_match_results")
+}
+
+/// Deal Job model for async processing
+model DealJob {
+  id            String        @id @default(uuid())
+  dealRequestId String        @map("deal_request_id")
+  step          DealJobStep
+  status        DealJobStatus @default(PENDING)
+  progress      Int           @default(0) @db.SmallInt
+  error         String?       @db.Text
+  attempts      Int           @default(0) @db.SmallInt
+  maxAttempts   Int           @default(3) @map("max_attempts") @db.SmallInt
+  startedAt     DateTime?     @map("started_at")
+  completedAt   DateTime?     @map("completed_at")
+  bullJobId     String?       @map("bull_job_id") @db.VarChar(100)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  dealRequest   DealRequest   @relation(fields: [dealRequestId], references: [id], onDelete: Cascade)
+
+  @@unique([dealRequestId, step])
+  @@index([dealRequestId])
+  @@index([status])
+  @@map("deal_jobs")
+}
+
+model ProductProfile {
+  id                String      @id @default(uuid())
+  userId            String      @unique @map("user_id")
+  productType       ProductType @map("product_type")
+  productName       String?     @map("product_name") @db.VarChar(255)
+  targetIndustry    String      @map("target_industry") @db.VarChar(255)
+  targetCompanySize String      @map("target_company_size") @db.VarChar(100)
+  problemSolved     String      @map("problem_solved") @db.Text
+  decisionMakerRole String      @map("decision_maker_role") @db.VarChar(255)
+  additionalContext String?     @map("additional_context") @db.Text
+  isActive          Boolean     @default(true) @map("is_active")
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matchRuns         ProductMatchRun[]
+
+  @@index([userId])
+  @@map("product_profiles")
+}
+
+model ProductMatchRun {
+  id               String                @id @default(uuid())
+  userId           String                @map("user_id")
+  productProfileId String                @map("product_profile_id")
+  status           ProductMatchRunStatus @default(QUEUED)
+  progress         Int                   @default(0) @db.SmallInt
+  totalContacts    Int                   @default(0) @map("total_contacts")
+  matchCount       Int                   @default(0) @map("match_count")
+  avgScore         Int                   @default(0) @map("avg_score")
+  error            String?               @db.Text
+  startedAt        DateTime?             @map("started_at")
+  completedAt      DateTime?             @map("completed_at")
+  bullJobId        String?               @map("bull_job_id") @db.VarChar(100)
+  createdAt        DateTime              @default(now()) @map("created_at")
+  updatedAt        DateTime              @updatedAt @map("updated_at")
+  user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productProfile   ProductProfile        @relation(fields: [productProfileId], references: [id], onDelete: Cascade)
+  results          ProductMatchResult[]
+
+  @@index([userId])
+  @@index([productProfileId])
+  @@index([status])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("product_match_runs")
+}
+
+model ProductMatchResult {
+  id              String            @id @default(uuid())
+  matchRunId      String            @map("match_run_id")
+  contactId       String            @map("contact_id")
+  score           Int               @db.SmallInt
+  badge           ProductMatchBadge
+  explanationJson Json              @map("explanation_json")
+  talkAngle       String?           @map("talk_angle") @db.Text
+  openerMessage   String?           @map("opener_message") @db.Text
+  openerEdited    String?           @map("opener_edited") @db.Text
+  breakdownJson   Json              @map("breakdown_json")
+  isSaved         Boolean           @default(false) @map("is_saved")
+  isDismissed     Boolean           @default(false) @map("is_dismissed")
+  isContacted     Boolean           @default(false) @map("is_contacted")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+  matchRun        ProductMatchRun   @relation(fields: [matchRunId], references: [id], onDelete: Cascade)
+  contact         Contact           @relation(fields: [contactId], references: [id])
+
+  @@unique([matchRunId, contactId])
+  @@index([matchRunId])
+  @@index([contactId])
+  @@index([matchRunId, score(sort: Desc)])
+  @@map("product_match_results")
+}
+
+/// Request from owner to collaborator (polymorphic - links to feature)
+/// Can be sent to either a User (toUserId) or a Contact (toContactId)
+model CollaborationRequest {
+  id              String                     @id @default(uuid())
+  fromUserId      String                     @map("from_user_id")
+  toUserId        String?                    @map("to_user_id")
+  message         String?                    @db.Text
+  voiceMessageUrl String?                    @map("voice_message_url") @db.VarChar(500)
+  status          CollaborationRequestStatus @default(PENDING)
+  respondedAt     DateTime?                  @map("responded_at")
+  createdAt       DateTime                   @default(now()) @map("created_at")
+  updatedAt       DateTime                   @updatedAt @map("updated_at")
+  dealId          String?                    @map("deal_id")
+  opportunityId   String?                    @map("opportunity_id")
+  pitchId         String?                    @map("pitch_id")
+  projectId       String?                    @map("project_id")
+  sourceType      CollaborationSourceType    @map("source_type")
+  toContactId     String?                    @map("to_contact_id")
+  fromUser        User                       @relation("CollabRequestFromUser", fields: [fromUserId], references: [id])
+  toUser          User?                      @relation("CollabRequestToUser", fields: [toUserId], references: [id])
+  toContact       Contact?                   @relation(fields: [toContactId], references: [id])
+  project         Project?                   @relation(fields: [projectId], references: [id])
+  opportunity     OpportunityIntent?         @relation(fields: [opportunityId], references: [id])
+  pitch           Pitch?                     @relation(fields: [pitchId], references: [id])
+  deal            DealRequest?               @relation(fields: [dealId], references: [id])
+  session         CollaborationSession?
+  introductions   Introduction[]
+  invitations     CollaborationInvitation[]
+
+  @@unique([projectId, toUserId])
+  @@unique([opportunityId, toUserId])
+  @@unique([pitchId, toUserId])
+  @@unique([dealId, toUserId])
+  @@unique([projectId, toContactId])
+  @@unique([opportunityId, toContactId])
+  @@unique([pitchId, toContactId])
+  @@unique([dealId, toContactId])
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@index([toContactId])
+  @@index([status])
+  @@index([sourceType])
+  @@index([toUserId, status])
+  @@map("collaboration_requests")
+}
+
+/// Matching session created when collaborator accepts
+model CollaborationSession {
+  id                     String    @id @default(uuid())
+  collaborationRequestId String    @unique @map("collaboration_request_id")
+  collaboratorUserId     String    @map("collaborator_user_id")
+  contactsSource         String    @default("internal_contacts") @map("contacts_source")
+  totalContacts          Int       @default(0) @map("total_contacts")
+  matchCount             Int       @default(0) @map("match_count")
+  progress               Int       @default(0) @db.SmallInt
+  status                 String    @default("PENDING")
+  bullJobId              String?   @map("bull_job_id") @db.VarChar(100)
+  error                  String?   @db.Text
+  startedAt              DateTime? @map("started_at")
+  lastScanAt             DateTime? @map("last_scan_at")
+  completedAt            DateTime? @map("completed_at")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  collaborationRequest   CollaborationRequest @relation(fields: [collaborationRequestId], references: [id])
+  matchResults           CollaborationMatchResult[]
+
+  @@index([collaboratorUserId])
+  @@index([status])
+  @@map("collaboration_sessions")
+}
+
+/// Match results visible ONLY to collaborator
+model CollaborationMatchResult {
+  id           String   @id @default(uuid())
+  sessionId    String   @map("session_id")
+  contactId    String   @map("contact_id")
+  score        Int      @db.SmallInt
+  reasonsJson  Json     @map("reasons_json")
+  isIntroduced Boolean  @default(false) @map("is_introduced")
+  isDismissed  Boolean  @default(false) @map("is_dismissed")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  session      CollaborationSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  contact      Contact              @relation(fields: [contactId], references: [id])
+  invitations  CollaborationInvitation[]
+
+  @@unique([sessionId, contactId])
+  @@index([sessionId])
+  @@index([sessionId, score(sort: Desc)])
+  @@index([contactId], map: "collaboration_match_results_contact_id_fkey")
+  @@map("collaboration_match_results")
+}
+
+/// Introduction tracking (contact ref hidden from owner)
+model Introduction {
+  id                     String             @id @default(uuid())
+  collaborationRequestId String             @map("collaboration_request_id")
+  collaboratorUserId     String             @map("collaborator_user_id")
+  thirdPartyContactRef   String             @map("third_party_contact_ref")
+  status                 IntroductionStatus @default(PENDING)
+  completedAt            DateTime?          @map("completed_at")
+  token                  String?            @unique
+  channel                String?
+  contactEmail           String?            @map("contact_email")
+  contactPhone           String?            @map("contact_phone")
+  contactName            String?            @map("contact_name")
+  message                String?            @db.Text
+  sentAt                 DateTime?          @map("sent_at")
+  respondedAt            DateTime?          @map("responded_at")
+  createdAt              DateTime           @default(now()) @map("created_at")
+  updatedAt              DateTime           @updatedAt @map("updated_at")
+  collaborationRequest   CollaborationRequest @relation(fields: [collaborationRequestId], references: [id])
+  collaborator           User                 @relation("IntroductionCollaborator", fields: [collaboratorUserId], references: [id])
+
+  @@index([collaborationRequestId])
+  @@index([collaboratorUserId])
+  @@index([status])
+  @@map("introductions")
+}
+
+/// Permanent collaboration history
+model CollaborationLedger {
+  id                 String                  @id @default(uuid())
+  fromUserId         String                  @map("from_user_id")
+  toUserId           String                  @map("to_user_id")
+  introductionsCount Int                     @default(0) @map("introductions_count")
+  lastIntroductionAt DateTime?               @map("last_introduction_at")
+  createdAt          DateTime                @default(now()) @map("created_at")
+  updatedAt          DateTime                @updatedAt @map("updated_at")
+  sourceId           String                  @map("source_id")
+  sourceType         CollaborationSourceType @map("source_type")
+  fromUser           User                    @relation("CollabLedgerFromUser", fields: [fromUserId], references: [id])
+  toUser             User                    @relation("CollabLedgerToUser", fields: [toUserId], references: [id])
+
+  @@unique([fromUserId, toUserId, sourceType, sourceId])
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@index([sourceType])
+  @@map("collaboration_ledger")
+}
+
+/// User collaboration preferences
+model CollaborationSettings {
+  id                         String   @id @default(uuid())
+  userId                     String   @unique @map("user_id")
+  globalCollaborationEnabled Boolean  @default(true) @map("global_collaboration_enabled")
+  blockedUserIdsJson         Json     @map("blocked_user_ids_json")
+  allowedUserIdsJson         Json?    @map("allowed_user_ids_json")
+  perTypeOverridesJson       Json?    @map("per_type_overrides_json")
+  createdAt                  DateTime @default(now()) @map("created_at")
+  updatedAt                  DateTime @updatedAt @map("updated_at")
+  allowedSourceTypesJson     Json     @map("allowed_source_types_json")
+  user                       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("collaboration_settings")
+}
+
+/// Invitation sent to third party (matched contact) via WhatsApp/Email
+model CollaborationInvitation {
+  id                     String            @id @default(uuid())
+  collaborationRequestId String            @map("collaboration_request_id")
+  matchResultId          String?           @map("match_result_id")
+  recipientName          String            @map("recipient_name") @db.VarChar(255)
+  recipientEmail         String?           @map("recipient_email") @db.VarChar(255)
+  recipientPhone         String?           @map("recipient_phone") @db.VarChar(50)
+  channel                InvitationChannel @default(EMAIL)
+  token                  String            @unique @db.VarChar(100)
+  message                String?           @db.Text
+  sentAt                 DateTime?         @map("sent_at")
+  deliveredAt            DateTime?         @map("delivered_at")
+  openedAt               DateTime?         @map("opened_at")
+  respondedAt            DateTime?         @map("responded_at")
+  status                 TeamMemberStatus  @default(INVITED)
+  declineReason          String?           @map("decline_reason") @db.Text
+  teamMemberId           String?           @map("team_member_id")
+  createdAt              DateTime          @default(now()) @map("created_at")
+  updatedAt              DateTime          @updatedAt @map("updated_at")
+  collaborationRequest   CollaborationRequest     @relation(fields: [collaborationRequestId], references: [id])
+  matchResult            CollaborationMatchResult? @relation(fields: [matchResultId], references: [id])
+
+  @@index([collaborationRequestId])
+  @@index([token])
+  @@index([status])
+  @@index([recipientEmail])
+  @@index([matchResultId], map: "collaboration_invitations_match_result_id_fkey")
+  @@map("collaboration_invitations")
+}
+
+/// Project team member - someone who joined a project
+model ProjectMember {
+  id              String           @id @default(uuid())
+  projectId       String           @map("project_id")
+  userId          String?          @map("user_id")
+  externalName    String?          @map("external_name") @db.VarChar(255)
+  externalEmail   String?          @map("external_email") @db.VarChar(255)
+  externalPhone   String?          @map("external_phone") @db.VarChar(50)
+  role            TeamMemberRole   @default(MEMBER)
+  status          TeamMemberStatus @default(INVITED)
+  invitationToken String?          @unique @map("invitation_token") @db.VarChar(100)
+  invitedAt       DateTime         @default(now()) @map("invited_at")
+  joinedAt        DateTime?        @map("joined_at")
+  removedAt       DateTime?        @map("removed_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user            User?            @relation("ProjectMemberUser", fields: [userId], references: [id])
+
+  @@unique([projectId, userId])
+  @@unique([projectId, externalEmail])
+  @@index([projectId])
+  @@index([userId])
+  @@index([status])
+  @@map("project_members")
+}
+
+/// Opportunity team member
+model OpportunityMember {
+  id              String           @id @default(uuid())
+  opportunityId   String           @map("opportunity_id")
+  userId          String?          @map("user_id")
+  externalName    String?          @map("external_name") @db.VarChar(255)
+  externalEmail   String?          @map("external_email") @db.VarChar(255)
+  externalPhone   String?          @map("external_phone") @db.VarChar(50)
+  role            TeamMemberRole   @default(MEMBER)
+  status          TeamMemberStatus @default(INVITED)
+  invitationToken String?          @unique @map("invitation_token") @db.VarChar(100)
+  invitedAt       DateTime         @default(now()) @map("invited_at")
+  joinedAt        DateTime?        @map("joined_at")
+  removedAt       DateTime?        @map("removed_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  opportunity     OpportunityIntent @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  user            User?             @relation("OpportunityMemberUser", fields: [userId], references: [id])
+
+  @@unique([opportunityId, userId])
+  @@unique([opportunityId, externalEmail])
+  @@index([opportunityId])
+  @@index([userId])
+  @@index([status])
+  @@map("opportunity_members")
+}
+
+/// Pitch team member
+model PitchMember {
+  id              String           @id @default(uuid())
+  pitchId         String           @map("pitch_id")
+  userId          String?          @map("user_id")
+  externalName    String?          @map("external_name") @db.VarChar(255)
+  externalEmail   String?          @map("external_email") @db.VarChar(255)
+  externalPhone   String?          @map("external_phone") @db.VarChar(50)
+  role            TeamMemberRole   @default(MEMBER)
+  status          TeamMemberStatus @default(INVITED)
+  invitationToken String?          @unique @map("invitation_token") @db.VarChar(100)
+  invitedAt       DateTime         @default(now()) @map("invited_at")
+  joinedAt        DateTime?        @map("joined_at")
+  removedAt       DateTime?        @map("removed_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  pitch           Pitch            @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+  user            User?            @relation("PitchMemberUser", fields: [userId], references: [id])
+
+  @@unique([pitchId, userId])
+  @@unique([pitchId, externalEmail])
+  @@index([pitchId])
+  @@index([userId])
+  @@index([status])
+  @@map("pitch_members")
+}
+
+/// Deal team member
+model DealMember {
+  id              String           @id @default(uuid())
+  dealId          String           @map("deal_id")
+  userId          String?          @map("user_id")
+  externalName    String?          @map("external_name") @db.VarChar(255)
+  externalEmail   String?          @map("external_email") @db.VarChar(255)
+  externalPhone   String?          @map("external_phone") @db.VarChar(50)
+  role            TeamMemberRole   @default(MEMBER)
+  status          TeamMemberStatus @default(INVITED)
+  invitationToken String?          @unique @map("invitation_token") @db.VarChar(100)
+  invitedAt       DateTime         @default(now()) @map("invited_at")
+  joinedAt        DateTime?        @map("joined_at")
+  removedAt       DateTime?        @map("removed_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  deal            DealRequest      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  user            User?            @relation("DealMemberUser", fields: [userId], references: [id])
+
+  @@unique([dealId, userId])
+  @@unique([dealId, externalEmail])
+  @@index([dealId])
+  @@index([userId])
+  @@index([status])
+  @@map("deal_members")
+}
+
+/// Contact Import Batch - tracks each import operation
+model ContactImportBatch {
+  id                     String            @id @default(uuid())
+  userId                 String            @map("user_id")
+  source                 ImportSource
+  status                 ImportBatchStatus @default(PENDING)
+  consentedAt            DateTime          @map("consented_at")
+  enrichmentEnabled      Boolean           @default(false) @map("enrichment_enabled")
+  aiSummaryEnabled       Boolean           @default(false) @map("ai_summary_enabled")
+  phoneEnrichmentEnabled Boolean           @default(false) @map("phone_enrichment_enabled")
+  currentStage           String?           @map("current_stage") @db.VarChar(50)
+  stageProgress          Int               @default(0) @map("stage_progress") @db.SmallInt
+  overallProgress        Int               @default(0) @map("overall_progress") @db.SmallInt
+  totalReceived          Int               @default(0) @map("total_received")
+  totalImported          Int               @default(0) @map("total_imported")
+  duplicatesMerged       Int               @default(0) @map("duplicates_merged")
+  enrichedCount          Int               @default(0) @map("enriched_count")
+  taggedCount            Int               @default(0) @map("tagged_count")
+  summarizedCount        Int               @default(0) @map("summarized_count")
+  matchedCount           Int               @default(0) @map("matched_count")
+  failedCount            Int               @default(0) @map("failed_count")
+  errorMessage           String?           @map("error_message") @db.Text
+  errorDetails           Json?             @map("error_details")
+  currentJobId           String?           @map("current_job_id") @db.VarChar(100)
+  startedAt              DateTime?         @map("started_at")
+  completedAt            DateTime?         @map("completed_at")
+  createdAt              DateTime          @default(now()) @map("created_at")
+  updatedAt              DateTime          @updatedAt @map("updated_at")
+  contacts               Contact[]         @relation("ImportedContacts")
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("contact_import_batches")
+}
+
+/// Import Audit Log - tracks all import/delete operations
+model ImportAuditLog {
+  id        String   @id @default(uuid())
+  batchId   String   @map("batch_id")
+  userId    String   @map("user_id")
+  action    String   @db.VarChar(50)
+  details   Json?
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  userAgent String?  @map("user_agent") @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([batchId])
+  @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("import_audit_logs")
+}
+
+/// Contact Computed Profile - stores extracted/computed data
+model ContactComputedProfile {
+  id                String         @id @default(uuid())
+  contactId         String         @unique @map("contact_id")
+  sectorsJson       Json           @map("sectors_json")
+  skillsJson        Json           @map("skills_json")
+  interestsJson     Json           @map("interests_json")
+  keywordsJson      Json           @map("keywords_json")
+  profileSummary    String?        @map("profile_summary") @db.Text
+  summarySource     String?        @map("summary_source") @db.VarChar(20)
+  overallConfidence Float          @default(0) @map("overall_confidence")
+  confidenceLevel   DataConfidence @default(LOW) @map("confidence_level")
+  confidenceJson    Json?          @map("confidence_json")
+  lastEnrichedAt    DateTime?      @map("last_enriched_at")
+  lastTaggedAt      DateTime?      @map("last_tagged_at")
+  lastSummarizedAt  DateTime?      @map("last_summarized_at")
+  enrichmentSource  String?        @map("enrichment_source") @db.VarChar(50)
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+
+  @@index([contactId])
+  @@index([confidenceLevel])
+  @@map("contact_computed_profiles")
+}
+
+/// Contact Match Cache - stores precomputed match scores
+model ContactMatchCache {
+  id                 String    @id @default(uuid())
+  userId             String    @map("user_id")
+  contactId          String    @map("contact_id")
+  score              Int       @db.SmallInt
+  breakdownJson      Json      @map("breakdown_json")
+  reasonsJson        Json      @map("reasons_json")
+  version            Int       @default(1)
+  computedAt         DateTime  @map("computed_at")
+  expiresAt          DateTime? @map("expires_at")
+  userProfileHash    String?   @map("user_profile_hash") @db.VarChar(64)
+  contactProfileHash String?   @map("contact_profile_hash") @db.VarChar(64)
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@unique([userId, contactId])
+  @@index([userId])
+  @@index([userId, score(sort: Desc)])
+  @@index([contactId])
+  @@index([expiresAt])
+  @@map("contact_match_cache")
+}
+
+/// User Import Consent - stores consent records
+model UserImportConsent {
+  id                String   @id @default(uuid())
+  userId            String   @map("user_id")
+  consentVersion    String   @map("consent_version") @db.VarChar(20)
+  enrichmentConsent Boolean  @default(false) @map("enrichment_consent")
+  aiSummaryConsent  Boolean  @default(false) @map("ai_summary_consent")
+  ipAddress         String?  @map("ip_address") @db.VarChar(45)
+  userAgent         String?  @map("user_agent") @db.VarChar(500)
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("user_import_consents")
+}
+
+/// User subscription information
+model Subscription {
+  id                 String             @id @default(uuid())
+  userId             String             @unique @map("user_id")
+  plan               SubscriptionPlan   @default(FREE)
+  status             SubscriptionStatus @default(TRIALING)
+  billingInterval    BillingInterval?   @map("billing_interval")
+  seats              Int                @default(1)
+  trialEndsAt        DateTime?          @map("trial_ends_at")
+  currentPeriodStart DateTime?          @map("current_period_start")
+  currentPeriodEnd   DateTime?          @map("current_period_end")
+  cancelledAt        DateTime?          @map("cancelled_at")
+  cancelAtPeriodEnd  Boolean            @default(false) @map("cancel_at_period_end")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization       Organization?
+  payments           Payment[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([plan])
+  @@map("subscriptions")
+}
+
+/// Payment records from PayTabs
+model Payment {
+  id              String           @id @default(uuid())
+  subscriptionId  String           @map("subscription_id")
+  tranRef         String?          @unique @map("tran_ref")
+  cartId          String           @unique @map("cart_id")
+  amount          Decimal          @db.Decimal(10, 2)
+  currency        String           @default("USD") @db.VarChar(3)
+  status          PaymentStatus    @default(PENDING)
+  responseCode    String?          @map("response_code")
+  responseMessage String?          @map("response_message") @db.Text
+  callbackPayload Json?            @map("callback_payload")
+  customerEmail   String           @map("customer_email")
+  customerName    String           @map("customer_name")
+  description     String?          @db.Text
+  billingInterval BillingInterval  @map("billing_interval")
+  plan            SubscriptionPlan
+  seats           Int              @default(1)
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  paidAt          DateTime?        @map("paid_at")
+  subscription    Subscription     @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+  @@index([tranRef])
+  @@index([cartId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("payments")
+}
+
+/// Point pack purchase via payment gateway
+model PointPackPurchase {
+  id              String        @id @default(uuid())
+  userId          String        @map("user_id")
+  packId          String        @map("pack_id")
+  cartId          String        @unique @map("cart_id")
+  tranRef         String?       @unique @map("tran_ref")
+  amount          Decimal       @db.Decimal(10, 2)
+  currency        String        @default("USD") @db.VarChar(3)
+  points          Int
+  status          PaymentStatus @default(PENDING)
+  responseCode    String?       @map("response_code")
+  responseMessage String?       @map("response_message") @db.Text
+  callbackPayload Json?         @map("callback_payload")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  paidAt          DateTime?     @map("paid_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pointPack PointPack @relation(fields: [packId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@map("point_pack_purchases")
+}
+
+/// Event created by a host for networking
+model Event {
+  id             String   @id @default(uuid())
+  hostId         String   @map("host_id")
+  name           String   @db.VarChar(255)
+  description    String?  @db.Text
+  dateTime       DateTime @map("date_time")
+  location       String?  @db.VarChar(500)
+  locationLat    Float?   @map("location_lat")
+  locationLng    Float?   @map("location_lng")
+  thumbnailUrl   String?  @map("thumbnail_url") @db.VarChar(500)
+  welcomeMessage String?  @map("welcome_message") @db.Text
+  uniqueCode     String   @unique @map("unique_code") @db.VarChar(20)
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  host           User     @relation(fields: [hostId], references: [id])
+  attendees      EventAttendee[]
+
+  @@index([hostId])
+  @@index([uniqueCode])
+  @@index([dateTime])
+  @@index([isActive])
+  @@map("events")
+}
+
+/// Attendee registered for an event (guest or logged-in user)
+model EventAttendee {
+  id          String    @id @default(uuid())
+  eventId     String    @map("event_id")
+  userId      String?   @map("user_id")
+  email       String    @db.VarChar(255)
+  name        String    @db.VarChar(255)
+  mobile      String?   @db.VarChar(50)
+  company     String?   @db.VarChar(255)
+  role        String?   @db.VarChar(255)
+  bio         String?   @db.Text
+  lookingFor  String?   @map("looking_for") @db.Text
+  cvUrl       String?   @map("cv_url") @db.VarChar(500)
+  photoUrl    String?   @map("photo_url") @db.VarChar(500)
+  isHost      Boolean   @default(false) @map("is_host")
+  accessToken String?   @map("access_token") @db.VarChar(100)
+  tokenExpiry DateTime? @map("token_expiry")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user        User?     @relation("EventAttendeeUser", fields: [userId], references: [id])
+  matchesAsSource  EventAttendeeMatch[] @relation("AttendeeMatchSource")
+  matchesAsTarget  EventAttendeeMatch[] @relation("AttendeeMatchTarget")
+
+  @@unique([eventId, email])
+  @@index([eventId])
+  @@index([userId])
+  @@index([email])
+  @@index([accessToken])
+  @@map("event_attendees")
+}
+
+/// Match result between two event attendees
+model EventAttendeeMatch {
+  id                String          @id @default(uuid())
+  attendeeId        String          @map("attendee_id")
+  matchedAttendeeId String          @map("matched_attendee_id")
+  matchLevel        EventMatchLevel @map("match_level")
+  score             Int             @default(0)
+  reasons           String?         @db.Text
+  createdAt         DateTime        @default(now()) @map("created_at")
+  attendee          EventAttendee   @relation("AttendeeMatchSource", fields: [attendeeId], references: [id], onDelete: Cascade)
+  matchedAttendee   EventAttendee   @relation("AttendeeMatchTarget", fields: [matchedAttendeeId], references: [id], onDelete: Cascade)
+
+  @@unique([attendeeId, matchedAttendeeId])
+  @@index([attendeeId])
+  @@index([matchedAttendeeId])
+  @@index([matchLevel])
+  @@map("event_attendee_matches")
+}
+
+/// Itemized match result - stores complete per-criterion breakdown
+model ItemizedMatchResult {
+  id              String            @id @default(uuid())
+  matchType       ItemizedMatchType @map("match_type")
+  sourceId        String            @map("source_id")
+  sourceType      MatchEntityType   @map("source_type")
+  sourceName      String            @map("source_name") @db.VarChar(255)
+  targetId        String            @map("target_id")
+  targetType      MatchEntityType   @map("target_type")
+  targetName      String            @map("target_name") @db.VarChar(255)
+  perfectCount    Int               @default(0) @map("perfect_count") @db.SmallInt
+  excellentCount  Int               @default(0) @map("excellent_count") @db.SmallInt
+  strongCount     Int               @default(0) @map("strong_count") @db.SmallInt
+  moderateCount   Int               @default(0) @map("moderate_count") @db.SmallInt
+  weakCount       Int               @default(0) @map("weak_count") @db.SmallInt
+  noMatchCount    Int               @default(0) @map("no_match_count") @db.SmallInt
+  criticalMet     Int               @default(0) @map("critical_met") @db.SmallInt
+  criticalTotal   Int               @default(0) @map("critical_total") @db.SmallInt
+  concernsJson    Json?             @map("concerns_json")
+  suggestedAction String?           @map("suggested_action") @db.VarChar(255)
+  actionReason    String?           @map("action_reason") @db.Text
+  messageTemplate String?           @map("message_template") @db.Text
+  iceBreakersJson Json?             @map("ice_breakers_json")
+  expiresAt       DateTime?         @map("expires_at")
+  calculatedAt    DateTime          @default(now()) @map("calculated_at")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+  criteria        ItemizedMatchCriterion[]
+
+  @@unique([matchType, sourceId, targetId])
+  @@index([matchType])
+  @@index([sourceId])
+  @@index([targetId])
+  @@index([sourceId, targetId])
+  @@index([matchType, sourceId])
+  @@index([expiresAt])
+  @@map("itemized_match_results")
+}
+
+/// Individual criterion score within an itemized match
+model ItemizedMatchCriterion {
+  id           String               @id @default(uuid())
+  resultId     String               @map("result_id")
+  criterionId  String               @map("criterion_id") @db.VarChar(50)
+  name         String               @db.VarChar(100)
+  icon         String               @db.VarChar(50)
+  score        Int                  @db.SmallInt
+  status       CriterionMatchStatus
+  importance   CriterionImportance
+  matchType    CriterionMatchType   @map("match_type")
+  summary      String               @db.Text
+  sourceValue  String               @map("source_value") @db.Text
+  targetValue  String               @map("target_value") @db.Text
+  detailsJson  Json                 @map("details_json")
+  rawDataJson  Json?                @map("raw_data_json")
+  displayOrder Int                  @default(0) @map("display_order") @db.SmallInt
+  createdAt    DateTime             @default(now()) @map("created_at")
+  result       ItemizedMatchResult  @relation(fields: [resultId], references: [id], onDelete: Cascade)
+
+  @@unique([resultId, criterionId])
+  @@index([resultId])
+  @@index([criterionId])
+  @@index([resultId, status])
+  @@index([resultId, importance])
+  @@map("itemized_match_criteria")
+}
+
+/// Direct message conversation between two users
+model Conversation {
+  id               String    @id @default(uuid())
+  participantOneId String    @map("participant_one_id")
+  participantTwoId String    @map("participant_two_id")
+  lastMessageAt    DateTime? @map("last_message_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  participantOne   User      @relation("ConversationParticipantOne", fields: [participantOneId], references: [id])
+  participantTwo   User      @relation("ConversationParticipantTwo", fields: [participantTwoId], references: [id])
+  messages         Message[]
+
+  @@unique([participantOneId, participantTwoId])
+  @@index([participantOneId])
+  @@index([participantTwoId])
+  @@index([lastMessageAt])
+  @@map("conversations")
+}
+
+/// Direct message in a conversation
+model Message {
+  id             String        @id @default(uuid())
+  conversationId String        @map("conversation_id")
+  senderId       String        @map("sender_id")
+  content        String?       @db.Text
+  messageType    MessageType   @default(TEXT) @map("message_type")
+  status         MessageStatus @default(SENT)
+  readAt         DateTime?     @map("read_at")
+  isEdited       Boolean       @default(false) @map("is_edited")
+  editedAt       DateTime?     @map("edited_at")
+  deletedAt      DateTime?     @map("deleted_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  conversation   Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User          @relation("MessageSender", fields: [senderId], references: [id])
+  attachments    MessageAttachment[]
+  reactions      MessageReaction[]
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([conversationId, createdAt])
+  @@index([conversationId, status])
+  @@map("messages")
+}
+
+/// Attachment for a message (image, video, audio, voice, file)
+model MessageAttachment {
+  id            String   @id @default(uuid())
+  messageId     String   @map("message_id")
+  fileName      String   @map("file_name") @db.VarChar(500)
+  originalName  String   @map("original_name") @db.VarChar(500)
+  mimeType      String   @map("mime_type") @db.VarChar(100)
+  size          Int
+  storageKey    String   @map("storage_key") @db.VarChar(500)
+  storageBucket String   @map("storage_bucket") @db.VarChar(100)
+  url           String   @db.VarChar(1000)
+  duration      Float?
+  createdAt     DateTime @default(now()) @map("created_at")
+  message       Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("message_attachments")
+}
+
+model MessageReaction {
+  id        String   @id @default(uuid())
+  messageId String   @map("message_id")
+  userId    String   @map("user_id")
+  emoji     String   @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at")
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation("MessageReactionUser", fields: [userId], references: [id])
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+  @@map("message_reactions")
+}
+
+/// Collaboration task for a project
+/// Allows project collaborators to create, assign, and track tasks
+model CollaborationTask {
+  id           String    @id @default(uuid())
+  projectId    String    @map("project_id")
+  createdById  String    @map("created_by_id")
+  assignedToId String?   @map("assigned_to_id")
+  title        String    @db.VarChar(255)
+  description  String?   @db.Text
+  dueDate      DateTime? @map("due_date")
+  status       String    @default("TODO") @db.VarChar(20)
+  priority     String    @default("MEDIUM") @db.VarChar(20)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy    User      @relation("CollabTaskCreatedBy", fields: [createdById], references: [id])
+  assignedTo   User?     @relation("CollabTaskAssignedTo", fields: [assignedToId], references: [id])
+
+  @@index([projectId])
+  @@index([createdById])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([projectId, status])
+  @@map("collaboration_tasks")
+}
+
+/// Platform invitation sent to contacts to join the platform (MOD-010)
+/// Created when a user invites a scanned contact to register on the platform.
+/// NOTE: After adding this model, run `npx prisma db push` to sync the database.
+model PlatformInvitation {
+  id              String                   @id @default(uuid())
+  contactId       String                   @map("contact_id")
+  invitedByUserId String                   @map("invited_by_user_id")
+  email           String                   @db.VarChar(255)
+  status          PlatformInvitationStatus @default(PENDING)
+  token           String                   @unique @db.VarChar(128)
+  expiresAt       DateTime                 @map("expires_at")
+  acceptedAt      DateTime?                @map("accepted_at")
+  createdAt       DateTime                 @default(now()) @map("created_at")
+  updatedAt       DateTime                 @updatedAt @map("updated_at")
+  contact         Contact                  @relation(fields: [contactId], references: [id])
+  invitedByUser   User                     @relation(fields: [invitedByUserId], references: [id])
+
+  @@index([contactId])
+  @@index([invitedByUserId])
+  @@index([email])
+  @@index([token])
+  @@index([status])
+  @@map("platform_invitations")
+}
+
+/// SDAIA PDPL Processing Record
+/// Tracks all personal data processing for Saudi PDPL compliance
+model SdaiaProcessingRecord {
+  id                  String                @id @default(uuid())
+  userId              String                @map("user_id")
+  subjectContactId    String?               @map("subject_contact_id")
+  batchId             String?               @map("batch_id")
+  processingPurpose   String                @map("processing_purpose") @db.VarChar(255)
+  legalBasis          SdaiaLegalBasis       @map("legal_basis")
+  consentId           String?               @map("consent_id") @db.VarChar(100)
+  consentTimestamp    DateTime?             @map("consent_timestamp")
+  dataFieldsProcessed Json                  @map("data_fields_processed")
+  providersUsed       Json?                 @map("providers_used")
+  retentionDays       Int                   @map("retention_days")
+  scheduledDeletionAt DateTime              @map("scheduled_deletion_at")
+  crossBorderTransfer Json?                 @map("cross_border_transfer")
+  status              SdaiaProcessingStatus @default(ACTIVE)
+  deletedAt           DateTime?             @map("deleted_at")
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @updatedAt @map("updated_at")
+  user                User                  @relation(fields: [userId], references: [id])
+  subjectContact      Contact?              @relation("SdaiaSubjectContact", fields: [subjectContactId], references: [id])
+
+  @@index([userId])
+  @@index([subjectContactId])
+  @@index([batchId])
+  @@index([scheduledDeletionAt])
+  @@index([status])
+  @@map("sdaia_processing_records")
+}
+
+/// Organization for Team plan
+model Organization {
+  id             String    @id @default(uuid())
+  name           String    @db.VarChar(255)
+  slug           String    @unique @db.VarChar(255)
+  logoUrl        String?   @map("logo_url") @db.VarChar(500)
+  website        String?   @db.VarChar(500)
+  industry       String?   @db.VarChar(255)
+  size           OrgSize?
+  subscriptionId String    @unique @map("subscription_id")
+  contactLimit   Int       @default(30000) @map("contact_limit")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  projects           Project[]
+  contacts           Contact[]
+  opportunityIntents OpportunityIntent[]
+  subscription       Subscription      @relation(fields: [subscriptionId], references: [id])
+  members            OrganizationMember[]
+  invitations    OrgInvitation[]
+  activityLogs   OrgActivityLog[]
+  sharingPrefs   ContactSharingPreference[]
+  sharedContacts SharedContact[]
+  warmIntroRequests WarmIntroRequest[]
+  // Job Matching v3 relations
+  hiringProfiles    HiringProfile[]
+  candidateProfiles CandidateProfile[]
+
+  @@index([slug])
+  @@index([subscriptionId])
+  @@map("organizations")
+}
+
+/// Organization membership
+model OrganizationMember {
+  id             String        @id @default(uuid())
+  organizationId String        @map("organization_id")
+  userId         String        @map("user_id")
+  role           OrgMemberRole @default(MEMBER)
+  joinedAt       DateTime      @default(now()) @map("joined_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [userId], references: [id])
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+  @@index([userId])
+  @@map("organization_members")
+}
+
+/// Invitation to join an organization
+model OrgInvitation {
+  id             String              @id @default(uuid())
+  organizationId String              @map("organization_id")
+  email          String              @db.VarChar(255)
+  role           OrgMemberRole       @default(MEMBER)
+  token          String              @unique @db.VarChar(255)
+  status         OrgInvitationStatus @default(PENDING)
+  invitedById    String              @map("invited_by_id")
+  expiresAt      DateTime            @map("expires_at")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy      User                @relation("OrgInvitedBy", fields: [invitedById], references: [id])
+
+  @@index([organizationId])
+  @@index([email])
+  @@index([token])
+  @@index([status])
+  @@map("org_invitations")
+}
+
+/// Activity log for organization actions
+model OrgActivityLog {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  userId         String   @map("user_id")
+  action         String   @db.VarChar(100)
+  resourceType   String?  @map("resource_type") @db.VarChar(100)
+  resourceId     String?  @map("resource_id") @db.VarChar(255)
+  metadata       Json?
+  createdAt      DateTime @default(now()) @map("created_at")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  user           User         @relation("OrgActivityUser", fields: [userId], references: [id])
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("org_activity_logs")
+}
+
+/// Per-user sharing preference within an org
+model ContactSharingPreference {
+  id             String       @id @default(uuid())
+  userId         String       @map("user_id")
+  organizationId String       @map("organization_id")
+  shareMode      OrgShareMode @default(MANUAL)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  user           User         @relation(fields: [userId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+  @@map("contact_sharing_preferences")
+}
+
+/// Contact shared with an organization
+model SharedContact {
+  id             String               @id @default(uuid())
+  contactId      String               @map("contact_id")
+  organizationId String               @map("organization_id")
+  sharedById     String               @map("shared_by_id")
+  visibility     OrgContactVisibility @default(FULL)
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+  contact        Contact              @relation(fields: [contactId], references: [id])
+  organization   Organization         @relation(fields: [organizationId], references: [id])
+  sharedBy       User                 @relation("SharedContactBy", fields: [sharedById], references: [id])
+
+  @@unique([contactId, organizationId])
+  @@index([contactId])
+  @@index([organizationId])
+  @@index([sharedById])
+  @@map("shared_contacts")
+}
+
+/// Warm intro request between team members
+model WarmIntroRequest {
+  id              String          @id @default(uuid())
+  organizationId  String          @map("organization_id")
+  requesterId     String          @map("requester_id")
+  connectorId     String          @map("connector_id")
+  targetContactId String          @map("target_contact_id")
+  message         String?         @db.Text
+  context         String?         @db.Text
+  status          WarmIntroStatus @default(PENDING)
+  connectorNote   String?         @map("connector_note") @db.Text
+  completedAt     DateTime?       @map("completed_at")
+  declinedAt      DateTime?       @map("declined_at")
+  declinedReason  String?         @map("declined_reason") @db.Text
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  organization    Organization    @relation(fields: [organizationId], references: [id])
+  requester       User            @relation("WarmIntroRequester", fields: [requesterId], references: [id])
+  connector       User            @relation("WarmIntroConnector", fields: [connectorId], references: [id])
+  targetContact   Contact         @relation(fields: [targetContactId], references: [id])
+
+  @@index([organizationId])
+  @@index([requesterId])
+  @@index([connectorId])
+  @@index([targetContactId])
+  @@index([status])
+  @@map("warm_intro_requests")
+}
+
+enum TokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+/// Skill proficiency levels
+enum ProficiencyLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+/// Interest intensity levels
+enum Intensity {
+  CASUAL
+  MODERATE
+  PASSIONATE
+}
+
+/// Networking goal types
+enum GoalType {
+  MENTORSHIP
+  INVESTMENT
+  PARTNERSHIP
+  HIRING
+  JOB_SEEKING
+  COLLABORATION
+  LEARNING
+  SALES
+  OTHER
+}
+
+/// Contact source types
+enum ContactSource {
+  CARD_SCAN
+  MANUAL
+  IMPORT
+  LINKEDIN
+  COLLABORATION
+  EVENT
+  PHOTO
+}
+
+/// Source of sector/skill assignment
+enum SectorSource {
+  USER
+  AI
+  ENRICHMENT
+}
+
+/// Interaction types
+enum InteractionType {
+  SCANNED
+  SAVED
+  VIEWED
+  NOTED
+  MEETING
+  MESSAGE
+  FOLLOW_UP
+  INTRODUCED
+  CALLED
+  EMAILED
+}
+
+/// Consent types
+enum ConsentType {
+  ENRICHMENT
+  CONTACTS
+  ANALYTICS
+  EMAIL_SCAN
+}
+
+/// Consent action types
+enum ConsentAction {
+  GRANTED
+  REVOKED
+}
+
+/// Project stages
+enum ProjectStage {
+  IDEA
+  MVP
+  EARLY
+  GROWTH
+  SCALE
+}
+
+/// Project visibility options
+enum ProjectVisibility {
+  PUBLIC
+  PRIVATE
+  CONNECTIONS_ONLY
+}
+
+/// Skill importance for projects
+enum SkillImportance {
+  REQUIRED
+  PREFERRED
+  NICE_TO_HAVE
+}
+
+/// Project match status
+enum ProjectMatchStatus {
+  PENDING
+  CONTACTED
+  SAVED
+  DISMISSED
+  CONNECTED
+  ARCHIVED
+}
+
+/// Opportunity intent types
+enum OpportunityIntentType {
+  HIRING
+  OPEN_TO_OPPORTUNITIES
+  ADVISORY_BOARD
+  REFERRALS_ONLY
+}
+
+/// Opportunity visibility options (no PUBLIC - max is TEAM)
+enum OpportunityVisibility {
+  PRIVATE
+  LIMITED
+  TEAM
+}
+
+/// Seniority levels for opportunity matching
+enum SeniorityLevel {
+  ENTRY
+  MID
+  SENIOR
+  LEAD
+  DIRECTOR
+  VP
+  C_LEVEL
+  BOARD
+}
+
+/// Opportunity match status
+enum OpportunityMatchStatus {
+  PENDING
+  CONTACTED
+  INTRODUCED
+  SAVED
+  DISMISSED
+  CONNECTED
+  RESPONDED
+  SCHEDULED
+  HIRED
+  REJECTED
+  ARCHIVED
+}
+
+/// Match quality level (v2)
+enum MatchLevel {
+  EXCELLENT
+  VERY_GOOD
+  GOOD
+  WEAK
+  POOR
+}
+
+/// Confidence level for match scoring (v2)
+enum ConfidenceLevel {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+/// Hard filter status for pre-scoring gate (v2)
+enum HardFilterStatus {
+  PASS
+  FAIL
+  REVIEW
+}
+
+/// Task category for organizing tasks
+model TaskCategory {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String   @db.VarChar(100)
+  color     String   @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("task_categories")
+}
+
+/// Task recurrence pattern
+model TaskRecurrence {
+  id              String              @id @default(uuid())
+  userId          String              @map("user_id")
+  pattern         RecurrencePattern
+  interval        Int                 @default(1)
+  daysOfWeek      Json?               @map("days_of_week")
+  endDate         DateTime?           @map("end_date")
+  maxOccurrences  Int?                @map("max_occurrences")
+  occurrenceCount Int                 @default(0) @map("occurrence_count")
+  parentTaskId    String?             @map("parent_task_id")
+  nextRunAt       DateTime?           @map("next_run_at")
+  isActive        Boolean             @default(true) @map("is_active")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks           ContactTask[]
+
+  @@index([userId])
+  @@index([nextRunAt])
+  @@index([isActive])
+  @@map("task_recurrences")
+}
+
+/// Task-specific reminder (multiple per task)
+model TaskReminder {
+  id          String           @id @default(uuid())
+  taskId      String           @map("task_id")
+  reminderAt  DateTime         @map("reminder_at")
+  type        ReminderType     @default(IN_APP)
+  isSent      Boolean          @default(false) @map("is_sent")
+  snoozeUntil DateTime?        @map("snooze_until")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  task        ContactTask      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([reminderAt])
+  @@index([isSent])
+  @@index([reminderAt, isSent])
+  @@map("task_reminders")
+}
+
+/// Task sharing
+model TaskShare {
+  id           String    @id @default(uuid())
+  taskId       String    @map("task_id")
+  sharedById   String    @map("shared_by_id")
+  sharedWithId String?   @map("shared_with_id")
+  sharedEmail  String?   @map("shared_email") @db.VarChar(255)
+  shareToken   String?   @unique @map("share_token") @db.VarChar(100)
+  permission   String    @default("VIEW") @db.VarChar(20)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  task         ContactTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  sharedBy     User        @relation("TaskSharedBy", fields: [sharedById], references: [id])
+  sharedWith   User?       @relation("TaskSharedWith", fields: [sharedWithId], references: [id])
+
+  @@index([taskId])
+  @@index([sharedById])
+  @@index([sharedWithId])
+  @@index([shareToken])
+  @@map("task_shares")
+}
+
+/// Task comments
+model TaskComment {
+  id        String      @id @default(uuid())
+  taskId    String      @map("task_id")
+  userId    String      @map("user_id")
+  content   String      @db.Text
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+  task      ContactTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([taskId, createdAt])
+  @@map("task_comments")
+}
+
+/// Task activity log
+model TaskActivity {
+  id        String      @id @default(uuid())
+  taskId    String      @map("task_id")
+  userId    String      @map("user_id")
+  action    String      @db.VarChar(50)
+  details   Json?
+  createdAt DateTime    @default(now()) @map("created_at")
+  task      ContactTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([taskId, createdAt])
+  @@map("task_activities")
+}
+
+/// In-app notifications
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  type      String   @db.VarChar(50)
+  title     String   @db.VarChar(255)
+  message   String   @db.Text
+  data      Json?
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+/// Push notification subscriptions
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  endpoint  String   @db.Text
+  p256dh    String   @db.Text
+  auth      String   @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+/// Task priority levels
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+/// Task status
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+/// Note type for contact notes
+enum NoteType {
+  TEXT
+  IMAGE
+  VOICE
+  FILE
+}
+
+/// Search intent for Find Contact feature
+enum SearchIntent {
+  MEETING
+  COLLABORATION
+  FOLLOW_UP
+  SALES
+  SUPPORT
+  OTHER
+}
+
+/// Search input type detected
+enum SearchInputType {
+  PHONE
+  EMAIL
+  URL
+  NAME
+  IMAGE
+}
+
+/// Search status based on confidence
+enum SearchStatus {
+  HIGH_CONFIDENCE
+  LIKELY
+  UNCERTAIN
+  NO_MATCH
+  PENDING_OCR
+  PENDING_ENRICH
+}
+
+/// Candidate type in search results
+enum CandidateType {
+  USER
+  CONTACT
+}
+
+/// User account status
+enum UserStatus {
+  ACTIVE
+  PENDING_INVITATION
+  INVITED
+  INACTIVE
+}
+
+/// Meeting attendee response status
+enum AttendeeStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  TENTATIVE
+}
+
+/// Video conferencing provider
+enum VideoProvider {
+  ZOOM
+  GOOGLE_MEET
+  MICROSOFT_TEAMS
+  OTHER
+}
+
+/// User feedback on match recommendations
+/// Tracks accept/reject/rate signals for ML improvement
+enum MatchFeedbackAction {
+  ACCEPT
+  REJECT
+  SAVE
+  CONNECT
+  MESSAGE
+  HIDE
+}
+
+/// Pitch file types supported
+enum PitchFileType {
+  PDF
+  PPTX
+}
+
+/// Pitch processing status
+enum PitchStatus {
+  PENDING
+  EXTRACTING
+  CLASSIFYING
+  ANALYZING
+  MATCHING
+  GENERATING
+  COMPLETED
+  FAILED
+  EXPIRED
+}
+
+/// Pitch section types (standard deck structure)
+enum PitchSectionType {
+  PROBLEM
+  SOLUTION
+  MARKET
+  BUSINESS_MODEL
+  TRACTION
+  TECHNOLOGY
+  TEAM
+  INVESTMENT_ASK
+  EXECUTIVE_SUMMARY
+  OTHER
+}
+
+/// Structured pitch need categories
+enum PitchNeedKey {
+  FUNDING
+  SECTOR_EXPERTISE
+  TECHNICAL_EXPERTISE
+  GO_TO_MARKET
+  PARTNERSHIPS
+  TALENT
+  REGULATORY
+  OPERATIONS
+  MENTORSHIP
+  INTRODUCTIONS
+}
+
+/// Match angle categories for explainability
+enum MatchAngleCategory {
+  INVESTOR_FIT
+  TECHNICAL_ADVISOR
+  MARKET_ACCESS
+  STRATEGIC_PARTNER
+  DOMAIN_EXPERT
+  TALENT_SOURCE
+  CUSTOMER_INTRO
+  REGULATORY_HELP
+}
+
+/// Pitch match status (user actions)
+enum PitchMatchStatus {
+  PENDING
+  SAVED
+  IGNORED
+  CONTACTED
+  ARCHIVED
+}
+
+/// Pipeline job steps
+enum PitchJobStep {
+  UPLOAD
+  EXTRACT_TEXT
+  CLASSIFY_SECTIONS
+  EXTRACT_NEEDS
+  BUILD_PROFILES
+  COMPUTE_MATCHES
+  GENERATE_OUTREACH
+}
+
+/// Pipeline job status
+enum PitchJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  RETRYING
+}
+
+/// Deal mode: Sell (find buyers) or Buy (find providers)
+enum DealMode {
+  SELL
+  BUY
+}
+
+/// Company size classification for deal targeting
+enum DealCompanySize {
+  SMALL
+  MEDIUM
+  ENTERPRISE
+}
+
+/// Target entity type for Buy mode
+enum DealTargetEntityType {
+  COMPANY
+  INDIVIDUAL
+  CONSULTANT
+  PARTNER
+}
+
+/// Deal processing status
+enum DealStatus {
+  DRAFT
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+/// Deal match category based on mode
+enum DealMatchCategory {
+  POTENTIAL_CLIENT
+  DECISION_MAKER
+  INFLUENCER
+  SOLUTION_PROVIDER
+  CONSULTANT
+  BROKER
+  PARTNER
+}
+
+/// Deal match status for user actions
+enum DealMatchStatus {
+  NEW
+  SAVED
+  IGNORED
+  CONTACTED
+  ARCHIVED
+}
+
+/// Deal job steps for async processing
+enum DealJobStep {
+  BUILD_CANDIDATES
+  SCORE_CANDIDATES
+  CLASSIFY_MATCHES
+  GENERATE_MESSAGES
+}
+
+/// Deal job status
+enum DealJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  RETRYING
+}
+
+enum ProductType {
+  SAAS
+  SERVICE
+  SOLUTION
+}
+
+enum ProductMatchRunStatus {
+  QUEUED
+  RUNNING
+  DONE
+  FAILED
+}
+
+enum ProductMatchBadge {
+  SUITABLE
+  INFLUENCER
+  NOT_SUITABLE
+}
+
+/// Source type for collaboration requests (links to existing features)
+enum CollaborationSourceType {
+  PROJECT
+  OPPORTUNITY
+  PITCH
+  DEAL
+}
+
+enum CollaborationRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  COMPLETED
+}
+
+enum IntroductionStatus {
+  PENDING
+  SENT
+  ACCEPTED
+  COMPLETED
+  DECLINED
+}
+
+/// Team member role
+enum TeamMemberRole {
+  OWNER
+  COFOUNDER
+  PARTNER
+  ADVISOR
+  MEMBER
+  INVESTOR
+}
+
+/// Team member status
+enum TeamMemberStatus {
+  INVITED
+  ACCEPTED
+  DECLINED
+  REMOVED
+}
+
+/// Invitation delivery channel
+enum InvitationChannel {
+  EMAIL
+  WHATSAPP
+  SMS
+  IN_APP
+}
+
+/// Import source type
+enum ImportSource {
+  PHONE_FULL
+  PHONE_PICKER
+  CSV_UPLOAD
+  VCF_UPLOAD
+  GOOGLE_SYNC
+  MANUAL
+}
+
+/// Import batch status
+enum ImportBatchStatus {
+  PENDING
+  UPLOADING
+  PROCESSING
+  ENRICHING
+  TAGGING
+  SUMMARIZING
+  MATCHING
+  COMPLETED
+  FAILED
+  ROLLED_BACK
+}
+
+/// Data confidence level
+enum DataConfidence {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+/// Subscription plan types
+enum SubscriptionPlan {
+  FREE
+  PRO
+  TEAM
+}
+
+/// Billing interval for subscriptions
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+}
+
+/// Payment status from PayTabs
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  DECLINED
+  CANCELLED
+  REFUNDED
+  EXPIRED
+}
+
+/// Subscription status
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  PAST_DUE
+  TRIALING
+}
+
+/// Match level for event attendee matching
+enum EventMatchLevel {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+/// Itemized match type (what scenarios we support)
+enum ItemizedMatchType {
+  PROFILE_TO_PROFILE
+  PROFILE_TO_USER
+  PROJECT_TO_INVESTOR
+  PROJECT_TO_PARTNER
+  PROJECT_TO_TALENT
+  JOB_TO_CANDIDATE
+  DEAL_TO_BUYER
+  DEAL_TO_PROVIDER
+  EVENT_ATTENDEE_MATCH
+}
+
+/// Entity types that can be matched
+enum MatchEntityType {
+  USER
+  CONTACT
+  PROJECT
+  JOB
+  DEAL_SELL
+  DEAL_BUY
+  EVENT_ATTENDEE
+}
+
+/// Criterion match status based on score ranges
+/// 95-100% = PERFECT, 80-94% = EXCELLENT, 60-79% = STRONG
+/// 40-59% = MODERATE, 20-39% = WEAK, 0-19% = NO_MATCH
+enum CriterionMatchStatus {
+  PERFECT
+  EXCELLENT
+  STRONG
+  MODERATE
+  WEAK
+  NO_MATCH
+}
+
+/// Criterion importance levels
+enum CriterionImportance {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+/// Match type describes how two values relate
+enum CriterionMatchType {
+  EXACT
+  PARTIAL
+  COMPLEMENTARY
+  NONE
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  VOICE
+  FILE
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
+/// Invitation status for platform invitations (MOD-010)
+enum PlatformInvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+}
+
+enum SdaiaLegalBasis {
+  CONSENT
+  CONTRACT
+  LEGAL_OBLIGATION
+  VITAL_INTEREST
+  LEGITIMATE_INTEREST
+}
+
+enum SdaiaProcessingStatus {
+  ACTIVE
+  DELETED
+  EXPIRED
+}
+
+enum OrgSize {
+  SMALL
+  MEDIUM
+  LARGE
+  ENTERPRISE
+}
+
+enum OrgMemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum OrgInvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+}
+
+enum OrgShareMode {
+  ALL
+  MANUAL
+  NONE
+}
+
+enum OrgContactVisibility {
+  FULL
+  BASIC
+  NAME_ONLY
+}
+
+enum WarmIntroStatus {
+  PENDING
+  APPROVED
+  DECLINED
+  COMPLETED
+  CANCELLED
+}
+
+/// Recurrence pattern for tasks
+enum RecurrencePattern {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+  CUSTOM
+}
+
+/// Reminder delivery type
+enum ReminderType {
+  IN_APP
+  EMAIL
+  PUSH
+}
+
+/// Wallet transaction direction
+enum WalletTransactionType {
+  CREDIT
+  DEBIT
+}
+
+/// User wallet for points-based system
+model Wallet {
+  id           String              @id @default(uuid())
+  userId       String              @unique @map("user_id")
+  balance      Decimal             @default(0) @db.Decimal(10, 2)
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+
+  @@map("wallets")
+}
+
+/// Wallet transaction log
+model WalletTransaction {
+  id            String                @id @default(uuid())
+  walletId      String                @map("wallet_id")
+  type          WalletTransactionType
+  amount        Decimal               @db.Decimal(10, 2)
+  balance       Decimal               @db.Decimal(10, 2)
+  description   String                @db.VarChar(500)
+  referenceId   String?               @map("reference_id")
+  referenceType String?               @map("reference_type") @db.VarChar(50)
+  createdAt     DateTime              @default(now()) @map("created_at")
+  wallet        Wallet                @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId, createdAt])
+  @@map("wallet_transactions")
+}
+
+/// Dynamic plan configuration (admin-managed)
+model PlanConfig {
+  id               String   @id @default(uuid())
+  name             String   @unique @db.VarChar(100)
+  displayName      String   @map("display_name") @db.VarChar(200)
+  displayNameAr    String?  @map("display_name_ar") @db.VarChar(200)
+  description      String?  @db.Text
+  descriptionAr    String?  @map("description_ar") @db.Text
+  monthlyPrice     Decimal  @default(0) @map("monthly_price") @db.Decimal(10, 2)
+  yearlyPrice      Decimal  @default(0) @map("yearly_price") @db.Decimal(10, 2)
+  pointsAllocation Int      @default(0) @map("points_allocation")
+  contactLimit     Int      @default(100) @map("contact_limit")
+  features         Json?
+  featuresAr       Json?    @map("features_ar")
+  minSeats         Int      @default(1) @map("min_seats")
+  maxSeats         Int?     @map("max_seats")
+  isFree           Boolean  @default(false) @map("is_free")
+  hasFreeTrial     Boolean  @default(false) @map("has_free_trial")
+  freeTrialDays    Int      @default(7) @map("free_trial_days")
+  paymentRequired  Boolean  @default(false) @map("payment_required")
+  isUpgradable     Boolean  @default(true) @map("is_upgradable")
+  isActive         Boolean  @default(true) @map("is_active")
+  sortOrder        Int      @default(0) @map("sort_order")
+
+  // Landing page display options (controlled by SuperAdmin)
+  ctaText          String?  @map("cta_text") @db.VarChar(200)
+  ctaTextAr        String?  @map("cta_text_ar") @db.VarChar(200)
+  badgeText        String?  @map("badge_text") @db.VarChar(100)
+  badgeTextAr      String?  @map("badge_text_ar") @db.VarChar(100)
+  badgeColor       String?  @map("badge_color") @db.VarChar(50)
+  borderColor      String?  @map("border_color") @db.VarChar(50)
+  isHighlighted    Boolean  @default(false) @map("is_highlighted")
+  animation        String?  @map("animation") @db.VarChar(50)
+
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("plan_configs")
+}
+
+/// Admin key-value system configuration
+model SystemConfig {
+  id        String   @id @default(uuid())
+  key       String   @unique @db.VarChar(100)
+  value     String   @db.Text
+  type      String   @default("number") @db.VarChar(20)
+  label     String?  @db.VarChar(200)
+  groupName String?  @map("group_name") @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_configs")
+}
+
+/// Purchasable point bundles
+model PointPack {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(200)
+  nameAr    String?  @map("name_ar") @db.VarChar(200)
+  points    Int
+  price     Decimal  @db.Decimal(10, 2)
+  currency  String   @default("USD") @db.VarChar(3)
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  purchases PointPackPurchase[]
+
+  @@map("point_packs")
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+  MODERATOR
+  SUPPORT
+}
+
+model SuperAdmin {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  fullName     String    @map("full_name")
+  role         AdminRole @default(ADMIN)
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  auditLogs    AdminAuditLog[]
+
+  @@map("super_admins")
+}
+
+model AdminAuditLog {
+  id          String   @id @default(uuid())
+  adminId     String   @map("admin_id")
+  action      String   @db.VarChar(100)
+  targetType  String?  @map("target_type") @db.VarChar(50)
+  targetId    String?  @map("target_id")
+  details     Json?
+  ipAddress   String?  @map("ip_address") @db.VarChar(45)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  admin       SuperAdmin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, createdAt])
+  @@index([action])
+  @@map("admin_audit_logs")
+}
+
+/// Bug report urgency levels
+// ===========================================================================
+// AFFILIATE SYSTEM
+// ===========================================================================
+
+enum AffiliateStatus {
+  PENDING
+  APPROVED
+  SUSPENDED
+  REJECTED
+}
+
+enum AffiliateCodeStatus {
+  ACTIVE
+  PAUSED
+  EXPIRED
+}
+
+enum AffiliatePayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum AffiliateCommissionStatus {
+  PENDING
+  EARNED
+  PAID
+  CANCELLED
+}
+
+/// Affiliate profile — one per user
+model Affiliate {
+  id                  String           @id @default(uuid())
+  userId              String           @unique @map("user_id")
+  status              AffiliateStatus  @default(PENDING)
+  acceptedTermsAt     DateTime?        @map("accepted_terms_at")
+  termsVersion        String?          @map("terms_version") @db.VarChar(20)
+  appliedAt           DateTime         @default(now()) @map("applied_at")
+  approvedAt          DateTime?        @map("approved_at")
+  suspendedAt         DateTime?        @map("suspended_at")
+  suspendedReason     String?          @map("suspended_reason") @db.Text
+  totalEarnings       Decimal          @default(0) @map("total_earnings") @db.Decimal(10, 2)
+  totalEarningsPoints Int              @default(0) @map("total_earnings_points")
+  payoutBalance       Decimal          @default(0) @map("payout_balance") @db.Decimal(10, 2)
+  payoutBalancePoints Int              @default(0) @map("payout_balance_points")
+  createdAt           DateTime         @default(now()) @map("created_at")
+  updatedAt           DateTime         @updatedAt @map("updated_at")
+
+  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codes               AffiliateCode[]
+  referrals           AffiliateReferral[]
+  payouts             AffiliatePayout[]
+
+  @@index([status])
+  @@map("affiliates")
+}
+
+/// Affiliate referral/promo codes
+model AffiliateCode {
+  id              String              @id @default(uuid())
+  affiliateId     String              @map("affiliate_id")
+  name            String?             @db.VarChar(100)
+  code            String              @unique @db.VarChar(50)
+  discountPercent Decimal             @map("discount_percent") @db.Decimal(5, 2)
+  status          AffiliateCodeStatus @default(ACTIVE)
+  usageCount      Int                 @default(0) @map("usage_count")
+  totalRevenue    Decimal             @default(0) @map("total_revenue") @db.Decimal(10, 2)
+  totalCommission Decimal             @default(0) @map("total_commission") @db.Decimal(10, 2)
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  affiliate       Affiliate           @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  referrals       AffiliateReferral[]
+
+  @@index([affiliateId])
+  @@index([code])
+  @@map("affiliate_codes")
+}
+
+/// Tracks each person referred by an affiliate code
+model AffiliateReferral {
+  id                String                    @id @default(uuid())
+  affiliateId       String                    @map("affiliate_id")
+  codeId            String                    @map("code_id")
+  referredUserId    String?                   @map("referred_user_id")
+  referredEmail     String                    @map("referred_email") @db.VarChar(255)
+  registeredAt      DateTime?                 @map("registered_at")
+  purchasedAt       DateTime?                 @map("purchased_at")
+  purchaseAmount    Decimal?                  @map("purchase_amount") @db.Decimal(10, 2)
+  discountAmount    Decimal?                  @map("discount_amount") @db.Decimal(10, 2)
+  commissionPercent Decimal?                  @map("commission_percent") @db.Decimal(5, 2)
+  commissionAmount  Decimal?                  @map("commission_amount") @db.Decimal(10, 2)
+  commissionPoints  Int?                      @map("commission_points")
+  commissionStatus  AffiliateCommissionStatus @default(PENDING)
+  createdAt         DateTime                  @default(now()) @map("created_at")
+  updatedAt         DateTime                  @updatedAt @map("updated_at")
+
+  affiliate         Affiliate                 @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  code              AffiliateCode             @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  referredUser      User?                     @relation("ReferredByAffiliate", fields: [referredUserId], references: [id], onDelete: SetNull)
+
+  @@index([affiliateId])
+  @@index([codeId])
+  @@index([referredUserId])
+  @@index([referredEmail])
+  @@map("affiliate_referrals")
+}
+
+/// Affiliate withdrawal/payout records
+model AffiliatePayout {
+  id            String                @id @default(uuid())
+  affiliateId   String                @map("affiliate_id")
+  amount        Decimal               @db.Decimal(10, 2)
+  points        Int                   @default(0)
+  paymentMode   String                @map("payment_mode") @db.VarChar(10)
+  status        AffiliatePayoutStatus @default(PENDING)
+  processedAt   DateTime?             @map("processed_at")
+  notes         String?               @db.Text
+  createdAt     DateTime              @default(now()) @map("created_at")
+  updatedAt     DateTime              @updatedAt @map("updated_at")
+
+  affiliate     Affiliate             @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  @@index([affiliateId])
+  @@index([status])
+  @@map("affiliate_payouts")
+}
+
+enum BugReportUrgency {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+/// Bug report categories
+enum BugReportCategory {
+  BUG
+  UI_ISSUE
+  PERFORMANCE
+  FEATURE_REQUEST
+  OTHER
+}
+
+/// Bug report status
+enum BugReportStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+  WONT_FIX
+}
+
+/// User-submitted QA/Bug reports
+model BugReport {
+  id            String              @id @default(uuid())
+  userId        String              @map("user_id")
+  description   String              @db.Text
+  urgency       BugReportUrgency    @default(MEDIUM)
+  category      BugReportCategory   @default(BUG)
+  status        BugReportStatus     @default(OPEN)
+  pagePath      String              @map("page_path") @db.VarChar(500)
+  pageTitle     String?             @map("page_title") @db.VarChar(255)
+  screenshotUrl String?             @map("screenshot_url") @db.Text
+  userAgent     String?             @map("user_agent") @db.VarChar(500)
+  appVersion    String?             @map("app_version") @db.VarChar(50)
+  platform      String?             @db.VarChar(500)
+  adminNotes    String?             @map("admin_notes") @db.Text
+  resolvedAt    DateTime?           @map("resolved_at")
+  resolvedById  String?             @map("resolved_by_id")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@index([urgency])
+  @@index([category])
+  @@map("bug_reports")
+}
+
+// ============================================================
+// Video Gallery
+// ============================================================
+
+/// Video provider type
+enum VideoType {
+  YOUTUBE
+  VIMEO
+}
+
+/// Video category for organizing gallery videos
+model VideoCategory {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(100)
+  nameAr    String?  @map("name_ar") @db.VarChar(100)
+  slug      String   @unique @db.VarChar(100)
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  videos Video[]
+
+  @@map("video_categories")
+}
+
+/// Tag for video gallery videos
+model VideoTag {
+  id        String             @id @default(uuid())
+  name      String             @unique @db.VarChar(100)
+  nameAr    String?            @map("name_ar") @db.VarChar(100)
+  isActive  Boolean            @default(true) @map("is_active")
+  createdAt DateTime           @default(now()) @map("created_at")
+
+  videos VideoTagRelation[]
+
+  @@map("video_tags")
+}
+
+/// External video for gallery (YouTube/Vimeo)
+model Video {
+  id            String        @id @default(uuid())
+  title         String        @db.VarChar(255)
+  titleAr       String?       @map("title_ar") @db.VarChar(255)
+  description   String?       @db.Text
+  descriptionAr String?       @map("description_ar") @db.Text
+  videoUrl      String        @map("video_url") @db.VarChar(500)
+  videoType     VideoType     @map("video_type")
+  videoId       String        @map("video_id") @db.VarChar(100)
+  thumbnailUrl  String?       @map("thumbnail_url") @db.VarChar(500)
+  duration      String?       @db.VarChar(20)
+  categoryId    String        @map("category_id")
+  sortOrder     Int           @default(0) @map("sort_order")
+  isActive      Boolean       @default(true) @map("is_active")
+  isFeatured    Boolean       @default(false) @map("is_featured")
+  viewCount     Int           @default(0) @map("view_count")
+  likeCount     Int           @default(0) @map("like_count")
+  shareCount    Int           @default(0) @map("share_count")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  category VideoCategory @relation(fields: [categoryId], references: [id])
+  tags     VideoTagRelation[]
+
+  @@index([categoryId])
+  @@index([isActive])
+  @@index([isFeatured])
+  @@map("videos")
+}
+
+/// Join table for Video-Tag many-to-many
+model VideoTagRelation {
+  id      String @id @default(uuid())
+  videoId String @map("video_id")
+  tagId   String @map("tag_id")
+
+  video Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  tag   VideoTag @relation(fields: [tagId], references: [id])
+
+  @@unique([videoId, tagId])
+  @@map("video_tag_relations")
+}
+
+// ============================================================================
+// JOB MATCHING ENGINE V3
+// ============================================================================
+
+enum JobSeniority {
+  INTERN
+  JUNIOR
+  MID
+  SENIOR
+  LEAD
+  MANAGER
+  DIRECTOR
+  VP
+  C_LEVEL
+  FOUNDER
+}
+
+enum JobWorkMode {
+  ONSITE
+  HYBRID
+  REMOTE
+}
+
+enum JobEmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  FREELANCE
+  INTERNSHIP
+}
+
+enum JobHiringUrgency {
+  LOW
+  NORMAL
+  URGENT
+  CRITICAL
+}
+
+enum JobAvailability {
+  IMMEDIATELY
+  WITHIN_2_WEEKS
+  WITHIN_1_MONTH
+  WITHIN_3_MONTHS
+  NOT_ACTIVELY_LOOKING
+}
+
+enum JobMatchLevel {
+  POOR
+  WEAK
+  GOOD
+  VERY_GOOD
+  EXCELLENT
+}
+
+enum JobHardFilterStatus {
+  PASS
+  FAIL
+  WARN
+}
+
+/// Hiring-side profile for the Job Matching Engine v3.
+/// Represents a job posting or hiring need.
+model HiringProfile {
+  id                      String            @id @default(uuid())
+  userId                  String            @map("user_id")
+  organizationId          String?           @map("organization_id")
+  fullName                String?           @map("full_name") @db.VarChar(200)
+  title                   String            @db.VarChar(200)
+  roleArea                String            @map("role_area") @db.VarChar(255)
+  seniority               JobSeniority
+  location                String            @db.VarChar(255)
+  workMode                JobWorkMode       @map("work_mode")
+  employmentType          JobEmploymentType @map("employment_type")
+  mustHaveSkills          Json              @map("must_have_skills")
+  preferredSkills         Json?             @map("preferred_skills")
+  jobSummaryRequirements  String            @map("job_summary_requirements") @db.Text
+  minimumYearsExperience  Int?              @map("minimum_years_experience")
+  hiringUrgency           JobHiringUrgency? @map("hiring_urgency")
+  industries              Json?
+  requiredLanguages       Json?             @map("required_languages")
+  requiredCertifications  Json?             @map("required_certifications")
+  requiredEducationLevels Json?             @map("required_education_levels")
+  salaryRange             Json?             @map("salary_range")
+  tags                    Json              @default("[]")
+  embedding               Json?
+  dataQualityScore        Int               @default(50) @map("data_quality_score")
+  excludedCandidates      Json              @default("[]") @map("excluded_candidates")
+  isActive                Boolean           @default(true) @map("is_active")
+  createdAt               DateTime          @default(now()) @map("created_at")
+  updatedAt               DateTime          @updatedAt @map("updated_at")
+
+  user         User          @relation("UserHiringProfiles", fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  jobMatches   JobMatch[]
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([seniority])
+  @@index([isActive])
+  @@map("hiring_profiles")
+}
+
+/// Candidate-side profile for the Job Matching Engine v3.
+/// Represents a person open to opportunities.
+model CandidateProfile {
+  id                        String           @id @default(uuid())
+  userId                    String           @map("user_id")
+  organizationId            String?          @map("organization_id")
+  fullName                  String?          @map("full_name") @db.VarChar(200)
+  title                     String           @db.VarChar(200)
+  roleArea                  String           @map("role_area") @db.VarChar(255)
+  seniority                 JobSeniority
+  location                  String           @db.VarChar(255)
+  desiredWorkMode           Json             @map("desired_work_mode")
+  desiredEmploymentType     Json             @map("desired_employment_type")
+  skills                    Json
+  profileSummaryPreferences String           @map("profile_summary_preferences") @db.Text
+  yearsOfExperience         Int?             @map("years_of_experience")
+  availability              JobAvailability?
+  languages                 Json?
+  certifications            Json?
+  industries                Json?
+  education                 Json?
+  expectedSalary            Json?            @map("expected_salary")
+  noticePeriod              Int?             @map("notice_period")
+  relevantExperience        Json?            @map("relevant_experience")
+  tags                      Json             @default("[]")
+  embedding                 Json?
+  dataQualityScore          Int              @default(50) @map("data_quality_score")
+  optedOut                  Boolean          @default(false) @map("opted_out")
+  blocked                   Boolean          @default(false)
+  isActive                  Boolean          @default(true) @map("is_active")
+  createdAt                 DateTime         @default(now()) @map("created_at")
+  updatedAt                 DateTime         @updatedAt @map("updated_at")
+
+  user         User          @relation("UserCandidateProfiles", fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  jobMatches   JobMatch[]
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([seniority])
+  @@index([optedOut, blocked])
+  @@index([dataQualityScore(sort: Desc)])
+  @@index([isActive])
+  @@map("candidate_profiles")
+}
+
+/// Match result from the Job Matching Engine v3.
+model JobMatch {
+  id                 String              @id @default(uuid())
+  jobId              String              @map("job_id")
+  candidateId        String              @map("candidate_id")
+  deterministicScore Float               @map("deterministic_score")
+  aiScore            Float?              @map("ai_score")
+  finalScore         Float               @map("final_score")
+  confidence         Float
+  matchLevel         JobMatchLevel       @map("match_level")
+  hardFilterStatus   JobHardFilterStatus @map("hard_filter_status")
+  hardFilterReason   String?             @map("hard_filter_reason") @db.VarChar(100)
+  scoreBreakdown     Json                @map("score_breakdown")
+  explanation        Json?
+  keyReasons         Json                @map("key_reasons")
+  rank               Int
+  version            Int                 @default(1)
+  archived           Boolean             @default(false)
+  archivedAt         DateTime?           @map("archived_at")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  expiresAt          DateTime            @map("expires_at")
+
+  hiringProfile    HiringProfile    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  candidateProfile CandidateProfile @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, archived])
+  @@index([candidateId])
+  @@index([finalScore(sort: Desc)])
+  @@index([rank])
+  @@map("job_matches")
+}

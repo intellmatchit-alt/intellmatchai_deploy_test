@@ -1,0 +1,752 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom base styles - Theme-aware */
+@layer base {
+  :root {
+    --font-sans: var(--font-inter), 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-ar: var(--font-arabic), 'IBM Plex Sans Arabic', 'Tahoma', 'Segoe UI', sans-serif;
+
+    /* Light theme colors */
+    --color-bg-primary: #FFFFFF;
+    --color-bg-secondary: #F9FAFB;
+    --color-bg-tertiary: #F3F4F6;
+    --color-bg-surface: rgba(0,0,0,0.03);
+    --color-bg-surface-hover: rgba(0,0,0,0.06);
+    --color-nav-bg-header: rgba(255,255,255,0.8);
+    --color-nav-bg-bottom: rgba(255,255,255,0.95);
+    --color-text-primary: #111827;
+    --color-text-secondary: #4B5563;
+    --color-text-tertiary: #6B7280;
+    --color-text-muted: #9CA3AF;
+    --color-border-primary: rgba(0,0,0,0.1);
+    --color-border-secondary: rgba(0,0,0,0.06);
+    --color-ring-offset: #FFFFFF;
+    --grid-line-color: rgba(0,0,0,0.03);
+    --scrollbar-thumb: rgba(0,0,0,0.2);
+    --scrollbar-thumb-hover: rgba(0,0,0,0.3);
+    --orb-opacity: 0.08;
+  }
+
+  .dark {
+    --color-bg-primary: #060b18;
+    --color-bg-secondary: #0c1222;
+    --color-bg-tertiary: #131b2e;
+    --color-bg-surface: rgba(255,255,255,0.04);
+    --color-bg-surface-hover: rgba(255,255,255,0.08);
+    --color-nav-bg-header: rgba(6,11,24,0.85);
+    --color-nav-bg-bottom: rgba(6,11,24,0.95);
+    --color-text-primary: #FFFFFF;
+    --color-text-secondary: #c4cdd8;
+    --color-text-tertiary: #8896a7;
+    --color-text-muted: #56657a;
+    --color-border-primary: rgba(255,255,255,0.08);
+    --color-border-secondary: rgba(255,255,255,0.04);
+    --color-ring-offset: #060b18;
+    --grid-line-color: rgba(255,255,255,0.02);
+    --scrollbar-thumb: rgba(255,255,255,0.2);
+    --scrollbar-thumb-hover: rgba(255,255,255,0.3);
+    --orb-opacity: 0.15;
+
+    /* Landing page accent */
+    --accent: #00d084;
+    --accent-light: #00e896;
+    --accent-dark: #00b870;
+    --accent-glow: rgba(0, 208, 132, 0.15);
+    --accent-glow-strong: rgba(0, 208, 132, 0.3);
+  }
+
+  * {
+    border-color: var(--color-border-primary);
+  }
+
+  body {
+    color: var(--color-text-primary);
+    background: var(--color-bg-primary);
+    font-family: var(--font-sans);
+  }
+
+  /* Dark-themed date and time inputs */
+  .dark input[type="date"],
+  .dark input[type="time"],
+  .dark input[type="datetime-local"] {
+    color-scheme: dark;
+  }
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    color-scheme: light;
+  }
+  .dark input[type="date"]::-webkit-calendar-picker-indicator,
+  .dark input[type="time"]::-webkit-calendar-picker-indicator,
+  .dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.7) sepia(1) saturate(3) hue-rotate(220deg);
+    cursor: pointer;
+  }
+
+  /* Arabic font class - applied via JavaScript when language is Arabic */
+  body.font-arabic,
+  html.font-arabic body,
+  .font-arabic {
+    font-family: var(--font-ar) !important;
+  }
+
+  /* RTL styling */
+  body.rtl,
+  html[dir="rtl"] body,
+  [dir="rtl"] {
+    direction: rtl;
+    text-align: right;
+  }
+
+  /* Arabic language selector - fallback */
+  html[lang="ar"] body,
+  :lang(ar) {
+    font-family: var(--font-ar) !important;
+    direction: rtl;
+    text-align: right;
+  }
+
+  /* Arabic text spacing and line-height fixes */
+  html.font-arabic,
+  html[lang="ar"],
+  body.font-arabic,
+  [lang="ar"] {
+    line-height: 1.8 !important;
+    letter-spacing: 0 !important;
+    word-spacing: 0.05em;
+  }
+
+  /* Arabic headings - slightly tighter line-height */
+  html.font-arabic h1,
+  html.font-arabic h2,
+  html.font-arabic h3,
+  html.font-arabic h4,
+  html.font-arabic h5,
+  html.font-arabic h6,
+  html[lang="ar"] h1,
+  html[lang="ar"] h2,
+  html[lang="ar"] h3,
+  html[lang="ar"] h4,
+  html[lang="ar"] h5,
+  html[lang="ar"] h6 {
+    line-height: 1.6 !important;
+    letter-spacing: 0 !important;
+  }
+
+  /* Arabic paragraphs and text blocks */
+  html.font-arabic p,
+  html.font-arabic span,
+  html.font-arabic div,
+  html.font-arabic label,
+  html.font-arabic li,
+  html[lang="ar"] p,
+  html[lang="ar"] span,
+  html[lang="ar"] div,
+  html[lang="ar"] label,
+  html[lang="ar"] li {
+    line-height: 1.9 !important;
+  }
+
+  /* Arabic buttons - more compact */
+  html.font-arabic button,
+  html[lang="ar"] button {
+    line-height: 1.5 !important;
+    letter-spacing: 0 !important;
+  }
+
+  /* Arabic inputs */
+  html.font-arabic input,
+  html.font-arabic textarea,
+  html[lang="ar"] input,
+  html[lang="ar"] textarea {
+    line-height: 1.6 !important;
+    letter-spacing: 0 !important;
+  }
+
+  /* Ensure all text elements inherit Arabic font */
+  html.font-arabic *,
+  body.font-arabic *,
+  html[lang="ar"] * {
+    font-family: inherit;
+  }
+
+  /* Fix for inputs and buttons in Arabic - inherit from body to match labels */
+  html.font-arabic input,
+  html.font-arabic button,
+  html.font-arabic textarea,
+  html.font-arabic select,
+  html[lang="ar"] input,
+  html[lang="ar"] button,
+  html[lang="ar"] textarea,
+  html[lang="ar"] select {
+    font-family: inherit !important;
+  }
+
+  /* Ensure placeholders also inherit font to match labels */
+  html.font-arabic input::placeholder,
+  html.font-arabic textarea::placeholder,
+  html[lang="ar"] input::placeholder,
+  html[lang="ar"] textarea::placeholder {
+    font-family: inherit !important;
+  }
+
+  /* Remove text decoration issues in Arabic */
+  html.font-arabic a,
+  html[lang="ar"] a {
+    text-underline-offset: 0.3em;
+  }
+
+  /* Focus visible styles */
+  :focus-visible {
+    @apply outline-none ring-2 ring-offset-2;
+    --tw-ring-color: rgba(0, 208, 132, 0.5);
+    --tw-ring-offset-color: var(--color-ring-offset);
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Better text rendering */
+  body {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Selection color */
+  ::selection {
+    background: rgba(0, 208, 132, 0.25);
+    color: var(--color-text-primary);
+  }
+}
+
+/* Custom utility classes */
+@layer utilities {
+  /* RTL support */
+  .rtl {
+    direction: rtl;
+  }
+
+  .ltr {
+    direction: ltr;
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Custom scrollbar - Theme-aware */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+  }
+
+  /* Custom scrollbar - Accent Theme for expandable sections */
+  .scrollbar-purple {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 208, 132, 0.3) rgba(255, 255, 255, 0.05);
+  }
+
+  .scrollbar-purple::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-purple::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    margin: 4px;
+  }
+
+  .scrollbar-purple::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(0, 208, 132, 0.4), rgba(0, 184, 112, 0.4));
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+
+  .scrollbar-purple::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(0, 208, 132, 0.6), rgba(0, 184, 112, 0.6));
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  .scrollbar-purple::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Text gradient */
+  .text-gradient {
+    background: linear-gradient(135deg, #00d084, #00e896, #00d084);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Landing page teal text gradient */
+  .text-gradient-teal {
+    background: linear-gradient(135deg, #00d084, #00e896, #00d084);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Glass effect - Theme-aware */
+  .glass {
+    @apply backdrop-blur-lg border;
+    background: rgba(12, 18, 34, 0.5);
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  /* Safe area padding for mobile */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Padding bottom safe area */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+}
+
+/* Animation keyframes */
+@layer utilities {
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes scale-up {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slide-up-full {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slide-down {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes blob {
+    0% {
+      transform: translate(0px, 0px) scale(1);
+    }
+    33% {
+      transform: translate(30px, -50px) scale(1.1);
+    }
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+    100% {
+      transform: translate(0px, 0px) scale(1);
+    }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 0.8;
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.2s ease-out;
+  }
+
+  .animate-scale-up {
+    animation: scale-up 0.2s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+
+  .animate-slide-up-full {
+    animation: slide-up-full 0.4s ease-out forwards;
+  }
+
+  .animate-slide-down {
+    animation: slide-down 0.3s ease-out;
+  }
+
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+
+  /* Dock bar animations */
+  @keyframes dock-bounce {
+    0% { transform: scale(1) translateY(0); }
+    30% { transform: scale(1.3) translateY(-12px); }
+    50% { transform: scale(1.2) translateY(-6px); }
+    70% { transform: scale(1.28) translateY(-10px); }
+    100% { transform: scale(1.25) translateY(-10px); }
+  }
+
+  @keyframes dock-glow-pulse {
+    0%, 100% { box-shadow: 0 0 8px 2px var(--dock-glow-color, rgba(16, 185, 129, 0.4)); }
+    50% { box-shadow: 0 0 16px 4px var(--dock-glow-color, rgba(16, 185, 129, 0.6)); }
+  }
+
+  @keyframes form-enter {
+    0% { opacity: 0; transform: translateY(16px) scale(0.98); }
+    60% { opacity: 1; transform: translateY(-4px) scale(1.005); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .animate-dock-bounce {
+    animation: dock-bounce 400ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  .animate-dock-glow-pulse {
+    animation: dock-glow-pulse 2s ease-in-out infinite;
+  }
+
+  .animate-form-enter {
+    animation: form-enter 350ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  /* Deal card enter animation */
+  @keyframes deal-card-enter {
+    0% { opacity: 0; transform: translateY(20px) scale(0.97); }
+    70% { opacity: 1; transform: translateY(-4px) scale(1.005); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .animate-deal-card-enter {
+    animation: deal-card-enter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  /* Score fill animation */
+  @keyframes score-fill {
+    0% { height: 0%; }
+    100% { height: var(--score-height, 0%); }
+  }
+
+  .animate-score-fill {
+    animation: score-fill 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation-delay: 0.3s;
+  }
+
+  /* Gradient shimmer for processing state */
+  @keyframes gradient-shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+
+  .animate-gradient-shimmer {
+    background-size: 200% 100%;
+    animation: gradient-shimmer 2s linear infinite;
+  }
+
+  /* Submit button shimmer sweep */
+  @keyframes shimmer-sweep {
+    0% { transform: translateX(-100%) skewX(-15deg); }
+    100% { transform: translateX(200%) skewX(-15deg); }
+  }
+
+  /* Scroll reveal animation */
+  @keyframes reveal-up {
+    0% { opacity: 0; transform: translateY(40px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-reveal-up {
+    animation: reveal-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* Teal pulse glow */
+  @keyframes teal-pulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(0, 208, 132, 0.2); }
+    50% { box-shadow: 0 0 40px rgba(0, 208, 132, 0.4); }
+  }
+
+  .animate-teal-pulse {
+    animation: teal-pulse 3s ease-in-out infinite;
+  }
+
+  /* Floating animation for hero elements */
+  @keyframes gentle-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+
+  .animate-gentle-float {
+    animation: gentle-float 4s ease-in-out infinite;
+  }
+
+  /* Phone mockup outer glow pulse */
+  @keyframes phonePulse {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.04); }
+  }
+
+  /* Scanning line moving top to bottom inside phone */
+  @keyframes scanLine {
+    0% { top: 0%; }
+    50% { top: 100%; }
+    100% { top: 0%; }
+  }
+
+  /* Subtle avatar pop/breathe */
+  @keyframes avatarPop {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+  }
+
+  /* Blinking dot for live indicators */
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  /* Grid line animation */
+  @keyframes grid-scroll {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(64px); }
+  }
+
+  /* Stagger delay classes */
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.10s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.20s; }
+  .stagger-5 { animation-delay: 0.25s; }
+  .stagger-6 { animation-delay: 0.30s; }
+  .stagger-7 { animation-delay: 0.35s; }
+  .stagger-8 { animation-delay: 0.40s; }
+  .stagger-9 { animation-delay: 0.45s; }
+  .stagger-10 { animation-delay: 0.50s; }
+}
+
+/* Component-specific styles - Theme-aware */
+@layer components {
+  /* Page container */
+  .page-container {
+    @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Card hover effect */
+  .card-hover {
+    @apply transition-all duration-300 hover:-translate-y-0.5;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .card-hover:hover {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(0, 208, 132, 0.15);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  /* App card - internal page card style matching landing page */
+  .app-card {
+    background: rgba(12, 18, 34, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 1rem;
+    backdrop-filter: blur(8px);
+    transition: all 0.3s ease;
+  }
+  .app-card:hover {
+    border-color: rgba(0, 208, 132, 0.12);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Form field */
+  .form-field {
+    @apply flex flex-col gap-1.5;
+  }
+
+  /* Form label */
+  .form-label {
+    @apply text-sm font-medium;
+    color: var(--color-text-secondary);
+  }
+
+  /* Form error */
+  .form-error {
+    @apply text-sm text-red-400;
+  }
+
+  /* Link styles */
+  .link {
+    color: var(--accent, #00d084);
+    @apply underline-offset-4 hover:underline;
+  }
+  .link:hover {
+    color: var(--accent-light, #00e896);
+  }
+
+  /* Section heading */
+  .section-heading {
+    @apply text-2xl font-bold;
+    color: var(--color-text-primary);
+  }
+
+  /* Section description */
+  .section-description {
+    color: var(--color-text-tertiary);
+  }
+
+  /* Gradient button */
+  .btn-gradient {
+    @apply bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-xl
+           hover:shadow-lg hover:shadow-emerald-500/25 transition-all;
+  }
+
+  /* Glass card */
+  .card-glass {
+    @apply backdrop-blur-sm rounded-xl;
+    background: rgba(12, 18, 34, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  /* Landing page accent button */
+  .btn-accent {
+    background: var(--accent, #00d084);
+    color: #060b18;
+    font-weight: 600;
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
+  }
+  .btn-accent:hover {
+    background: var(--accent-light, #00e896);
+    box-shadow: 0 0 24px var(--accent-glow, rgba(0, 208, 132, 0.3)),
+                0 8px 32px rgba(0, 208, 132, 0.2);
+    transform: translateY(-1px);
+  }
+
+  /* Landing page outline button */
+  .btn-outline-accent {
+    background: transparent;
+    color: var(--accent, #00d084);
+    border: 1.5px solid var(--accent, #00d084);
+    font-weight: 600;
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
+  }
+  .btn-outline-accent:hover {
+    background: rgba(0, 208, 132, 0.1);
+    box-shadow: 0 0 20px var(--accent-glow, rgba(0, 208, 132, 0.15));
+  }
+
+  /* Landing card with teal border glow */
+  .landing-card {
+    background: rgba(12, 18, 34, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 1rem;
+    backdrop-filter: blur(12px);
+    transition: all 0.4s ease;
+  }
+  .landing-card:hover {
+    border-color: rgba(0, 208, 132, 0.2);
+    box-shadow: 0 0 30px rgba(0, 208, 132, 0.08),
+                0 8px 24px rgba(0, 0, 0, 0.3);
+    transform: translateY(-4px);
+  }
+
+  /* Teal glow effect */
+  .glow-teal {
+    box-shadow: 0 0 40px rgba(0, 208, 132, 0.15),
+                0 0 80px rgba(0, 208, 132, 0.05);
+  }
+}

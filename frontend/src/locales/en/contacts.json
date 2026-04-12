@@ -1,0 +1,63 @@
+{
+  "title": "Contacts",
+  "subtitle": "Manage your professional connections",
+  "addContact": "Add Contact",
+  "scanCard": "Scan Business Card",
+  "importContacts": "Import Contacts",
+  "searchPlaceholder": "Search contacts...",
+  "filterBy": "Filter by",
+  "sortBy": "Sort by",
+  "sortOptions": {
+    "recent": "Most Recent",
+    "name": "Name (A-Z)",
+    "company": "Company",
+    "matchScore": "Match Score"
+  },
+  "detail": {
+    "title": "Contact Details",
+    "matchScore": "Match Score",
+    "whyMatch": "Why this match?",
+    "intersection": "What you have in common",
+    "suggestedMessage": "Suggested Message",
+    "copyMessage": "Copy Message",
+    "lastInteraction": "Last Interaction",
+    "notes": "Notes",
+    "addNote": "Add a note...",
+    "interactions": "Interaction History"
+  },
+  "form": {
+    "title": "Contact Information",
+    "fullName": "Full Name",
+    "email": "Email",
+    "phone": "Phone",
+    "company": "Company",
+    "jobTitle": "Job Title",
+    "website": "Website",
+    "linkedin": "LinkedIn URL",
+    "notes": "Notes",
+    "sectors": "Sectors",
+    "selectSectors": "Select sectors..."
+  },
+  "interaction": {
+    "log": "Log Interaction",
+    "types": {
+      "meeting": "Meeting",
+      "call": "Phone Call",
+      "email": "Email",
+      "message": "Message",
+      "followUp": "Follow-up",
+      "introduced": "Introduction"
+    },
+    "addDetails": "Add details (optional)"
+  },
+  "delete": {
+    "title": "Delete Contact",
+    "message": "Are you sure you want to delete {name}? This action cannot be undone.",
+    "confirm": "Delete"
+  },
+  "empty": {
+    "title": "No contacts yet",
+    "description": "Start building your network by scanning a business card or adding contacts manually.",
+    "cta": "Add Your First Contact"
+  }
+}

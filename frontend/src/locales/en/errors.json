@@ -1,0 +1,52 @@
+{
+  "generic": {
+    "title": "Something went wrong",
+    "message": "An unexpected error occurred. Please try again.",
+    "retry": "Try Again"
+  },
+  "network": {
+    "title": "Connection Error",
+    "message": "Unable to connect to the server. Please check your internet connection.",
+    "offline": "You appear to be offline"
+  },
+  "notFound": {
+    "title": "Page Not Found",
+    "message": "The page you're looking for doesn't exist or has been moved.",
+    "goHome": "Go to Home"
+  },
+  "unauthorized": {
+    "title": "Session Expired",
+    "message": "Your session has expired. Please log in again.",
+    "login": "Log In"
+  },
+  "forbidden": {
+    "title": "Access Denied",
+    "message": "You don't have permission to access this resource."
+  },
+  "validation": {
+    "title": "Validation Error",
+    "message": "Please check the form and correct any errors."
+  },
+  "rateLimit": {
+    "title": "Too Many Requests",
+    "message": "Please slow down. Try again in a few moments."
+  },
+  "server": {
+    "title": "Server Error",
+    "message": "Our servers are having issues. Please try again later."
+  },
+  "maintenance": {
+    "title": "Under Maintenance",
+    "message": "We're currently performing maintenance. Please check back soon."
+  },
+  "api": {
+    "AUTHENTICATION_ERROR": "Authentication failed",
+    "AUTHORIZATION_ERROR": "You don't have permission for this action",
+    "NOT_FOUND": "The requested resource was not found",
+    "VALIDATION_ERROR": "Please check your input and try again",
+    "CONFLICT": "This action conflicts with existing data",
+    "RATE_LIMIT_EXCEEDED": "Too many requests. Please wait and try again.",
+    "EXTERNAL_SERVICE_ERROR": "An external service is unavailable",
+    "INTERNAL_ERROR": "An internal error occurred"
+  }
+}
