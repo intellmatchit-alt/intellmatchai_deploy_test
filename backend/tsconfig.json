@@ -5,9 +5,8 @@
     "lib": [
       "ES2022"
     ],
-    /* 🔥 FIX HERE */
-    "module": "CommonJS",
-    "moduleResolution": "node",
+    "module": "Node16",
+    "moduleResolution": "node16",
     /* Emit */
     "outDir": "./dist",
     "rootDir": "./src",
