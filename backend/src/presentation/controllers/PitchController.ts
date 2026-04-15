@@ -3,16 +3,16 @@
  * Handles HTTP requests for pitch operations
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { UploadPitchUseCase } from '../../application/use-cases/pitch/UploadPitchUseCase';
-import { GetPitchStatusUseCase } from '../../application/use-cases/pitch/GetPitchStatusUseCase';
-import { GetPitchResultsUseCase } from '../../application/use-cases/pitch/GetPitchResultsUseCase';
-import { UpdateMatchStatusUseCase } from '../../application/use-cases/pitch/UpdateMatchStatusUseCase';
-import { GetPNMEPreferencesUseCase } from '../../application/use-cases/pitch/GetPNMEPreferencesUseCase';
-import { UpdatePNMEPreferencesUseCase } from '../../application/use-cases/pitch/UpdatePNMEPreferencesUseCase';
-import { RegenerateOutreachUseCase } from '../../application/use-cases/pitch/RegenerateOutreachUseCase';
-import { RematchPitchUseCase } from '../../application/use-cases/pitch/RematchPitchUseCase';
-import { ExportPitchResultsUseCase } from '../../application/use-cases/pitch/ExportPitchResultsUseCase';
+import { Request, Response, NextFunction } from "express";
+import { UploadPitchUseCase } from "../../application/use-cases/pitch/UploadPitchUseCase";
+import { GetPitchStatusUseCase } from "../../application/use-cases/pitch/GetPitchStatusUseCase";
+import { GetPitchResultsUseCase } from "../../application/use-cases/pitch/GetPitchResultsUseCase";
+import { UpdateMatchStatusUseCase } from "../../application/use-cases/pitch/UpdateMatchStatusUseCase";
+import { GetPNMEPreferencesUseCase } from "../../application/use-cases/pitch/GetPNMEPreferencesUseCase";
+import { UpdatePNMEPreferencesUseCase } from "../../application/use-cases/pitch/UpdatePNMEPreferencesUseCase";
+import { RegenerateOutreachUseCase } from "../../application/use-cases/pitch/RegenerateOutreachUseCase";
+import { RematchPitchUseCase } from "../../application/use-cases/pitch/RematchPitchUseCase";
+import { ExportPitchResultsUseCase } from "../../application/use-cases/pitch/ExportPitchResultsUseCase";
 import {
   UploadPitchRequestDTO,
   GetPitchResultsQueryDTO,
@@ -21,14 +21,37 @@ import {
   RegenerateOutreachRequestDTO,
   RematchRequestDTO,
   UpdatePNMEPreferencesRequestDTO,
-} from '../../application/dto/pitch.dto';
-import { PitchMatchStatus, PitchSectionType, PitchStatus, MatchAngleCategory, MatchBreakdown, MatchReason, MatchReasonType } from '../../domain/entities/Pitch';
-import { logger } from '../../shared/logger';
-import { ContactProfileDTO, MatchWeightsDTO } from '../../application/dto/pitch.dto';
-import { pitchMatchingService, PITCH_MATCHING_DEFAULTS } from '../../infrastructure/services/pitch/PitchMatchingService';
-import { prisma } from '../../infrastructure/database/prisma/client.js';
-import { AuthenticationError, NotFoundError, ValidationError } from '../../shared/errors/index.js';
-import { ProjectStage, ProjectVisibility, SkillImportance, PitchSectionType as PrismaPitchSectionType } from '@prisma/client';
+} from "../../application/dto/pitch.dto";
+import {
+  PitchMatchStatus,
+  PitchSectionType,
+  PitchStatus,
+  MatchAngleCategory,
+  MatchBreakdown,
+  MatchReason,
+  MatchReasonType,
+} from "../../domain/entities/Pitch";
+import { logger } from "../../shared/logger";
+import {
+  ContactProfileDTO,
+  MatchWeightsDTO,
+} from "../../application/dto/pitch.dto";
+import {
+  pitchMatchingService,
+  PITCH_MATCHING_DEFAULTS,
+} from "../../infrastructure/services/pitch/PitchMatchingService";
+import { prisma } from "../../infrastructure/database/prisma/client.js";
+import {
+  AuthenticationError,
+  NotFoundError,
+  ValidationError,
+} from "../../shared/errors/index.js";
+import {
+  ProjectStage,
+  ProjectVisibility,
+  SkillImportance,
+  PitchSectionType as PrismaPitchSectionType,
+} from "@prisma/client";
 
 // Import repositories
 import {
@@ -39,15 +62,15 @@ import {
   PrismaPitchJobRepository,
   PrismaContactProfileCacheRepository,
   PrismaUserPNMEPreferencesRepository,
-} from '../../infrastructure/repositories/PrismaPitchRepository';
-import { PrismaContactRepository } from '../../infrastructure/repositories/PrismaContactRepository';
+} from "../../infrastructure/repositories/PrismaPitchRepository";
+import { PrismaContactRepository } from "../../infrastructure/repositories/PrismaContactRepository";
 
 // Import services
 import {
   pitchFileStorageService,
   pitchQueueService,
   outreachGeneratorService,
-} from '../../infrastructure/services/pitch';
+} from "../../infrastructure/services/pitch";
 
 // Initialize repositories
 const pitchRepository = new PrismaPitchRepository();
@@ -126,14 +149,14 @@ export async function uploadPitch(
     const file = req.file;
 
     if (!file) {
-      res.status(400).json({ error: { message: 'No file provided' } });
+      res.status(400).json({ error: { message: "No file provided" } });
       return;
     }
 
     const input: UploadPitchRequestDTO = {
       file,
       title: req.body.title,
-      language: req.body.language || 'en',
+      language: req.body.language || "en",
     };
 
     const result = await uploadPitchUseCase.execute(userId, input);
@@ -157,7 +180,7 @@ export async function uploadPitch(
  */
 function safeJsonArray(value: unknown): unknown[] {
   if (Array.isArray(value)) return value;
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     try {
       const parsed = JSON.parse(value);
       if (Array.isArray(parsed)) return parsed;
@@ -185,20 +208,20 @@ export async function createPitch(
       detailedDesc,
       companyName,
       category,
-      stage = 'IDEA',
+      stage = "IDEA",
       investmentRange,
       timeline,
       lookingFor = [],
       sectorIds = [],
       skills = [],
-      visibility = 'PUBLIC',
+      visibility = "PUBLIC",
       problemStatement,
       whatYouNeed,
       metadata,
     } = req.body;
 
     if (!title || !summary) {
-      throw new ValidationError('Title and summary are required');
+      throw new ValidationError("Title and summary are required");
     }
 
     // Create pitch with related data in a transaction
@@ -217,12 +240,12 @@ export async function createPitch(
           timeline,
           lookingFor,
           keywords: [],
-          visibility: 'PRIVATE' as ProjectVisibility,
-          status: 'COMPLETED',
+          visibility: "PRIVATE" as ProjectVisibility,
+          status: "COMPLETED",
           fileKey: null,
           fileName: null,
           fileSize: null,
-          language: 'en',
+          language: "en",
           ...(problemStatement !== undefined && { problemStatement }),
           ...(whatYouNeed !== undefined && { whatYouNeed }),
           ...(metadata !== undefined && { metadata }),
@@ -245,7 +268,7 @@ export async function createPitch(
           data: skills.map((s: { skillId: string; importance?: string }) => ({
             pitchId: newPitch.id,
             skillId: s.skillId,
-            importance: (s.importance || 'REQUIRED') as SkillImportance,
+            importance: (s.importance || "REQUIRED") as SkillImportance,
           })),
         });
       }
@@ -259,8 +282,9 @@ export async function createPitch(
       if (detailedDesc) sectionParts.push(detailedDesc);
       if (investmentRange) sectionParts.push(`Investment: ${investmentRange}`);
       if (timeline) sectionParts.push(`Timeline: ${timeline}`);
-      if (lookingFor?.length) sectionParts.push(`Looking for: ${lookingFor.join(', ')}`);
-      const sectionContent = sectionParts.join('\n\n');
+      if (lookingFor?.length)
+        sectionParts.push(`Looking for: ${lookingFor.join(", ")}`);
+      const sectionContent = sectionParts.join("\n\n");
       await tx.pitchSection.create({
         data: {
           pitchId: newPitch.id,
@@ -293,7 +317,7 @@ export async function createPitch(
       },
     });
 
-    logger.info('Pitch created (form-based)', {
+    logger.info("Pitch created (form-based)", {
       userId,
       pitchId: pitch.id,
       title: pitch.title,
@@ -306,10 +330,11 @@ export async function createPitch(
         lookingFor: safeJsonArray(fullPitch?.lookingFor),
         keywords: safeJsonArray(fullPitch?.keywords),
         sectors: fullPitch?.pitchSectors.map((ps) => ps.sector) || [],
-        skillsNeeded: fullPitch?.pitchSkills.map((ps) => ({
-          ...ps.skill,
-          importance: ps.importance,
-        })) || [],
+        skillsNeeded:
+          fullPitch?.pitchSkills.map((ps) => ({
+            ...ps.skill,
+            importance: ps.importance,
+          })) || [],
       },
     });
   } catch (error) {
@@ -333,9 +358,12 @@ export async function getPitchStatus(
     // Scope by organization context
     const orgId = req.orgContext?.organizationId || null;
     if (orgId) {
-      const rawPitch = await prisma.pitch.findUnique({ where: { id: pitchId }, select: { organizationId: true } });
+      const rawPitch = await prisma.pitch.findUnique({
+        where: { id: pitchId },
+        select: { organizationId: true },
+      });
       if (rawPitch?.organizationId !== orgId) {
-        res.status(403).json({ error: { message: 'Access denied' } });
+        res.status(403).json({ error: { message: "Access denied" } });
         return;
       }
     }
@@ -374,10 +402,11 @@ export async function getPitchStatus(
         keywords: safeJsonArray(pitchExtra?.keywords),
         visibility: pitchExtra?.visibility,
         sectors: pitchExtra?.pitchSectors.map((ps) => ps.sector) || [],
-        skillsNeeded: pitchExtra?.pitchSkills.map((ps) => ({
-          ...ps.skill,
-          importance: ps.importance,
-        })) || [],
+        skillsNeeded:
+          pitchExtra?.pitchSkills.map((ps) => ({
+            ...ps.skill,
+            importance: ps.importance,
+          })) || [],
       },
     });
   } catch (error) {
@@ -401,17 +430,24 @@ export async function getPitchResults(
     // Scope by organization context
     const orgId = req.orgContext?.organizationId || null;
     if (orgId) {
-      const rawPitch = await prisma.pitch.findUnique({ where: { id: pitchId }, select: { organizationId: true } });
+      const rawPitch = await prisma.pitch.findUnique({
+        where: { id: pitchId },
+        select: { organizationId: true },
+      });
       if (rawPitch?.organizationId !== orgId) {
-        res.status(403).json({ error: { message: 'Access denied' } });
+        res.status(403).json({ error: { message: "Access denied" } });
         return;
       }
     }
 
     const query: GetPitchResultsQueryDTO = {
       sectionType: req.query.sectionType as PitchSectionType | undefined,
-      minScore: req.query.minScore ? parseInt(req.query.minScore as string, 10) : undefined,
-      limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
+      minScore: req.query.minScore
+        ? parseInt(req.query.minScore as string, 10)
+        : undefined,
+      limit: req.query.limit
+        ? parseInt(req.query.limit as string, 10)
+        : undefined,
     };
 
     const result = await getPitchResultsUseCase.execute(userId, pitchId, query);
@@ -440,10 +476,14 @@ export async function updateMatchStatus(
     if (orgId) {
       const match = await prisma.pitchMatch.findUnique({
         where: { id: matchId },
-        include: { pitchSection: { include: { pitch: { select: { organizationId: true } } } } },
+        include: {
+          pitchSection: {
+            include: { pitch: { select: { organizationId: true } } },
+          },
+        },
       });
       if (match?.pitchSection?.pitch?.organizationId !== orgId) {
-        res.status(403).json({ error: { message: 'Access denied' } });
+        res.status(403).json({ error: { message: "Access denied" } });
         return;
       }
     }
@@ -453,7 +493,11 @@ export async function updateMatchStatus(
       outreachEdited: req.body.outreachEdited,
     };
 
-    const result = await updateMatchStatusUseCase.execute(userId, matchId, input);
+    const result = await updateMatchStatusUseCase.execute(
+      userId,
+      matchId,
+      input,
+    );
 
     res.json({ success: true, data: result });
   } catch (error) {
@@ -477,19 +521,28 @@ export async function regenerateOutreach(
     // Scope by organization context
     const orgId = req.orgContext?.organizationId || null;
     if (orgId) {
-      const rawPitch = await prisma.pitch.findUnique({ where: { id: pitchId }, select: { organizationId: true } });
+      const rawPitch = await prisma.pitch.findUnique({
+        where: { id: pitchId },
+        select: { organizationId: true },
+      });
       if (rawPitch?.organizationId !== orgId) {
-        res.status(403).json({ error: { message: 'Access denied' } });
+        res.status(403).json({ error: { message: "Access denied" } });
         return;
       }
     }
 
     const input: RegenerateOutreachRequestDTO = {
-      tone: req.body.tone || 'professional',
+      tone: req.body.tone || "professional",
       focus: req.body.focus,
     };
 
-    const result = await regenerateOutreachUseCase.execute(userId, pitchId, sectionId, contactId, input);
+    const result = await regenerateOutreachUseCase.execute(
+      userId,
+      pitchId,
+      sectionId,
+      contactId,
+      input,
+    );
 
     res.json({ success: true, data: result });
   } catch (error) {
@@ -513,15 +566,18 @@ export async function rematchPitch(
     // Scope by organization context
     const orgId = req.orgContext?.organizationId || null;
     if (orgId) {
-      const rawPitch = await prisma.pitch.findUnique({ where: { id: pitchId }, select: { organizationId: true } });
+      const rawPitch = await prisma.pitch.findUnique({
+        where: { id: pitchId },
+        select: { organizationId: true },
+      });
       if (rawPitch?.organizationId !== orgId) {
-        res.status(403).json({ error: { message: 'Access denied' } });
+        res.status(403).json({ error: { message: "Access denied" } });
         return;
       }
     }
 
     const input: RematchRequestDTO = {
-      fromStep: req.body.fromStep || 'COMPUTE_MATCHES',
+      fromStep: req.body.fromStep || "COMPUTE_MATCHES",
     };
 
     const result = await rematchPitchUseCase.execute(userId, pitchId, input);
@@ -547,19 +603,26 @@ export async function updatePitch(
 
     const pitch = await pitchRepository.findById(pitchId);
     if (!pitch) {
-      res.status(404).json({ error: { message: 'Pitch not found' } });
+      res.status(404).json({ error: { message: "Pitch not found" } });
       return;
     }
 
     const orgId = req.orgContext?.organizationId || null;
     if (orgId) {
-      const rawPitch = await prisma.pitch.findUnique({ where: { id: pitchId }, select: { organizationId: true } });
+      const rawPitch = await prisma.pitch.findUnique({
+        where: { id: pitchId },
+        select: { organizationId: true },
+      });
       if (rawPitch?.organizationId !== orgId) {
-        res.status(403).json({ error: { message: 'Not authorized to update this pitch' } });
+        res
+          .status(403)
+          .json({ error: { message: "Not authorized to update this pitch" } });
         return;
       }
     } else if (pitch.userId !== userId) {
-      res.status(403).json({ error: { message: 'Not authorized to update this pitch' } });
+      res
+        .status(403)
+        .json({ error: { message: "Not authorized to update this pitch" } });
       return;
     }
 
@@ -591,11 +654,14 @@ export async function updatePitch(
     if (detailedDesc !== undefined) updateData.detailedDesc = detailedDesc;
     if (category !== undefined) updateData.category = category;
     if (stage !== undefined) updateData.stage = stage as ProjectStage;
-    if (investmentRange !== undefined) updateData.investmentRange = investmentRange;
+    if (investmentRange !== undefined)
+      updateData.investmentRange = investmentRange;
     if (timeline !== undefined) updateData.timeline = timeline;
     if (lookingFor !== undefined) updateData.lookingFor = lookingFor;
-    if (visibility !== undefined) updateData.visibility = visibility as ProjectVisibility;
-    if (problemStatement !== undefined) updateData.problemStatement = problemStatement;
+    if (visibility !== undefined)
+      updateData.visibility = visibility as ProjectVisibility;
+    if (problemStatement !== undefined)
+      updateData.problemStatement = problemStatement;
     if (whatYouNeed !== undefined) updateData.whatYouNeed = whatYouNeed;
     if (metadata !== undefined) updateData.metadata = metadata;
 
@@ -620,7 +686,7 @@ export async function updatePitch(
           data: skills.map((s: { skillId: string; importance?: string }) => ({
             pitchId,
             skillId: s.skillId,
-            importance: (s.importance || 'REQUIRED') as SkillImportance,
+            importance: (s.importance || "REQUIRED") as SkillImportance,
           })),
         });
       }
@@ -634,13 +700,19 @@ export async function updatePitch(
     // Update the auto-generated PitchSection if summary/detailedDesc changed
     if (summary !== undefined || detailedDesc !== undefined) {
       const existingSection = await prisma.pitchSection.findFirst({
-        where: { pitchId, type: 'EXECUTIVE_SUMMARY' },
-        orderBy: { order: 'asc' },
+        where: { pitchId, type: "EXECUTIVE_SUMMARY" },
+        orderBy: { order: "asc" },
       });
       if (existingSection) {
-        const newSummary = summary !== undefined ? summary : (pitch as any).summary || '';
-        const newDetailed = detailedDesc !== undefined ? detailedDesc : (pitch as any).detailedDesc || '';
-        const sectionContent = [newSummary, newDetailed].filter(Boolean).join('\n\n');
+        const newSummary =
+          summary !== undefined ? summary : (pitch as any).summary || "";
+        const newDetailed =
+          detailedDesc !== undefined
+            ? detailedDesc
+            : (pitch as any).detailedDesc || "";
+        const sectionContent = [newSummary, newDetailed]
+          .filter(Boolean)
+          .join("\n\n");
         await prisma.pitchSection.update({
           where: { id: existingSection.id },
           data: {
@@ -690,25 +762,30 @@ export async function updatePitchSection(
 
     const pitch = await pitchRepository.findById(pitchId);
     if (!pitch) {
-      res.status(404).json({ error: { message: 'Pitch not found' } });
+      res.status(404).json({ error: { message: "Pitch not found" } });
       return;
     }
 
     const orgId = req.orgContext?.organizationId || null;
     if (orgId) {
-      const rawPitch = await prisma.pitch.findUnique({ where: { id: pitchId }, select: { organizationId: true } });
+      const rawPitch = await prisma.pitch.findUnique({
+        where: { id: pitchId },
+        select: { organizationId: true },
+      });
       if (rawPitch?.organizationId !== orgId) {
-        res.status(403).json({ error: { message: 'Not authorized' } });
+        res.status(403).json({ error: { message: "Not authorized" } });
         return;
       }
     } else if (pitch.userId !== userId) {
-      res.status(403).json({ error: { message: 'Not authorized' } });
+      res.status(403).json({ error: { message: "Not authorized" } });
       return;
     }
 
-    const section = await prisma.pitchSection.findFirst({ where: { id: sectionId, pitchId } });
+    const section = await prisma.pitchSection.findFirst({
+      where: { id: sectionId, pitchId },
+    });
     if (!section) {
-      res.status(404).json({ error: { message: 'Section not found' } });
+      res.status(404).json({ error: { message: "Section not found" } });
       return;
     }
 
@@ -720,13 +797,20 @@ export async function updatePitchSection(
       },
     });
 
-    res.json({ success: true, data: { id: updated.id, title: updated.title, content: updated.content } });
+    res.json({
+      success: true,
+      data: { id: updated.id, title: updated.title, content: updated.content },
+    });
   } catch (error) {
     next(error);
   }
 }
 
-export async function archivePitch(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function archivePitch(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const userId = req.user!.userId;
     const pitchId = req.params.id;
@@ -734,24 +818,33 @@ export async function archivePitch(req: Request, res: Response, next: NextFuncti
 
     const pitch = await pitchRepository.findById(pitchId);
     if (!pitch) {
-      res.status(404).json({ error: { message: 'Pitch not found' } });
+      res.status(404).json({ error: { message: "Pitch not found" } });
       return;
     }
 
     const orgId = req.orgContext?.organizationId || null;
     if (orgId) {
-      const rawPitch = await prisma.pitch.findUnique({ where: { id: pitchId }, select: { organizationId: true } });
+      const rawPitch = await prisma.pitch.findUnique({
+        where: { id: pitchId },
+        select: { organizationId: true },
+      });
       if (rawPitch?.organizationId !== orgId) {
-        res.status(403).json({ error: { message: 'Not authorized' } });
+        res.status(403).json({ error: { message: "Not authorized" } });
         return;
       }
     } else if (pitch.userId !== userId) {
-      res.status(403).json({ error: { message: 'Not authorized' } });
+      res.status(403).json({ error: { message: "Not authorized" } });
       return;
     }
 
-    const updated = await prisma.pitch.update({ where: { id: pitchId }, data: { isActive } });
-    res.json({ success: true, data: { id: updated.id, isActive: updated.isActive } });
+    const updated = await prisma.pitch.update({
+      where: { id: pitchId },
+      data: { isActive },
+    });
+    res.json({
+      success: true,
+      data: { id: updated.id, isActive: updated.isActive },
+    });
   } catch (error) {
     next(error);
   }
@@ -766,7 +859,7 @@ export async function deletePitch(
     const userId = req.user!.userId;
     const pitchId = req.params.id;
 
-    logger.info('Delete pitch requested', { userId, pitchId });
+    logger.info("Delete pitch requested", { userId, pitchId });
 
     // Scope by organization context
     const orgId = req.orgContext?.organizationId || null;
@@ -774,26 +867,33 @@ export async function deletePitch(
     // Verify pitch belongs to user/org
     const pitch = await pitchRepository.findById(pitchId);
     if (!pitch) {
-      res.status(404).json({ error: { message: 'Pitch not found' } });
+      res.status(404).json({ error: { message: "Pitch not found" } });
       return;
     }
 
     if (orgId) {
-      const rawPitch = await prisma.pitch.findUnique({ where: { id: pitchId }, select: { organizationId: true } });
+      const rawPitch = await prisma.pitch.findUnique({
+        where: { id: pitchId },
+        select: { organizationId: true },
+      });
       if (rawPitch?.organizationId !== orgId) {
-        res.status(403).json({ error: { message: 'Not authorized to delete this pitch' } });
+        res
+          .status(403)
+          .json({ error: { message: "Not authorized to delete this pitch" } });
         return;
       }
     } else if (pitch.userId !== userId) {
-      res.status(403).json({ error: { message: 'Not authorized to delete this pitch' } });
+      res
+        .status(403)
+        .json({ error: { message: "Not authorized to delete this pitch" } });
       return;
     }
 
     // Soft delete the pitch
     await pitchRepository.softDelete(pitchId);
 
-    logger.info('Pitch deleted', { userId, pitchId });
-    res.json({ success: true, message: 'Pitch deleted successfully' });
+    logger.info("Pitch deleted", { userId, pitchId });
+    res.json({ success: true, message: "Pitch deleted successfully" });
   } catch (error) {
     next(error);
   }
@@ -817,7 +917,7 @@ export async function listPitches(
       limit: req.query.limit ? parseInt(req.query.limit as string, 10) : 10,
     };
 
-    logger.info('List pitches requested', { userId, query });
+    logger.info("List pitches requested", { userId, query });
 
     // Scope by organization context
     const orgId = req.orgContext?.organizationId || null;
@@ -842,7 +942,7 @@ export async function listPitches(
             },
           },
         },
-        orderBy: { uploadedAt: 'desc' },
+        orderBy: { uploadedAt: "desc" },
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -873,7 +973,10 @@ export async function listPitches(
             ...ps.skill,
             importance: ps.importance,
           })),
-          matchCount: pitch.sections.reduce((sum, s) => sum + s._count.pitchMatches, 0),
+          matchCount: pitch.sections.reduce(
+            (sum, s) => sum + s._count.pitchMatches,
+            0,
+          ),
         })),
         pagination: {
           page,
@@ -901,16 +1004,18 @@ export async function discoverPitches(
     const userId = req.user!.userId;
 
     const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
-    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
+    const limit = req.query.limit
+      ? parseInt(req.query.limit as string, 10)
+      : 20;
     const category = req.query.category as string | undefined;
     const stage = req.query.stage as string | undefined;
 
     const where: any = {
       userId: { not: userId },
-      visibility: 'PUBLIC',
+      visibility: "PUBLIC",
       isActive: true,
       deletedAt: null,
-      status: 'COMPLETED',
+      status: "COMPLETED",
     };
 
     if (category) where.category = category;
@@ -934,7 +1039,7 @@ export async function discoverPitches(
           pitchSectors: { include: { sector: true } },
           pitchSkills: { include: { skill: true } },
         },
-        orderBy: { uploadedAt: 'desc' },
+        orderBy: { uploadedAt: "desc" },
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -962,14 +1067,17 @@ export async function discoverPitches(
             ...ps.skill,
             importance: ps.importance,
           })),
-          user: pitch.user ? {
-            id: pitch.user.id,
-            fullName: `${pitch.user.firstName || ''} ${pitch.user.lastName || ''}`.trim(),
-            email: pitch.user.email,
-            company: pitch.user.company,
-            jobTitle: pitch.user.jobTitle,
-            avatarUrl: pitch.user.avatarUrl,
-          } : null,
+          user: pitch.user
+            ? {
+                id: pitch.user.id,
+                fullName:
+                  `${pitch.user.firstName || ""} ${pitch.user.lastName || ""}`.trim(),
+                email: pitch.user.email,
+                company: pitch.user.company,
+                jobTitle: pitch.user.jobTitle,
+                avatarUrl: pitch.user.avatarUrl,
+              }
+            : null,
         })),
         pagination: {
           page,
@@ -1000,20 +1108,30 @@ export async function exportPitchResults(
     // Scope by organization context
     const orgId = req.orgContext?.organizationId || null;
     if (orgId) {
-      const rawPitch = await prisma.pitch.findUnique({ where: { id: pitchId }, select: { organizationId: true } });
+      const rawPitch = await prisma.pitch.findUnique({
+        where: { id: pitchId },
+        select: { organizationId: true },
+      });
       if (rawPitch?.organizationId !== orgId) {
-        res.status(403).json({ error: { message: 'Access denied' } });
+        res.status(403).json({ error: { message: "Access denied" } });
         return;
       }
     }
 
-    const format = req.query.format as 'json' | 'csv' | 'pdf' || 'json';
+    const format = (req.query.format as "json" | "csv" | "pdf") || "json";
 
-    const validFormat = format === 'csv' ? 'csv' : 'json';
-    const result = await exportPitchResultsUseCase.execute(userId, pitchId, validFormat);
+    const validFormat = format === "csv" ? "csv" : "json";
+    const result = await exportPitchResultsUseCase.execute(
+      userId,
+      pitchId,
+      validFormat,
+    );
 
-    res.setHeader('Content-Type', result.contentType);
-    res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    res.setHeader("Content-Type", result.contentType);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${result.filename}"`,
+    );
     res.send(result.data);
   } catch (error) {
     next(error);
@@ -1083,7 +1201,7 @@ export async function findMatches(
 ): Promise<void> {
   try {
     if (!req.user) {
-      throw new AuthenticationError('Authentication required');
+      throw new AuthenticationError("Authentication required");
     }
 
     const userId = req.user.userId;
@@ -1105,16 +1223,16 @@ export async function findMatches(
     });
 
     if (!pitch) {
-      throw new NotFoundError('Pitch not found');
+      throw new NotFoundError("Pitch not found");
     }
 
-    logger.info('Starting pitch matching (sync)', { userId, pitchId });
+    logger.info("Starting pitch matching (sync)", { userId, pitchId });
 
     // Get pitch sections + pitch sectors/skills for context enrichment
     const [sections, pitchSectors, pitchSkills] = await Promise.all([
       prisma.pitchSection.findMany({
         where: { pitchId },
-        orderBy: { order: 'asc' },
+        orderBy: { order: "asc" },
       }),
       prisma.pitchSector.findMany({
         where: { pitchId },
@@ -1127,7 +1245,12 @@ export async function findMatches(
     ]);
 
     if (sections.length === 0) {
-      res.status(400).json({ success: false, error: { message: 'No sections found for this pitch' } });
+      res
+        .status(400)
+        .json({
+          success: false,
+          error: { message: "No sections found for this pitch" },
+        });
       return;
     }
 
@@ -1135,10 +1258,12 @@ export async function findMatches(
     const sectorNames = pitchSectors.map((ps: any) => ps.sector.name);
     const skillNames = pitchSkills.map((ps: any) => ps.skill.name);
     const enrichmentContext = [
-      sectorNames.length ? `Sectors: ${sectorNames.join(', ')}` : '',
-      skillNames.length ? `Skills needed: ${skillNames.join(', ')}` : '',
-      pitch.category ? `Category: ${pitch.category}` : '',
-    ].filter(Boolean).join('\n');
+      sectorNames.length ? `Sectors: ${sectorNames.join(", ")}` : "",
+      skillNames.length ? `Skills needed: ${skillNames.join(", ")}` : "",
+      pitch.category ? `Category: ${pitch.category}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
 
     // Get contacts scoped by org context
     const contactWhere: any = orgId
@@ -1155,18 +1280,27 @@ export async function findMatches(
     });
 
     if (contacts.length === 0) {
-      res.status(400).json({ success: false, error: { message: 'No contacts in your network. Add contacts first.' } });
+      res
+        .status(400)
+        .json({
+          success: false,
+          error: {
+            message: "No contacts in your network. Add contacts first.",
+          },
+        });
       return;
     }
 
     // Get interaction counts for all contacts in one query
     const contactIds = contacts.map((c) => c.id);
     const interactionCounts = await prisma.interaction.groupBy({
-      by: ['contactId'],
+      by: ["contactId"],
       where: { contactId: { in: contactIds } },
       _count: { id: true },
     });
-    const interactionCountMap = new Map(interactionCounts.map((ic) => [ic.contactId, ic._count.id]));
+    const interactionCountMap = new Map(
+      interactionCounts.map((ic) => [ic.contactId, ic._count.id]),
+    );
 
     // Build ContactProfileDTO from contacts (on the fly, no cache needed)
     const contactProfiles: ContactProfileDTO[] = contacts.map((contact) => ({
@@ -1176,10 +1310,12 @@ export async function findMatches(
       company: contact.company,
       jobTitle: contact.jobTitle,
       profileSummary: [
-        contact.bioSummary || contact.bio || '',
-        contact.jobTitle ? `Works as ${contact.jobTitle}` : '',
-        contact.company ? `at ${contact.company}` : '',
-      ].filter(Boolean).join('. '),
+        contact.bioSummary || contact.bio || "",
+        contact.jobTitle ? `Works as ${contact.jobTitle}` : "",
+        contact.company ? `at ${contact.company}` : "",
+      ]
+        .filter(Boolean)
+        .join(". "),
       sectors: contact.contactSectors.map((cs: any) => cs.sector.name),
       skills: contact.contactSkills.map((cs: any) => cs.skill.name),
       interests: contact.contactInterests.map((ci: any) => ci.interest.name),
@@ -1188,7 +1324,10 @@ export async function findMatches(
       checkSize: undefined,
       relationshipStrength: 50, // Default
       lastInteractionDays: contact.lastInteractionAt
-        ? Math.floor((Date.now() - new Date(contact.lastInteractionAt).getTime()) / (1000 * 60 * 60 * 24))
+        ? Math.floor(
+            (Date.now() - new Date(contact.lastInteractionAt).getTime()) /
+              (1000 * 60 * 60 * 24),
+          )
         : null,
       interactionCount: interactionCountMap.get(contact.id) || 0,
     }));
@@ -1198,7 +1337,9 @@ export async function findMatches(
 
     // Delete existing matches for this pitch
     for (const section of sections) {
-      await prisma.pitchMatch.deleteMany({ where: { pitchSectionId: section.id } });
+      await prisma.pitchMatch.deleteMany({
+        where: { pitchSectionId: section.id },
+      });
     }
 
     let totalMatchCount = 0;
@@ -1221,7 +1362,10 @@ export async function findMatches(
       );
 
       // Save top matches per section
-      const topMatches = computed.slice(0, PITCH_MATCHING_DEFAULTS.maxMatchesPerSection);
+      const topMatches = computed.slice(
+        0,
+        PITCH_MATCHING_DEFAULTS.maxMatchesPerSection,
+      );
 
       if (topMatches.length > 0) {
         await prisma.$transaction(
@@ -1238,7 +1382,7 @@ export async function findMatches(
                 breakdownJson: m.breakdown as any,
                 reasonsJson: m.reasons as any,
                 angleCategory: m.angleCategory || undefined,
-                status: 'PENDING',
+                status: "PENDING",
               },
             }),
           ),
@@ -1246,7 +1390,7 @@ export async function findMatches(
         totalMatchCount += topMatches.length;
       }
 
-      logger.info('Section matching complete', {
+      logger.info("Section matching complete", {
         sectionId: section.id,
         sectionType: section.type,
         matchCount: topMatches.length,
@@ -1256,10 +1400,10 @@ export async function findMatches(
     // Update pitch status to COMPLETED
     await prisma.pitch.update({
       where: { id: pitchId },
-      data: { status: 'COMPLETED', processedAt: new Date() },
+      data: { status: "COMPLETED", processedAt: new Date() },
     });
 
-    logger.info('Pitch matching completed (sync)', {
+    logger.info("Pitch matching completed (sync)", {
       userId,
       pitchId,
       totalMatches: totalMatchCount,
@@ -1286,9 +1430,9 @@ export async function findMatches(
  */
 function cleanExtractedText(text: string): string {
   let cleaned = text;
-  const lines = cleaned.split('\n');
+  const lines = cleaned.split("\n");
   const processedLines: string[] = [];
-  let charBuffer = '';
+  let charBuffer = "";
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -1297,19 +1441,31 @@ function cleanExtractedText(text: string): string {
       if (i > 0 && i < lines.length - 1) {
         const prevLine = lines[i - 1].trim();
         const nextLine = lines[i + 1].trim();
-        if ((prevLine.length <= 2 && prevLine.length > 0) || (nextLine.length <= 2 && nextLine.length > 0)) {
+        if (
+          (prevLine.length <= 2 && prevLine.length > 0) ||
+          (nextLine.length <= 2 && nextLine.length > 0)
+        ) {
           isPartOfSequence = true;
         }
       }
-      if (isPartOfSequence) { charBuffer += line; continue; }
+      if (isPartOfSequence) {
+        charBuffer += line;
+        continue;
+      }
     }
-    if (charBuffer) { processedLines.push(charBuffer); charBuffer = ''; }
+    if (charBuffer) {
+      processedLines.push(charBuffer);
+      charBuffer = "";
+    }
     if (line) processedLines.push(line);
   }
   if (charBuffer) processedLines.push(charBuffer);
 
-  cleaned = processedLines.join('\n');
-  cleaned = cleaned.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+  cleaned = processedLines.join("\n");
+  cleaned = cleaned
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
   return cleaned;
 }
 
@@ -1324,59 +1480,96 @@ export async function analyzePitchText(
 ): Promise<void> {
   try {
     if (!req.user) {
-      throw new AuthenticationError('Authentication required');
+      throw new AuthenticationError("Authentication required");
     }
 
     const { title, summary, detailedDesc } = req.body;
 
     if (!title && !summary) {
-      throw new ValidationError('Title or summary is required for analysis');
+      throw new ValidationError("Title or summary is required for analysis");
     }
 
-    const pitchText = [title, summary, detailedDesc].filter(Boolean).join('\n\n');
+    const pitchText = [title, summary, detailedDesc]
+      .filter(Boolean)
+      .join("\n\n");
 
     if (pitchText.trim().length < 10) {
-      throw new ValidationError('Please provide more details for AI analysis');
+      throw new ValidationError("Please provide more details for AI analysis");
     }
 
     const openaiApiKey = process.env.OPENAI_API_KEY;
     const groqApiKey = process.env.GROQ_API_KEY;
     const useOpenAI = !!openaiApiKey;
     const aiApiKey = useOpenAI ? openaiApiKey : groqApiKey;
-    const aiEndpoint = useOpenAI ? 'https://api.openai.com/v1/chat/completions' : 'https://api.groq.com/openai/v1/chat/completions';
-    const aiModel = useOpenAI ? 'gpt-4o' : 'llama-3.3-70b-versatile';
+    const aiEndpoint = useOpenAI
+      ? "https://api.openai.com/v1/chat/completions"
+      : "https://api.groq.com/openai/v1/chat/completions";
+    const aiModel = useOpenAI ? "gpt-4o" : "llama-3.3-70b-versatile";
 
     if (!aiApiKey) {
-      throw new ValidationError('AI service not configured');
+      throw new ValidationError("AI service not configured");
     }
 
     // Get available sectors and skills for matching
     const [sectors, skills] = await Promise.all([
-      prisma.sector.findMany({ where: { isActive: true }, select: { id: true, name: true }, take: 200 }),
-      prisma.skill.findMany({ where: { isActive: true }, select: { id: true, name: true }, take: 200 }),
+      prisma.sector.findMany({
+        where: { isActive: true },
+        select: { id: true, name: true },
+        take: 200,
+      }),
+      prisma.skill.findMany({
+        where: { isActive: true },
+        select: { id: true, name: true },
+        take: 200,
+      }),
     ]);
 
     const validCategories = [
-      'healthtech', 'fintech', 'edtech', 'saas', 'ecommerce', 'aiml',
-      'cleantech', 'proptech', 'agritech', 'foodtech', 'legaltech',
-      'hrtech', 'martech', 'insurtech', 'logistics', 'gaming',
-      'social', 'media', 'cybersecurity', 'iot', 'blockchain', 'other',
+      "healthtech",
+      "fintech",
+      "edtech",
+      "saas",
+      "ecommerce",
+      "aiml",
+      "cleantech",
+      "proptech",
+      "agritech",
+      "foodtech",
+      "legaltech",
+      "hrtech",
+      "martech",
+      "insurtech",
+      "logistics",
+      "gaming",
+      "social",
+      "media",
+      "cybersecurity",
+      "iot",
+      "blockchain",
+      "other",
     ];
 
     const lookingForOptions = [
-      'cofounder', 'investor', 'technical_partner', 'business_partner',
-      'advisor', 'employee', 'contractor', 'customer', 'supplier',
+      "cofounder",
+      "investor",
+      "technical_partner",
+      "business_partner",
+      "advisor",
+      "employee",
+      "contractor",
+      "customer",
+      "supplier",
     ];
 
     const prompt = `You are a world-class startup analyst. Analyze this pitch and suggest the BEST matching options for each field. Be specific and relevant to THIS pitch.
 
 PITCH:
-Title: ${title || ''}
-Summary: ${summary || ''}
-${detailedDesc ? `Details: ${detailedDesc.substring(0, 3000)}` : ''}
+Title: ${title || ""}
+Summary: ${summary || ""}
+${detailedDesc ? `Details: ${detailedDesc.substring(0, 3000)}` : ""}
 
-CATEGORY OPTIONS: ${validCategories.join(', ')}
-LOOKING FOR OPTIONS: ${lookingForOptions.join(', ')}
+CATEGORY OPTIONS: ${validCategories.join(", ")}
+LOOKING FOR OPTIONS: ${lookingForOptions.join(", ")}
 STAGE OPTIONS: IDEA, MVP, EARLY, GROWTH, SCALE
 
 MATCH INTENT OPTIONS: INVESTOR, ADVISOR, STRATEGIC_PARTNER, COFOUNDER, CUSTOMER_BUYER
@@ -1409,75 +1602,109 @@ RULES:
 - Return ONLY valid JSON`;
 
     const aiResponse = await fetch(aiEndpoint, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${aiApiKey}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${aiApiKey}`,
       },
       body: JSON.stringify({
         model: aiModel,
         messages: [
-          { role: 'system', content: 'You are a startup expert. Analyze pitches and suggest the best matching categories, sectors, and skills. Output ONLY valid JSON.' },
-          { role: 'user', content: prompt },
+          {
+            role: "system",
+            content:
+              "You are a startup expert. Analyze pitches and suggest the best matching categories, sectors, and skills. Output ONLY valid JSON.",
+          },
+          { role: "user", content: prompt },
         ],
         temperature: 0.3,
         max_tokens: 2500,
-        ...(useOpenAI ? {} : { response_format: { type: 'json_object' } }),
+        ...(useOpenAI ? {} : { response_format: { type: "json_object" } }),
       }),
     });
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      logger.error('AI API error during pitch analysis', { status: aiResponse.status, error: errorText, provider: useOpenAI ? 'OpenAI' : 'Groq' });
+      logger.error("AI API error during pitch analysis", {
+        status: aiResponse.status,
+        error: errorText,
+        provider: useOpenAI ? "OpenAI" : "Groq",
+      });
       if (aiResponse.status === 429 || aiResponse.status === 413) {
-        throw new ValidationError('AI service is busy. Please wait a moment and try again.');
+        throw new ValidationError(
+          "AI service is busy. Please wait a moment and try again.",
+        );
       }
-      throw new ValidationError('AI analysis failed. Please try again.');
+      throw new ValidationError("AI analysis failed. Please try again.");
     }
 
-    const aiData = await aiResponse.json() as { choices?: Array<{ message?: { content?: string } }> };
+    const aiData = (await aiResponse.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
     const content = aiData.choices?.[0]?.message?.content;
 
     if (!content) {
-      throw new ValidationError('AI analysis returned no content');
+      throw new ValidationError("AI analysis returned no content");
     }
 
     let extractedData: any;
     try {
       let cleanContent = content.trim();
       const jsonMatch = cleanContent.match(/```json\s*([\s\S]*?)```/) ||
-                        cleanContent.match(/```\s*([\s\S]*?)```/) ||
-                        [null, cleanContent.match(/\{[\s\S]*\}/)?.[0]];
+        cleanContent.match(/```\s*([\s\S]*?)```/) || [
+          null,
+          cleanContent.match(/\{[\s\S]*\}/)?.[0],
+        ];
       cleanContent = (jsonMatch[1] || cleanContent).trim();
       extractedData = JSON.parse(cleanContent);
     } catch (e) {
-      logger.error('Failed to parse pitch analysis response', { content, error: e });
-      throw new ValidationError('Failed to parse AI analysis');
+      logger.error("Failed to parse pitch analysis response", {
+        content,
+        error: e,
+      });
+      throw new ValidationError("Failed to parse AI analysis");
     }
 
     // Validate category
-    const analysisCategory = validCategories.includes(extractedData.category) ? extractedData.category : 'other';
+    const analysisCategory = validCategories.includes(extractedData.category)
+      ? extractedData.category
+      : "other";
 
     // Validate stage
-    const validStages = ['IDEA', 'MVP', 'EARLY', 'GROWTH', 'SCALE'];
-    let analysisStage = (extractedData.stage || '').toUpperCase().trim();
+    const validStages = ["IDEA", "MVP", "EARLY", "GROWTH", "SCALE"];
+    let analysisStage = (extractedData.stage || "").toUpperCase().trim();
     if (!validStages.includes(analysisStage)) {
       const stageMap: Record<string, string> = {
-        'EARLY REVENUE': 'EARLY', 'REVENUE': 'EARLY', 'SEED': 'EARLY',
-        'PRE-SEED': 'IDEA', 'BETA': 'MVP', 'PROTOTYPE': 'MVP', 'CONCEPT': 'IDEA',
-        'VALIDATION': 'EARLY', 'LAUNCHED': 'EARLY', 'SCALING': 'SCALE',
-        'SERIES A': 'GROWTH', 'SERIES B': 'SCALE',
+        "EARLY REVENUE": "EARLY",
+        REVENUE: "EARLY",
+        SEED: "EARLY",
+        "PRE-SEED": "IDEA",
+        BETA: "MVP",
+        PROTOTYPE: "MVP",
+        CONCEPT: "IDEA",
+        VALIDATION: "EARLY",
+        LAUNCHED: "EARLY",
+        SCALING: "SCALE",
+        "SERIES A": "GROWTH",
+        "SERIES B": "SCALE",
       };
-      analysisStage = stageMap[analysisStage] || 'IDEA';
+      analysisStage = stageMap[analysisStage] || "IDEA";
     }
 
     // Validate lookingFor
-    const analysisLookingFor = (extractedData.lookingFor || []).filter((l: string) => lookingForOptions.includes(l));
+    const analysisLookingFor = (extractedData.lookingFor || []).filter(
+      (l: string) => lookingForOptions.includes(l),
+    );
 
     // Smart fuzzy match with word overlap scoring
-    const smartMatch = (query: string, items: Array<{ id: string; name: string }>): { id: string; name: string; score: number } | null => {
+    const smartMatch = (
+      query: string,
+      items: Array<{ id: string; name: string }>,
+    ): { id: string; name: string; score: number } | null => {
       const queryLower = query.toLowerCase().trim();
-      const queryWords = queryLower.split(/[\s/&,\-()]+/).filter(w => w.length > 2);
+      const queryWords = queryLower
+        .split(/[\s/&,\-()]+/)
+        .filter((w) => w.length > 2);
       let best: { id: string; name: string; score: number } | null = null;
       for (const item of items) {
         const nameLower = item.name.toLowerCase();
@@ -1486,13 +1713,18 @@ RULES:
           if (!best || 80 > best.score) best = { ...item, score: 80 };
           continue;
         }
-        const nameWords = nameLower.split(/[\s/&,\-()]+/).filter(w => w.length > 2);
+        const nameWords = nameLower
+          .split(/[\s/&,\-()]+/)
+          .filter((w) => w.length > 2);
         let matched = 0;
         for (const qw of queryWords) {
-          if (nameWords.some(nw => nw.includes(qw) || qw.includes(nw))) matched++;
+          if (nameWords.some((nw) => nw.includes(qw) || qw.includes(nw)))
+            matched++;
         }
-        const score = queryWords.length > 0 ? (matched / queryWords.length) * 60 : 0;
-        if (score > 0 && (!best || score > best.score)) best = { ...item, score };
+        const score =
+          queryWords.length > 0 ? (matched / queryWords.length) * 60 : 0;
+        if (score > 0 && (!best || score > best.score))
+          best = { ...item, score };
       }
       return best && best.score >= 30 ? best : null;
     };
@@ -1508,12 +1740,17 @@ RULES:
           sectorIds.push(match.id);
         } else {
           try {
-            const newSector = await prisma.sector.create({ data: { name: trimmedName, isActive: true } });
+            const newSector = await prisma.sector.create({
+              data: { name: trimmedName, isActive: true },
+            });
             sectorIds.push(newSector.id);
             sectors.push({ id: newSector.id, name: trimmedName });
           } catch {
-            const existing = sectors.find(s => s.name.toLowerCase() === trimmedName.toLowerCase());
-            if (existing && !sectorIds.includes(existing.id)) sectorIds.push(existing.id);
+            const existing = sectors.find(
+              (s) => s.name.toLowerCase() === trimmedName.toLowerCase(),
+            );
+            if (existing && !sectorIds.includes(existing.id))
+              sectorIds.push(existing.id);
           }
         }
       }
@@ -1527,7 +1764,8 @@ RULES:
       for (const name of extractedData.skills.slice(0, 12)) {
         const trimmedName = name.trim();
         if (!trimmedName) continue;
-        const importance = idx < 3 ? 'REQUIRED' : idx < 6 ? 'PREFERRED' : 'NICE_TO_HAVE';
+        const importance =
+          idx < 3 ? "REQUIRED" : idx < 6 ? "PREFERRED" : "NICE_TO_HAVE";
         const match = smartMatch(trimmedName, skills);
         if (match && match.score >= 60 && !addedSkillIds.has(match.id)) {
           skillItems.push({ skillId: match.id, importance });
@@ -1535,13 +1773,17 @@ RULES:
           idx++;
         } else {
           try {
-            const newSkill = await prisma.skill.create({ data: { name: trimmedName, isActive: true } });
+            const newSkill = await prisma.skill.create({
+              data: { name: trimmedName, isActive: true },
+            });
             skillItems.push({ skillId: newSkill.id, importance });
             addedSkillIds.add(newSkill.id);
             skills.push({ id: newSkill.id, name: trimmedName });
             idx++;
           } catch {
-            const existing = skills.find(s => s.name.toLowerCase() === trimmedName.toLowerCase());
+            const existing = skills.find(
+              (s) => s.name.toLowerCase() === trimmedName.toLowerCase(),
+            );
             if (existing && !addedSkillIds.has(existing.id)) {
               skillItems.push({ skillId: existing.id, importance });
               addedSkillIds.add(existing.id);
@@ -1552,7 +1794,7 @@ RULES:
       }
     }
 
-    logger.info('Pitch text analyzed', {
+    logger.info("Pitch text analyzed", {
       userId: req.user.userId,
       category: analysisCategory,
       stage: analysisStage,
@@ -1562,25 +1804,55 @@ RULES:
     });
 
     // Validate new structured fields from analysis
-    const VALID_MATCH_INTENTS_A = ['INVESTOR', 'ADVISOR', 'STRATEGIC_PARTNER', 'COFOUNDER', 'CUSTOMER_BUYER'];
-    const VALID_SUPPORT_TAGS_A = ['funding', 'introductions', 'advisor', 'strategic_partner', 'distribution', 'technical_integration', 'pilot_customer', 'design_partner', 'buyer_customer', 'enterprise_access', 'cofounder', 'hiring', 'compliance', 'market_access', 'growth_support'];
-    const VALID_CURRENCIES_A = ['USD', 'EUR', 'GBP', 'JOD', 'SAR', 'AED'];
+    const VALID_MATCH_INTENTS_A = [
+      "INVESTOR",
+      "ADVISOR",
+      "STRATEGIC_PARTNER",
+      "COFOUNDER",
+      "CUSTOMER_BUYER",
+    ];
+    const VALID_SUPPORT_TAGS_A = [
+      "funding",
+      "introductions",
+      "advisor",
+      "strategic_partner",
+      "distribution",
+      "technical_integration",
+      "pilot_customer",
+      "design_partner",
+      "buyer_customer",
+      "enterprise_access",
+      "cofounder",
+      "hiring",
+      "compliance",
+      "market_access",
+      "growth_support",
+    ];
+    const VALID_CURRENCIES_A = ["USD", "EUR", "GBP", "JOD", "SAR", "AED"];
 
-    const analysisMatchIntent = (extractedData.matchIntent || []).filter((v: string) => VALID_MATCH_INTENTS_A.includes(v));
-    const analysisSupportTags = (extractedData.supportNeededTags || []).filter((v: string) => VALID_SUPPORT_TAGS_A.includes(v));
+    const analysisMatchIntent = (extractedData.matchIntent || []).filter(
+      (v: string) => VALID_MATCH_INTENTS_A.includes(v),
+    );
+    const analysisSupportTags = (extractedData.supportNeededTags || []).filter(
+      (v: string) => VALID_SUPPORT_TAGS_A.includes(v),
+    );
 
     let analysisFundingAmount: number | null = null;
     const rawFundingA = extractedData.fundingAmountRequested;
     if (rawFundingA != null) {
-      if (typeof rawFundingA === 'number' && !isNaN(rawFundingA)) {
+      if (typeof rawFundingA === "number" && !isNaN(rawFundingA)) {
         analysisFundingAmount = rawFundingA;
-      } else if (typeof rawFundingA === 'string') {
-        const cleaned = rawFundingA.replace(/[$€£,\s]/g, '');
+      } else if (typeof rawFundingA === "string") {
+        const cleaned = rawFundingA.replace(/[$€£,\s]/g, "");
         const multiplierMatch = cleaned.match(/^([\d.]+)([KkMmBb])?$/);
         if (multiplierMatch) {
           const num = parseFloat(multiplierMatch[1]);
-          const suffix = (multiplierMatch[2] || '').toUpperCase();
-          const multipliers: Record<string, number> = { K: 1_000, M: 1_000_000, B: 1_000_000_000 };
+          const suffix = (multiplierMatch[2] || "").toUpperCase();
+          const multipliers: Record<string, number> = {
+            K: 1_000,
+            M: 1_000_000,
+            B: 1_000_000_000,
+          };
           analysisFundingAmount = num * (multipliers[suffix] || 1);
         } else {
           const num = parseFloat(cleaned);
@@ -1588,13 +1860,19 @@ RULES:
         }
       }
     }
-    const analysisCurrency = VALID_CURRENCIES_A.includes(extractedData.fundingCurrency) ? extractedData.fundingCurrency : (analysisFundingAmount ? 'USD' : null);
+    const analysisCurrency = VALID_CURRENCIES_A.includes(
+      extractedData.fundingCurrency,
+    )
+      ? extractedData.fundingCurrency
+      : analysisFundingAmount
+        ? "USD"
+        : null;
 
     // Validate confidence
     const rawConfidenceA = extractedData.confidence || {};
     const analysisConfidence: Record<string, number> = {};
     for (const [key, val] of Object.entries(rawConfidenceA)) {
-      if (typeof val === 'number' && val >= 0 && val <= 1) {
+      if (typeof val === "number" && val >= 0 && val <= 1) {
         analysisConfidence[key] = val;
       }
     }
@@ -1604,15 +1882,15 @@ RULES:
       data: {
         category: analysisCategory,
         stage: analysisStage,
-        companyName: extractedData.companyName || '',
+        companyName: extractedData.companyName || "",
         lookingFor: analysisLookingFor,
         sectorIds,
         skills: skillItems,
-        whatYouNeed: extractedData.whatYouNeed || '',
+        whatYouNeed: extractedData.whatYouNeed || "",
         matchIntent: analysisMatchIntent,
         supportNeededTags: analysisSupportTags,
-        tractionSummary: extractedData.tractionSummary || '',
-        founderBackgroundSummary: extractedData.founderBackgroundSummary || '',
+        tractionSummary: extractedData.tractionSummary || "",
+        founderBackgroundSummary: extractedData.founderBackgroundSummary || "",
         fundingAmountRequested: analysisFundingAmount,
         fundingCurrency: analysisCurrency,
         confidence: analysisConfidence,
@@ -1627,450 +1905,450 @@ RULES:
  * Extract pitch data from uploaded document using AI
  * POST /api/v1/pitches/extract-document
  */
-export async function extractPitchFromDocument(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> {
-  try {
-    const userId = req.user!.userId;
-    const file = req.file;
+// export async function extractPitchFromDocument(
+//   req: Request,
+//   res: Response,
+//   next: NextFunction,
+// ): Promise<void> {
+//   try {
+//     const userId = req.user!.userId;
+//     const file = req.file;
 
-    if (!file) {
-      res.status(400).json({ success: false, error: { code: 'VALIDATION', message: 'Document file is required' } });
-      return;
-    }
+//     if (!file) {
+//       res.status(400).json({ success: false, error: { code: 'VALIDATION', message: 'Document file is required' } });
+//       return;
+//     }
 
-    logger.info('Extracting pitch data from document', {
-      userId,
-      fileName: file.originalname,
-      mimeType: file.mimetype,
-      size: file.size,
-    });
+//     logger.info('Extracting pitch data from document', {
+//       userId,
+//       fileName: file.originalname,
+//       mimeType: file.mimetype,
+//       size: file.size,
+//     });
 
-    let textContent = '';
+//     let textContent = '';
 
-    if (file.mimetype === 'application/pdf') {
-      try {
-        const pdfParse = require('pdf-parse');
-        const pdfData = await pdfParse(file.buffer);
-        textContent = cleanExtractedText(pdfData.text);
-      } catch (pdfError: any) {
-        logger.warn('Failed to parse PDF file', { error: pdfError.message, fileName: file.originalname });
-        res.status(400).json({ success: false, error: { code: 'PDF_ERROR', message: 'Could not read the PDF file. It may be corrupted or not a valid PDF. Please try a different file.' } });
-        return;
-      }
-    } else if (
-      file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-      file.mimetype === 'application/msword'
-    ) {
-      try {
-        const mammoth = require('mammoth');
-        const result = await mammoth.extractRawText({ buffer: file.buffer });
-        textContent = cleanExtractedText(result.value);
-      } catch (docError: any) {
-        logger.warn('Failed to parse DOCX file', { error: docError.message, fileName: file.originalname });
-        res.status(400).json({ success: false, error: { code: 'DOC_ERROR', message: 'Could not read the document file. It may be corrupted or not a valid DOCX/DOC file.' } });
-        return;
-      }
-    } else if (file.mimetype === 'text/plain') {
-      textContent = file.buffer.toString('utf-8');
-    } else {
-      res.status(400).json({ success: false, error: { code: 'VALIDATION', message: 'Unsupported file format. Please upload PDF, DOCX, DOC, or TXT files.' } });
-      return;
-    }
+//     if (file.mimetype === 'application/pdf') {
+//       try {
+//         const pdfParse = require('pdf-parse');
+//         const pdfData = await pdfParse(file.buffer);
+//         textContent = cleanExtractedText(pdfData.text);
+//       } catch (pdfError: any) {
+//         logger.warn('Failed to parse PDF file', { error: pdfError.message, fileName: file.originalname });
+//         res.status(400).json({ success: false, error: { code: 'PDF_ERROR', message: 'Could not read the PDF file. It may be corrupted or not a valid PDF. Please try a different file.' } });
+//         return;
+//       }
+//     } else if (
+//       file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+//       file.mimetype === 'application/msword'
+//     ) {
+//       try {
+//         const mammoth = require('mammoth');
+//         const result = await mammoth.extractRawText({ buffer: file.buffer });
+//         textContent = cleanExtractedText(result.value);
+//       } catch (docError: any) {
+//         logger.warn('Failed to parse DOCX file', { error: docError.message, fileName: file.originalname });
+//         res.status(400).json({ success: false, error: { code: 'DOC_ERROR', message: 'Could not read the document file. It may be corrupted or not a valid DOCX/DOC file.' } });
+//         return;
+//       }
+//     } else if (file.mimetype === 'text/plain') {
+//       textContent = file.buffer.toString('utf-8');
+//     } else {
+//       res.status(400).json({ success: false, error: { code: 'VALIDATION', message: 'Unsupported file format. Please upload PDF, DOCX, DOC, or TXT files.' } });
+//       return;
+//     }
 
-    if (!textContent || textContent.trim().length < 30) {
-      res.status(400).json({ success: false, error: { code: 'VALIDATION', message: 'Could not extract sufficient text from document.' } });
-      return;
-    }
+//     if (!textContent || textContent.trim().length < 30) {
+//       res.status(400).json({ success: false, error: { code: 'VALIDATION', message: 'Could not extract sufficient text from document.' } });
+//       return;
+//     }
 
-    logger.info('Text extracted from pitch document', { textLength: textContent.length });
+//     logger.info('Text extracted from pitch document', { textLength: textContent.length });
 
-    const groqApiKey = process.env.GROQ_API_KEY;
-    if (!groqApiKey) {
-      res.status(500).json({ success: false, error: { code: 'CONFIG', message: 'AI extraction service not configured' } });
-      return;
-    }
+//     const groqApiKey = process.env.GROQ_API_KEY;
+//     if (!groqApiKey) {
+//       res.status(500).json({ success: false, error: { code: 'CONFIG', message: 'AI extraction service not configured' } });
+//       return;
+//     }
 
-    // Get available sectors and skills for matching
-    const [dbSectors, dbSkills] = await Promise.all([
-      prisma.sector.findMany({ where: { isActive: true }, select: { id: true, name: true }, take: 200 }),
-      prisma.skill.findMany({ where: { isActive: true }, select: { id: true, name: true }, take: 200 }),
-    ]);
+//     // Get available sectors and skills for matching
+//     const [dbSectors, dbSkills] = await Promise.all([
+//       prisma.sector.findMany({ where: { isActive: true }, select: { id: true, name: true }, take: 200 }),
+//       prisma.skill.findMany({ where: { isActive: true }, select: { id: true, name: true }, take: 200 }),
+//     ]);
 
-    const maxDocLength = 8000;
-    const truncatedContent = textContent.substring(0, maxDocLength);
+//     const maxDocLength = 8000;
+//     const truncatedContent = textContent.substring(0, maxDocLength);
 
-    const validCategories = [
-      'healthtech', 'fintech', 'edtech', 'saas', 'ecommerce', 'aiml',
-      'cleantech', 'proptech', 'agritech', 'foodtech', 'legaltech',
-      'hrtech', 'martech', 'insurtech', 'logistics', 'gaming',
-      'social', 'media', 'cybersecurity', 'iot', 'blockchain', 'other',
-    ];
+//     const validCategories = [
+//       'healthtech', 'fintech', 'edtech', 'saas', 'ecommerce', 'aiml',
+//       'cleantech', 'proptech', 'agritech', 'foodtech', 'legaltech',
+//       'hrtech', 'martech', 'insurtech', 'logistics', 'gaming',
+//       'social', 'media', 'cybersecurity', 'iot', 'blockchain', 'other',
+//     ];
 
-    const lookingForOptions = [
-      'cofounder', 'investor', 'technical_partner', 'business_partner',
-      'advisor', 'employee', 'contractor', 'customer', 'supplier',
-    ];
+//     const lookingForOptions = [
+//       'cofounder', 'investor', 'technical_partner', 'business_partner',
+//       'advisor', 'employee', 'contractor', 'customer', 'supplier',
+//     ];
 
-    const prompt = `You are a world-class startup analyst and venture capital expert. Read this entire document VERY carefully, extract EVERY piece of information, and produce a comprehensive structured analysis. ALL OUTPUT IN ENGLISH (translate if needed).
+//     const prompt = `You are a world-class startup analyst and venture capital expert. Read this entire document VERY carefully, extract EVERY piece of information, and produce a comprehensive structured analysis. ALL OUTPUT IN ENGLISH (translate if needed).
 
-DOCUMENT:
-${truncatedContent}
+// DOCUMENT:
+// ${truncatedContent}
 
-INSTRUCTIONS:
-1. Read the ENTIRE document word by word. Do NOT skim.
-2. Look for the company/startup name in: page headers, footers, "About Us" sections, team bios, legal text, domain names, email addresses (e.g. info@companyname.com), copyright notices (© 2024 CompanyName), slide titles, logo text.
-3. Look for funding asks in: "Investment", "Fundraising", "Use of Funds", "Financial Projections", tables with dollar amounts, "seeking $X", "raising $X", "round size".
-4. Determine the business stage from concrete evidence: revenue numbers → EARLY/GROWTH, user/customer counts → MVP+, "prototype"/"beta" → MVP, "concept"/"idea" → IDEA, "pilot"/"testing" → EARLY, growth metrics/KPIs → GROWTH, multi-market expansion → SCALE.
-5. For sectors and skills, think about what INDUSTRY this company operates in and what EXPERTISE they need. Be specific and relevant.
+// INSTRUCTIONS:
+// 1. Read the ENTIRE document word by word. Do NOT skim.
+// 2. Look for the company/startup name in: page headers, footers, "About Us" sections, team bios, legal text, domain names, email addresses (e.g. info@companyname.com), copyright notices (© 2024 CompanyName), slide titles, logo text.
+// 3. Look for funding asks in: "Investment", "Fundraising", "Use of Funds", "Financial Projections", tables with dollar amounts, "seeking $X", "raising $X", "round size".
+// 4. Determine the business stage from concrete evidence: revenue numbers → EARLY/GROWTH, user/customer counts → MVP+, "prototype"/"beta" → MVP, "concept"/"idea" → IDEA, "pilot"/"testing" → EARLY, growth metrics/KPIs → GROWTH, multi-market expansion → SCALE.
+// 5. For sectors and skills, think about what INDUSTRY this company operates in and what EXPERTISE they need. Be specific and relevant.
 
-CATEGORY OPTIONS: ${validCategories.join(', ')}
-LOOKING FOR OPTIONS: ${lookingForOptions.join(', ')}
+// CATEGORY OPTIONS: ${validCategories.join(', ')}
+// LOOKING FOR OPTIONS: ${lookingForOptions.join(', ')}
 
-Return this EXACT JSON structure (fill EVERY field as best as possible):
-{
-  "title": "A compelling 3-8 word title that captures WHAT the company does (not just the company name)",
-  "companyName": "The exact company/startup/project name as written in the document",
-  "description": "A powerful 2-4 sentence elevator pitch covering: what the product is, what problem it solves, what makes it unique, who benefits from it",
-  "detailedDesc": "A thorough 4-8 sentence analysis covering: THE PROBLEM (specific pain point), THE SOLUTION (how this product addresses it), THE APPROACH (technology/methodology/business model), KEY DIFFERENTIATORS (competitive advantages), and TRACTION (any metrics, users, revenue mentioned)",
-  "whatYouNeed": "3-5 detailed, specific sentences about what this company needs. Examples: 'Seeking $500K seed funding to hire 3 engineers and launch in Q3 2025. Needs a CTO with experience in distributed systems. Looking for strategic partnerships with healthcare providers in the MENA region to accelerate customer acquisition. Would benefit from an advisor with FDA regulatory experience.'",
-  "stage": "EXACTLY one of: IDEA, MVP, EARLY, GROWTH, SCALE",
-  "category": "EXACTLY one of: ${validCategories.join(', ')}",
-  "targetMarket": "Specific target market with details: geography, demographics, industry vertical, estimated market size if mentioned",
-  "fundingAsk": "Exact amount or range with context (e.g. '$2M Series A for product development and market expansion', '$500K seed round'). If not explicitly mentioned, write empty string.",
-  "timeline": "Key milestones and dates from the document. If a roadmap exists, summarize it. If not explicit, infer 2-3 logical next milestones based on current stage.",
-  "lookingFor": ["Select 2-5 MOST relevant from: cofounder, investor, technical_partner, business_partner, advisor, employee, contractor, customer, supplier"],
-  "sectors": ["List 4-8 specific industry sectors/domains this company operates in. Use descriptive names like 'Healthcare Technology', 'Digital Marketing', 'Supply Chain Management', 'Artificial Intelligence', 'E-commerce', 'Financial Services', etc."],
-  "skills": ["List 6-12 specific professional skills needed. Use names like 'Machine Learning', 'Product Management', 'Digital Marketing', 'Financial Analysis', 'Software Engineering', 'Sales Management', 'UI/UX Design', 'Data Science', 'Business Development', 'Cloud Computing', etc."],
-  "matchIntent": ["Select 1-3 MOST relevant from: INVESTOR, ADVISOR, STRATEGIC_PARTNER, COFOUNDER, CUSTOMER_BUYER. Based on what the pitch is actively seeking."],
-  "supportNeededTags": ["Select ALL applicable from: funding, introductions, advisor, strategic_partner, distribution, technical_integration, pilot_customer, design_partner, buyer_customer, enterprise_access, cofounder, hiring, compliance, market_access, growth_support"],
-  "fundingAmountRequested": "A NUMBER only (no currency symbol). Extract from any dollar/currency amounts related to fundraising. E.g. 500000 for '$500K'. Return null if not found.",
-  "fundingCurrency": "EXACTLY one of: USD, EUR, GBP, JOD, SAR, AED. Detect from the document currency context. Default USD if unclear.",
-  "businessModel": ["Select applicable from: B2B, B2C, B2B2C, Marketplace, SaaS, Subscription, Freemium, Pay-per-use, Licensing, Other"],
-  "targetCustomerType": ["Select applicable from: Enterprise, SMB, Startup, Consumer, Government, Non-profit"],
-  "operatingMarkets": ["List geographic markets/regions mentioned, e.g. MENA, North America, Europe, Global"],
-  "tractionSummary": "Summary of traction metrics: users, revenue, pilots, LOIs, partnerships. If no traction mentioned, write empty string.",
-  "founderBackgroundSummary": "Summary of founder/team backgrounds, experience, previous exits. If not mentioned, write empty string.",
-  "problemStatement": "The core problem being solved, 2-3 sentences.",
-  "confidence": {"title": 0.9, "companyName": 0.8, "stage": 0.7, "category": 0.8, "fundingAmountRequested": 0.6, "matchIntent": 0.7, "supportNeededTags": 0.7, "tractionSummary": 0.5, "founderBackgroundSummary": 0.5}
-}
+// Return this EXACT JSON structure (fill EVERY field as best as possible):
+// {
+//   "title": "A compelling 3-8 word title that captures WHAT the company does (not just the company name)",
+//   "companyName": "The exact company/startup/project name as written in the document",
+//   "description": "A powerful 2-4 sentence elevator pitch covering: what the product is, what problem it solves, what makes it unique, who benefits from it",
+//   "detailedDesc": "A thorough 4-8 sentence analysis covering: THE PROBLEM (specific pain point), THE SOLUTION (how this product addresses it), THE APPROACH (technology/methodology/business model), KEY DIFFERENTIATORS (competitive advantages), and TRACTION (any metrics, users, revenue mentioned)",
+//   "whatYouNeed": "3-5 detailed, specific sentences about what this company needs. Examples: 'Seeking $500K seed funding to hire 3 engineers and launch in Q3 2025. Needs a CTO with experience in distributed systems. Looking for strategic partnerships with healthcare providers in the MENA region to accelerate customer acquisition. Would benefit from an advisor with FDA regulatory experience.'",
+//   "stage": "EXACTLY one of: IDEA, MVP, EARLY, GROWTH, SCALE",
+//   "category": "EXACTLY one of: ${validCategories.join(', ')}",
+//   "targetMarket": "Specific target market with details: geography, demographics, industry vertical, estimated market size if mentioned",
+//   "fundingAsk": "Exact amount or range with context (e.g. '$2M Series A for product development and market expansion', '$500K seed round'). If not explicitly mentioned, write empty string.",
+//   "timeline": "Key milestones and dates from the document. If a roadmap exists, summarize it. If not explicit, infer 2-3 logical next milestones based on current stage.",
+//   "lookingFor": ["Select 2-5 MOST relevant from: cofounder, investor, technical_partner, business_partner, advisor, employee, contractor, customer, supplier"],
+//   "sectors": ["List 4-8 specific industry sectors/domains this company operates in. Use descriptive names like 'Healthcare Technology', 'Digital Marketing', 'Supply Chain Management', 'Artificial Intelligence', 'E-commerce', 'Financial Services', etc."],
+//   "skills": ["List 6-12 specific professional skills needed. Use names like 'Machine Learning', 'Product Management', 'Digital Marketing', 'Financial Analysis', 'Software Engineering', 'Sales Management', 'UI/UX Design', 'Data Science', 'Business Development', 'Cloud Computing', etc."],
+//   "matchIntent": ["Select 1-3 MOST relevant from: INVESTOR, ADVISOR, STRATEGIC_PARTNER, COFOUNDER, CUSTOMER_BUYER. Based on what the pitch is actively seeking."],
+//   "supportNeededTags": ["Select ALL applicable from: funding, introductions, advisor, strategic_partner, distribution, technical_integration, pilot_customer, design_partner, buyer_customer, enterprise_access, cofounder, hiring, compliance, market_access, growth_support"],
+//   "fundingAmountRequested": "A NUMBER only (no currency symbol). Extract from any dollar/currency amounts related to fundraising. E.g. 500000 for '$500K'. Return null if not found.",
+//   "fundingCurrency": "EXACTLY one of: USD, EUR, GBP, JOD, SAR, AED. Detect from the document currency context. Default USD if unclear.",
+//   "businessModel": ["Select applicable from: B2B, B2C, B2B2C, Marketplace, SaaS, Subscription, Freemium, Pay-per-use, Licensing, Other"],
+//   "targetCustomerType": ["Select applicable from: Enterprise, SMB, Startup, Consumer, Government, Non-profit"],
+//   "operatingMarkets": ["List geographic markets/regions mentioned, e.g. MENA, North America, Europe, Global"],
+//   "tractionSummary": "Summary of traction metrics: users, revenue, pilots, LOIs, partnerships. If no traction mentioned, write empty string.",
+//   "founderBackgroundSummary": "Summary of founder/team backgrounds, experience, previous exits. If not mentioned, write empty string.",
+//   "problemStatement": "The core problem being solved, 2-3 sentences.",
+//   "confidence": {"title": 0.9, "companyName": 0.8, "stage": 0.7, "category": 0.8, "fundingAmountRequested": 0.6, "matchIntent": 0.7, "supportNeededTags": 0.7, "tractionSummary": 0.5, "founderBackgroundSummary": 0.5}
+// }
 
-CRITICAL RULES:
-- NEVER leave companyName empty if the document has ANY reference to a company, project, or brand name.
-- NEVER default stage to IDEA - look for evidence of actual progress first.
-- whatYouNeed must be SPECIFIC to THIS company, not generic startup advice.
-- sectors and skills should be FREE-FORM descriptive names (they will be matched to a database later). Write the most accurate, specific names.
-- fundingAsk: search the entire document for ANY dollar/currency amounts related to fundraising.
-- Return ONLY valid JSON, no markdown, no explanation.`;
+// CRITICAL RULES:
+// - NEVER leave companyName empty if the document has ANY reference to a company, project, or brand name.
+// - NEVER default stage to IDEA - look for evidence of actual progress first.
+// - whatYouNeed must be SPECIFIC to THIS company, not generic startup advice.
+// - sectors and skills should be FREE-FORM descriptive names (they will be matched to a database later). Write the most accurate, specific names.
+// - fundingAsk: search the entire document for ANY dollar/currency amounts related to fundraising.
+// - Return ONLY valid JSON, no markdown, no explanation.`;
 
-    const callAIWithRetry = async (maxRetries = 3): Promise<globalThis.Response> => {
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        const response = await fetch(aiEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${aiApiKey}`,
-          },
-          body: JSON.stringify({
-            model: aiModel,
-            messages: [
-              { role: 'system', content: 'You are a world-class startup analyst. Extract comprehensive structured pitch information from documents. Be thorough - read the entire document carefully and extract every detail. Output ONLY valid JSON in English.' },
-              { role: 'user', content: prompt },
-            ],
-            temperature: 0.2,
-            max_tokens: 4000,
-            ...(useOpenAI ? {} : { response_format: { type: 'json_object' } }),
-          }),
-        });
+//     const callAIWithRetry = async (maxRetries = 3): Promise<globalThis.Response> => {
+//       for (let attempt = 1; attempt <= maxRetries; attempt++) {
+//         const response = await fetch(aiEndpoint, {
+//           method: 'POST',
+//           headers: {
+//             'Content-Type': 'application/json',
+//             'Authorization': `Bearer ${aiApiKey}`,
+//           },
+//           body: JSON.stringify({
+//             model: aiModel,
+//             messages: [
+//               { role: 'system', content: 'You are a world-class startup analyst. Extract comprehensive structured pitch information from documents. Be thorough - read the entire document carefully and extract every detail. Output ONLY valid JSON in English.' },
+//               { role: 'user', content: prompt },
+//             ],
+//             temperature: 0.2,
+//             max_tokens: 4000,
+//             ...(useOpenAI ? {} : { response_format: { type: 'json_object' } }),
+//           }),
+//         });
 
-        if (response.ok) return response;
+//         if (response.ok) return response;
 
-        if (response.status === 429 && attempt < maxRetries) {
-          const errorText = await response.text();
-          logger.warn('AI rate limit hit for pitch extraction, retrying...', { attempt, error: errorText });
-          let waitTime = Math.pow(2, attempt) * 5000;
-          try {
-            const errorData = JSON.parse(errorText);
-            const retryMatch = errorData.error?.message?.match(/try again in ([\d.]+)s/);
-            if (retryMatch) waitTime = Math.ceil(parseFloat(retryMatch[1]) * 1000) + 1000;
-          } catch (e) {}
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-          continue;
-        }
-        return response;
-      }
-      throw new Error('Max retries exceeded');
-    };
+//         if (response.status === 429 && attempt < maxRetries) {
+//           const errorText = await response.text();
+//           logger.warn('AI rate limit hit for pitch extraction, retrying...', { attempt, error: errorText });
+//           let waitTime = Math.pow(2, attempt) * 5000;
+//           try {
+//             const errorData = JSON.parse(errorText);
+//             const retryMatch = errorData.error?.message?.match(/try again in ([\d.]+)s/);
+//             if (retryMatch) waitTime = Math.ceil(parseFloat(retryMatch[1]) * 1000) + 1000;
+//           } catch (e) {}
+//           await new Promise(resolve => setTimeout(resolve, waitTime));
+//           continue;
+//         }
+//         return response;
+//       }
+//       throw new Error('Max retries exceeded');
+//     };
 
-    const aiResponse = await callAIWithRetry();
+//     const aiResponse = await callAIWithRetry();
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      logger.error('AI API error during pitch extraction', { status: aiResponse.status, error: errorText, provider: useOpenAI ? 'OpenAI' : 'Groq' });
-      if (aiResponse.status === 429 || aiResponse.status === 413) {
-        res.status(429).json({ success: false, error: { code: 'RATE_LIMIT', message: 'AI service is busy. Please wait a moment and try again.' } });
-        return;
-      }
-      res.status(500).json({ success: false, error: { code: 'AI_ERROR', message: 'AI extraction failed. Please try again.' } });
-      return;
-    }
+//     if (!aiResponse.ok) {
+//       const errorText = await aiResponse.text();
+//       logger.error('AI API error during pitch extraction', { status: aiResponse.status, error: errorText, provider: useOpenAI ? 'OpenAI' : 'Groq' });
+//       if (aiResponse.status === 429 || aiResponse.status === 413) {
+//         res.status(429).json({ success: false, error: { code: 'RATE_LIMIT', message: 'AI service is busy. Please wait a moment and try again.' } });
+//         return;
+//       }
+//       res.status(500).json({ success: false, error: { code: 'AI_ERROR', message: 'AI extraction failed. Please try again.' } });
+//       return;
+//     }
 
-    const aiData = await aiResponse.json() as { choices?: Array<{ message?: { content?: string } }> };
-    const content = aiData.choices?.[0]?.message?.content;
+//     const aiData = await aiResponse.json() as { choices?: Array<{ message?: { content?: string } }> };
+//     const content = aiData.choices?.[0]?.message?.content;
 
-    if (!content) {
-      res.status(500).json({ success: false, error: { code: 'AI_ERROR', message: 'AI extraction returned no content' } });
-      return;
-    }
+//     if (!content) {
+//       res.status(500).json({ success: false, error: { code: 'AI_ERROR', message: 'AI extraction returned no content' } });
+//       return;
+//     }
 
-    let extractedData: any;
-    try {
-      let cleanContent = content.trim();
-      const jsonCodeBlockMatch = cleanContent.match(/```json\s*([\s\S]*?)```/);
-      const genericCodeBlockMatch = cleanContent.match(/```\s*([\s\S]*?)```/);
-      if (jsonCodeBlockMatch && jsonCodeBlockMatch[1]) {
-        cleanContent = jsonCodeBlockMatch[1].trim();
-      } else if (genericCodeBlockMatch && genericCodeBlockMatch[1]) {
-        cleanContent = genericCodeBlockMatch[1].trim();
-      } else {
-        const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
-        if (jsonMatch) cleanContent = jsonMatch[0];
-      }
-      extractedData = JSON.parse(cleanContent.trim());
-    } catch (e) {
-      logger.error('Failed to parse Groq pitch extraction response', { content, error: e });
-      res.status(500).json({ success: false, error: { code: 'PARSE_ERROR', message: 'Failed to parse extracted data' } });
-      return;
-    }
+//     let extractedData: any;
+//     try {
+//       let cleanContent = content.trim();
+//       const jsonCodeBlockMatch = cleanContent.match(/```json\s*([\s\S]*?)```/);
+//       const genericCodeBlockMatch = cleanContent.match(/```\s*([\s\S]*?)```/);
+//       if (jsonCodeBlockMatch && jsonCodeBlockMatch[1]) {
+//         cleanContent = jsonCodeBlockMatch[1].trim();
+//       } else if (genericCodeBlockMatch && genericCodeBlockMatch[1]) {
+//         cleanContent = genericCodeBlockMatch[1].trim();
+//       } else {
+//         const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
+//         if (jsonMatch) cleanContent = jsonMatch[0];
+//       }
+//       extractedData = JSON.parse(cleanContent.trim());
+//     } catch (e) {
+//       logger.error('Failed to parse Groq pitch extraction response', { content, error: e });
+//       res.status(500).json({ success: false, error: { code: 'PARSE_ERROR', message: 'Failed to parse extracted data' } });
+//       return;
+//     }
 
-    logger.info('Pitch data extracted from document (raw AI response)', {
-      userId,
-      title: extractedData.title,
-      companyName: extractedData.companyName,
-      stage: extractedData.stage,
-      category: extractedData.category,
-      fundingAsk: extractedData.fundingAsk,
-      lookingFor: extractedData.lookingFor,
-      sectors: extractedData.sectors,
-      skills: extractedData.skills,
-    });
+//     logger.info('Pitch data extracted from document (raw AI response)', {
+//       userId,
+//       title: extractedData.title,
+//       companyName: extractedData.companyName,
+//       stage: extractedData.stage,
+//       category: extractedData.category,
+//       fundingAsk: extractedData.fundingAsk,
+//       lookingFor: extractedData.lookingFor,
+//       sectors: extractedData.sectors,
+//       skills: extractedData.skills,
+//     });
 
-    // Validate stage
-    const validStages = ['IDEA', 'MVP', 'EARLY', 'GROWTH', 'SCALE'];
-    let extractedStage = (extractedData.stage || '').toUpperCase().trim();
-    if (!validStages.includes(extractedStage)) {
-      // Try to map common variations
-      const stageMap: Record<string, string> = {
-        'EARLY REVENUE': 'EARLY', 'REVENUE': 'EARLY', 'SEED': 'EARLY',
-        'PRE-SEED': 'IDEA', 'PRESEED': 'IDEA', 'BETA': 'MVP', 'PROTOTYPE': 'MVP',
-        'ALPHA': 'EARLY', 'CONCEPT': 'IDEA', 'GROWTH STAGE': 'GROWTH',
-        'VALIDATION': 'EARLY', 'LAUNCHED': 'EARLY', 'SCALING': 'SCALE',
-        'SERIES A': 'GROWTH', 'SERIES B': 'SCALE',
-      };
-      extractedStage = stageMap[extractedStage] || 'IDEA';
-    }
+//     // Validate stage
+//     const validStages = ['IDEA', 'MVP', 'EARLY', 'GROWTH', 'SCALE'];
+//     let extractedStage = (extractedData.stage || '').toUpperCase().trim();
+//     if (!validStages.includes(extractedStage)) {
+//       // Try to map common variations
+//       const stageMap: Record<string, string> = {
+//         'EARLY REVENUE': 'EARLY', 'REVENUE': 'EARLY', 'SEED': 'EARLY',
+//         'PRE-SEED': 'IDEA', 'PRESEED': 'IDEA', 'BETA': 'MVP', 'PROTOTYPE': 'MVP',
+//         'ALPHA': 'EARLY', 'CONCEPT': 'IDEA', 'GROWTH STAGE': 'GROWTH',
+//         'VALIDATION': 'EARLY', 'LAUNCHED': 'EARLY', 'SCALING': 'SCALE',
+//         'SERIES A': 'GROWTH', 'SERIES B': 'SCALE',
+//       };
+//       extractedStage = stageMap[extractedStage] || 'IDEA';
+//     }
 
-    // Validate category
-    const extractedCategory = validCategories.includes(extractedData.category) ? extractedData.category : 'other';
+//     // Validate category
+//     const extractedCategory = validCategories.includes(extractedData.category) ? extractedData.category : 'other';
 
-    // Validate lookingFor
-    const extractedLookingFor = (extractedData.lookingFor || []).filter((l: string) => lookingForOptions.includes(l));
+//     // Validate lookingFor
+//     const extractedLookingFor = (extractedData.lookingFor || []).filter((l: string) => lookingForOptions.includes(l));
 
-    // Smart fuzzy match: exact → contains → word overlap scoring
-    const smartFuzzyMatch = (query: string, items: Array<{ id: string; name: string }>, maxResults: number): Array<{ id: string; name: string; score: number }> => {
-      const queryLower = query.toLowerCase().trim();
-      const queryWords = queryLower.split(/[\s/&,\-()]+/).filter(w => w.length > 2);
+//     // Smart fuzzy match: exact → contains → word overlap scoring
+//     const smartFuzzyMatch = (query: string, items: Array<{ id: string; name: string }>, maxResults: number): Array<{ id: string; name: string; score: number }> => {
+//       const queryLower = query.toLowerCase().trim();
+//       const queryWords = queryLower.split(/[\s/&,\-()]+/).filter(w => w.length > 2);
 
-      const scored = items.map(item => {
-        const nameLower = item.name.toLowerCase();
-        const nameWords = nameLower.split(/[\s/&,\-()]+/).filter(w => w.length > 2);
+//       const scored = items.map(item => {
+//         const nameLower = item.name.toLowerCase();
+//         const nameWords = nameLower.split(/[\s/&,\-()]+/).filter(w => w.length > 2);
 
-        // Exact match
-        if (nameLower === queryLower) return { ...item, score: 100 };
+//         // Exact match
+//         if (nameLower === queryLower) return { ...item, score: 100 };
 
-        // One contains the other
-        if (nameLower.includes(queryLower) || queryLower.includes(nameLower)) return { ...item, score: 80 };
+//         // One contains the other
+//         if (nameLower.includes(queryLower) || queryLower.includes(nameLower)) return { ...item, score: 80 };
 
-        // Word overlap scoring
-        let matchedWords = 0;
-        for (const qw of queryWords) {
-          if (nameWords.some(nw => nw.includes(qw) || qw.includes(nw))) {
-            matchedWords++;
-          }
-        }
-        const overlapScore = queryWords.length > 0 ? (matchedWords / queryWords.length) * 60 : 0;
+//         // Word overlap scoring
+//         let matchedWords = 0;
+//         for (const qw of queryWords) {
+//           if (nameWords.some(nw => nw.includes(qw) || qw.includes(nw))) {
+//             matchedWords++;
+//           }
+//         }
+//         const overlapScore = queryWords.length > 0 ? (matchedWords / queryWords.length) * 60 : 0;
 
-        return { ...item, score: overlapScore };
-      });
+//         return { ...item, score: overlapScore };
+//       });
 
-      return scored.filter(s => s.score >= 30).sort((a, b) => b.score - a.score).slice(0, maxResults);
-    };
+//       return scored.filter(s => s.score >= 30).sort((a, b) => b.score - a.score).slice(0, maxResults);
+//     };
 
-    // Match sectors: try fuzzy match first, create new sector if no good match
-    const sectorIds: string[] = [];
-    if (extractedData.sectors && Array.isArray(extractedData.sectors)) {
-      for (const name of extractedData.sectors.slice(0, 8)) {
-        const trimmedName = name.trim();
-        if (!trimmedName) continue;
-        const matches = smartFuzzyMatch(trimmedName, dbSectors, 1);
-        if (matches.length > 0 && matches[0].score >= 60) {
-          // Good match found in DB
-          if (!sectorIds.includes(matches[0].id)) {
-            sectorIds.push(matches[0].id);
-          }
-        } else {
-          // No good match — create new sector in DB
-          try {
-            const newSector = await prisma.sector.create({
-              data: { name: trimmedName, isActive: true },
-            });
-            sectorIds.push(newSector.id);
-            dbSectors.push({ id: newSector.id, name: trimmedName });
-            logger.info('Created new sector from AI extraction', { name: trimmedName, id: newSector.id });
-          } catch (createErr: any) {
-            // If duplicate name, find existing
-            const existing = dbSectors.find(s => s.name.toLowerCase() === trimmedName.toLowerCase());
-            if (existing && !sectorIds.includes(existing.id)) {
-              sectorIds.push(existing.id);
-            }
-          }
-        }
-      }
-    }
+//     // Match sectors: try fuzzy match first, create new sector if no good match
+//     const sectorIds: string[] = [];
+//     if (extractedData.sectors && Array.isArray(extractedData.sectors)) {
+//       for (const name of extractedData.sectors.slice(0, 8)) {
+//         const trimmedName = name.trim();
+//         if (!trimmedName) continue;
+//         const matches = smartFuzzyMatch(trimmedName, dbSectors, 1);
+//         if (matches.length > 0 && matches[0].score >= 60) {
+//           // Good match found in DB
+//           if (!sectorIds.includes(matches[0].id)) {
+//             sectorIds.push(matches[0].id);
+//           }
+//         } else {
+//           // No good match — create new sector in DB
+//           try {
+//             const newSector = await prisma.sector.create({
+//               data: { name: trimmedName, isActive: true },
+//             });
+//             sectorIds.push(newSector.id);
+//             dbSectors.push({ id: newSector.id, name: trimmedName });
+//             logger.info('Created new sector from AI extraction', { name: trimmedName, id: newSector.id });
+//           } catch (createErr: any) {
+//             // If duplicate name, find existing
+//             const existing = dbSectors.find(s => s.name.toLowerCase() === trimmedName.toLowerCase());
+//             if (existing && !sectorIds.includes(existing.id)) {
+//               sectorIds.push(existing.id);
+//             }
+//           }
+//         }
+//       }
+//     }
 
-    // Match skills: try fuzzy match first, create new skill if no good match
-    const skillItems: Array<{ skillId: string; importance: string }> = [];
-    const addedSkillIds = new Set<string>();
-    if (extractedData.skills && Array.isArray(extractedData.skills)) {
-      let idx = 0;
-      for (const name of extractedData.skills.slice(0, 12)) {
-        const trimmedName = name.trim();
-        if (!trimmedName) continue;
-        const matches = smartFuzzyMatch(trimmedName, dbSkills, 1);
-        const importance = idx < 3 ? 'REQUIRED' : idx < 6 ? 'PREFERRED' : 'NICE_TO_HAVE';
-        if (matches.length > 0 && matches[0].score >= 60) {
-          // Good match found in DB
-          if (!addedSkillIds.has(matches[0].id)) {
-            skillItems.push({ skillId: matches[0].id, importance });
-            addedSkillIds.add(matches[0].id);
-            idx++;
-          }
-        } else {
-          // No good match — create new skill in DB
-          try {
-            const newSkill = await prisma.skill.create({
-              data: { name: trimmedName, isActive: true },
-            });
-            skillItems.push({ skillId: newSkill.id, importance });
-            addedSkillIds.add(newSkill.id);
-            dbSkills.push({ id: newSkill.id, name: trimmedName });
-            idx++;
-            logger.info('Created new skill from AI extraction', { name: trimmedName, id: newSkill.id });
-          } catch (createErr: any) {
-            // If duplicate name, find existing
-            const existing = dbSkills.find(s => s.name.toLowerCase() === trimmedName.toLowerCase());
-            if (existing && !addedSkillIds.has(existing.id)) {
-              skillItems.push({ skillId: existing.id, importance });
-              addedSkillIds.add(existing.id);
-              idx++;
-            }
-          }
-        }
-      }
-    }
+//     // Match skills: try fuzzy match first, create new skill if no good match
+//     const skillItems: Array<{ skillId: string; importance: string }> = [];
+//     const addedSkillIds = new Set<string>();
+//     if (extractedData.skills && Array.isArray(extractedData.skills)) {
+//       let idx = 0;
+//       for (const name of extractedData.skills.slice(0, 12)) {
+//         const trimmedName = name.trim();
+//         if (!trimmedName) continue;
+//         const matches = smartFuzzyMatch(trimmedName, dbSkills, 1);
+//         const importance = idx < 3 ? 'REQUIRED' : idx < 6 ? 'PREFERRED' : 'NICE_TO_HAVE';
+//         if (matches.length > 0 && matches[0].score >= 60) {
+//           // Good match found in DB
+//           if (!addedSkillIds.has(matches[0].id)) {
+//             skillItems.push({ skillId: matches[0].id, importance });
+//             addedSkillIds.add(matches[0].id);
+//             idx++;
+//           }
+//         } else {
+//           // No good match — create new skill in DB
+//           try {
+//             const newSkill = await prisma.skill.create({
+//               data: { name: trimmedName, isActive: true },
+//             });
+//             skillItems.push({ skillId: newSkill.id, importance });
+//             addedSkillIds.add(newSkill.id);
+//             dbSkills.push({ id: newSkill.id, name: trimmedName });
+//             idx++;
+//             logger.info('Created new skill from AI extraction', { name: trimmedName, id: newSkill.id });
+//           } catch (createErr: any) {
+//             // If duplicate name, find existing
+//             const existing = dbSkills.find(s => s.name.toLowerCase() === trimmedName.toLowerCase());
+//             if (existing && !addedSkillIds.has(existing.id)) {
+//               skillItems.push({ skillId: existing.id, importance });
+//               addedSkillIds.add(existing.id);
+//               idx++;
+//             }
+//           }
+//         }
+//       }
+//     }
 
-    // Use investmentRange as fallback for fundingAsk
-    const fundingAsk = extractedData.fundingAsk || extractedData.investmentRange || '';
+//     // Use investmentRange as fallback for fundingAsk
+//     const fundingAsk = extractedData.fundingAsk || extractedData.investmentRange || '';
 
-    logger.info('Pitch extraction matching results', {
-      userId,
-      aiSectors: extractedData.sectors,
-      matchedSectorCount: sectorIds.length,
-      matchedSectorNames: sectorIds.map(id => dbSectors.find(s => s.id === id)?.name),
-      aiSkills: extractedData.skills,
-      matchedSkillCount: skillItems.length,
-      matchedSkillNames: skillItems.map(s => dbSkills.find(sk => sk.id === s.skillId)?.name),
-      lookingFor: extractedLookingFor,
-    });
+//     logger.info('Pitch extraction matching results', {
+//       userId,
+//       aiSectors: extractedData.sectors,
+//       matchedSectorCount: sectorIds.length,
+//       matchedSectorNames: sectorIds.map(id => dbSectors.find(s => s.id === id)?.name),
+//       aiSkills: extractedData.skills,
+//       matchedSkillCount: skillItems.length,
+//       matchedSkillNames: skillItems.map(s => dbSkills.find(sk => sk.id === s.skillId)?.name),
+//       lookingFor: extractedLookingFor,
+//     });
 
-    // Validate new structured fields
-    const VALID_MATCH_INTENTS = ['INVESTOR', 'ADVISOR', 'STRATEGIC_PARTNER', 'COFOUNDER', 'CUSTOMER_BUYER'];
-    const VALID_SUPPORT_TAGS = ['funding', 'introductions', 'advisor', 'strategic_partner', 'distribution', 'technical_integration', 'pilot_customer', 'design_partner', 'buyer_customer', 'enterprise_access', 'cofounder', 'hiring', 'compliance', 'market_access', 'growth_support'];
-    const VALID_CURRENCIES = ['USD', 'EUR', 'GBP', 'JOD', 'SAR', 'AED'];
-    const VALID_BUSINESS_MODELS = ['B2B', 'B2C', 'B2B2C', 'Marketplace', 'SaaS', 'Subscription', 'Freemium', 'Pay-per-use', 'Licensing', 'Other'];
-    const VALID_CUSTOMER_TYPES = ['Enterprise', 'SMB', 'Startup', 'Consumer', 'Government', 'Non-profit'];
+//     // Validate new structured fields
+//     const VALID_MATCH_INTENTS = ['INVESTOR', 'ADVISOR', 'STRATEGIC_PARTNER', 'COFOUNDER', 'CUSTOMER_BUYER'];
+//     const VALID_SUPPORT_TAGS = ['funding', 'introductions', 'advisor', 'strategic_partner', 'distribution', 'technical_integration', 'pilot_customer', 'design_partner', 'buyer_customer', 'enterprise_access', 'cofounder', 'hiring', 'compliance', 'market_access', 'growth_support'];
+//     const VALID_CURRENCIES = ['USD', 'EUR', 'GBP', 'JOD', 'SAR', 'AED'];
+//     const VALID_BUSINESS_MODELS = ['B2B', 'B2C', 'B2B2C', 'Marketplace', 'SaaS', 'Subscription', 'Freemium', 'Pay-per-use', 'Licensing', 'Other'];
+//     const VALID_CUSTOMER_TYPES = ['Enterprise', 'SMB', 'Startup', 'Consumer', 'Government', 'Non-profit'];
 
-    const validatedMatchIntent = (extractedData.matchIntent || []).filter((v: string) => VALID_MATCH_INTENTS.includes(v));
-    const validatedSupportTags = (extractedData.supportNeededTags || []).filter((v: string) => VALID_SUPPORT_TAGS.includes(v));
-    const validatedBusinessModel = (extractedData.businessModel || []).filter((v: string) => VALID_BUSINESS_MODELS.includes(v));
-    const validatedCustomerType = (extractedData.targetCustomerType || []).filter((v: string) => VALID_CUSTOMER_TYPES.includes(v));
-    const validatedMarkets = Array.isArray(extractedData.operatingMarkets) ? extractedData.operatingMarkets.filter((v: string) => typeof v === 'string' && v.trim()) : [];
+//     const validatedMatchIntent = (extractedData.matchIntent || []).filter((v: string) => VALID_MATCH_INTENTS.includes(v));
+//     const validatedSupportTags = (extractedData.supportNeededTags || []).filter((v: string) => VALID_SUPPORT_TAGS.includes(v));
+//     const validatedBusinessModel = (extractedData.businessModel || []).filter((v: string) => VALID_BUSINESS_MODELS.includes(v));
+//     const validatedCustomerType = (extractedData.targetCustomerType || []).filter((v: string) => VALID_CUSTOMER_TYPES.includes(v));
+//     const validatedMarkets = Array.isArray(extractedData.operatingMarkets) ? extractedData.operatingMarkets.filter((v: string) => typeof v === 'string' && v.trim()) : [];
 
-    // Parse funding amount: strip currency symbols, commas, K/M/B suffixes
-    let parsedFundingAmount: number | null = null;
-    const rawFunding = extractedData.fundingAmountRequested;
-    if (rawFunding != null) {
-      if (typeof rawFunding === 'number' && !isNaN(rawFunding)) {
-        parsedFundingAmount = rawFunding;
-      } else if (typeof rawFunding === 'string') {
-        const cleaned = rawFunding.replace(/[$€£,\s]/g, '');
-        const multiplierMatch = cleaned.match(/^([\d.]+)([KkMmBb])?$/);
-        if (multiplierMatch) {
-          const num = parseFloat(multiplierMatch[1]);
-          const suffix = (multiplierMatch[2] || '').toUpperCase();
-          const multipliers: Record<string, number> = { K: 1_000, M: 1_000_000, B: 1_000_000_000 };
-          parsedFundingAmount = num * (multipliers[suffix] || 1);
-        } else {
-          const num = parseFloat(cleaned);
-          if (!isNaN(num)) parsedFundingAmount = num;
-        }
-      }
-    }
+//     // Parse funding amount: strip currency symbols, commas, K/M/B suffixes
+//     let parsedFundingAmount: number | null = null;
+//     const rawFunding = extractedData.fundingAmountRequested;
+//     if (rawFunding != null) {
+//       if (typeof rawFunding === 'number' && !isNaN(rawFunding)) {
+//         parsedFundingAmount = rawFunding;
+//       } else if (typeof rawFunding === 'string') {
+//         const cleaned = rawFunding.replace(/[$€£,\s]/g, '');
+//         const multiplierMatch = cleaned.match(/^([\d.]+)([KkMmBb])?$/);
+//         if (multiplierMatch) {
+//           const num = parseFloat(multiplierMatch[1]);
+//           const suffix = (multiplierMatch[2] || '').toUpperCase();
+//           const multipliers: Record<string, number> = { K: 1_000, M: 1_000_000, B: 1_000_000_000 };
+//           parsedFundingAmount = num * (multipliers[suffix] || 1);
+//         } else {
+//           const num = parseFloat(cleaned);
+//           if (!isNaN(num)) parsedFundingAmount = num;
+//         }
+//       }
+//     }
 
-    const validatedCurrency = VALID_CURRENCIES.includes(extractedData.fundingCurrency) ? extractedData.fundingCurrency : (parsedFundingAmount ? 'USD' : null);
+//     const validatedCurrency = VALID_CURRENCIES.includes(extractedData.fundingCurrency) ? extractedData.fundingCurrency : (parsedFundingAmount ? 'USD' : null);
 
-    // Validate confidence object
-    const rawConfidence = extractedData.confidence || {};
-    const validatedConfidence: Record<string, number> = {};
-    for (const [key, val] of Object.entries(rawConfidence)) {
-      if (typeof val === 'number' && val >= 0 && val <= 1) {
-        validatedConfidence[key] = val;
-      }
-    }
+//     // Validate confidence object
+//     const rawConfidence = extractedData.confidence || {};
+//     const validatedConfidence: Record<string, number> = {};
+//     for (const [key, val] of Object.entries(rawConfidence)) {
+//       if (typeof val === 'number' && val >= 0 && val <= 1) {
+//         validatedConfidence[key] = val;
+//       }
+//     }
 
-    res.status(200).json({
-      success: true,
-      data: {
-        title: extractedData.title || '',
-        companyName: extractedData.companyName || '',
-        industry: extractedData.industry || '',
-        description: extractedData.description || '',
-        detailedDesc: extractedData.detailedDesc || '',
-        whatYouNeed: extractedData.whatYouNeed || '',
-        stage: extractedStage,
-        category: extractedCategory,
-        targetMarket: extractedData.targetMarket || '',
-        fundingAsk: fundingAsk,
-        timeline: extractedData.timeline || '',
-        lookingFor: extractedLookingFor,
-        sectorIds,
-        skills: skillItems,
-        matchIntent: validatedMatchIntent,
-        supportNeededTags: validatedSupportTags,
-        fundingAmountRequested: parsedFundingAmount,
-        fundingCurrency: validatedCurrency,
-        businessModel: validatedBusinessModel,
-        targetCustomerType: validatedCustomerType,
-        operatingMarkets: validatedMarkets,
-        tractionSummary: extractedData.tractionSummary || '',
-        founderBackgroundSummary: extractedData.founderBackgroundSummary || '',
-        problemStatement: extractedData.problemStatement || '',
-        confidence: validatedConfidence,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-}
+//     res.status(200).json({
+//       success: true,
+//       data: {
+//         title: extractedData.title || '',
+//         companyName: extractedData.companyName || '',
+//         industry: extractedData.industry || '',
+//         description: extractedData.description || '',
+//         detailedDesc: extractedData.detailedDesc || '',
+//         whatYouNeed: extractedData.whatYouNeed || '',
+//         stage: extractedStage,
+//         category: extractedCategory,
+//         targetMarket: extractedData.targetMarket || '',
+//         fundingAsk: fundingAsk,
+//         timeline: extractedData.timeline || '',
+//         lookingFor: extractedLookingFor,
+//         sectorIds,
+//         skills: skillItems,
+//         matchIntent: validatedMatchIntent,
+//         supportNeededTags: validatedSupportTags,
+//         fundingAmountRequested: parsedFundingAmount,
+//         fundingCurrency: validatedCurrency,
+//         businessModel: validatedBusinessModel,
+//         targetCustomerType: validatedCustomerType,
+//         operatingMarkets: validatedMarkets,
+//         tractionSummary: extractedData.tractionSummary || '',
+//         founderBackgroundSummary: extractedData.founderBackgroundSummary || '',
+//         problemStatement: extractedData.problemStatement || '',
+//         confidence: validatedConfidence,
+//       },
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// }

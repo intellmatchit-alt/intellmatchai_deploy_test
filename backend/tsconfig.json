@@ -5,6 +5,7 @@
     "lib": [
       "ES2022"
     ],
+    /* 🔥 FIX HERE */
     "module": "CommonJS",
     "moduleResolution": "node",
     /* Emit */
@@ -35,7 +36,7 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    /* Decorator Support (for Inversify) */
+    /* Decorator Support */
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     /* Path Aliases */

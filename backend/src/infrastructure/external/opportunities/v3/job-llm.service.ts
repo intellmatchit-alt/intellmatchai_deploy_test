@@ -23,9 +23,9 @@ import {
   EmploymentType,
   HiringUrgency,
   Availability,
-} from './job-matching.types';
+} from "./job-matching.types";
 
-import { AI_MAX_SCORE_ADJUSTMENT } from './matching-bands.constants';
+import { AI_MAX_SCORE_ADJUSTMENT } from "./matching-bands.constants";
 
 // ============================================================================
 // PROVIDER CONFIG
@@ -53,63 +53,144 @@ export class JobLLMService {
   }
 
   private initProviders(): void {
-    const candidates: Array<{ provider: LLMProvider; envKey: string; model: string; baseUrl: string }> = [
-      { provider: 'groq', envKey: 'GROQ_API_KEY', model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile', baseUrl: 'https://api.groq.com/openai/v1/chat/completions' },
-      { provider: 'gemini', envKey: 'GEMINI_API_KEY', model: process.env.GEMINI_MODEL || 'gemini-1.5-flash', baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models' },
-      { provider: 'openai', envKey: 'OPENAI_API_KEY', model: process.env.OPENAI_MODEL || 'gpt-4o-mini', baseUrl: 'https://api.openai.com/v1/chat/completions' },
+    const candidates: Array<{
+      provider: LLMProvider;
+      envKey: string;
+      model: string;
+      baseUrl: string;
+    }> = [
+      {
+        provider: "groq",
+        envKey: "GROQ_API_KEY",
+        model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+        baseUrl: "https://api.groq.com/openai/v1/chat/completions",
+      },
+      {
+        provider: "gemini",
+        envKey: "GEMINI_API_KEY",
+        model: process.env.GEMINI_MODEL || "gemini-1.5-flash",
+        baseUrl: "https://generativelanguage.googleapis.com/v1beta/models",
+      },
+      {
+        provider: "openai",
+        envKey: "OPENAI_API_KEY",
+        model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+        baseUrl: "https://api.openai.com/v1/chat/completions",
+      },
     ];
 
     for (const c of candidates) {
       const key = process.env[c.envKey];
       if (key) {
-        const cfg: ProviderConfig = { provider: c.provider, apiKey: key, model: c.model, baseUrl: c.baseUrl };
+        const cfg: ProviderConfig = {
+          provider: c.provider,
+          apiKey: key,
+          model: c.model,
+          baseUrl: c.baseUrl,
+        };
         if (!this.primary) this.primary = cfg;
         else this.fallbacks.push(cfg);
       }
     }
   }
 
-  isAvailable(): boolean { return this.primary !== null; }
+  isAvailable(): boolean {
+    return this.primary !== null;
+  }
 
   // ==========================================================================
   // AI VALIDATION
   // ==========================================================================
 
-  async validateMatches(request: JobAIValidationRequest): Promise<JobAIValidationItem[]> {
-    if (!this.primary) return this.fallbackValidations(request.candidates.length, request.candidates);
+  async validateMatches(
+    request: JobAIValidationRequest,
+  ): Promise<JobAIValidationItem[]> {
+    if (!this.primary)
+      return this.fallbackValidations(
+        request.candidates.length,
+        request.candidates,
+      );
 
     const prompt = this.buildValidationPrompt(request);
     try {
       const raw = await this.callWithCascade(prompt);
-      return this.parseValidation(raw, request.deterministicScores, request.candidates);
+      return this.parseValidation(
+        raw,
+        request.deterministicScores,
+        request.candidates,
+      );
     } catch (e) {
-      console.error('[JobLLM] Validation failed', e);
-      return this.fallbackValidations(request.candidates.length, request.candidates);
+      console.error("[JobLLM] Validation failed", e);
+      return this.fallbackValidations(
+        request.candidates.length,
+        request.candidates,
+      );
     }
   }
 
   private buildValidationPrompt(req: JobAIValidationRequest): string {
     const job = req.job;
-    const candidateSummaries = req.candidates.map((c, i) => {
-      const langSummary = (c.languages && c.languages.length > 0) ? ` | Languages: ${c.languages.map(l => `${l.language}(${l.proficiency})`).slice(0, 3).join(', ')}` : '';
-      const certSummary = (c.certifications && c.certifications.length > 0) ? ` | Certifications: ${c.certifications.slice(0, 3).join(', ')}` : '';
-      const relevantExperienceSummary = c.relevantExperience && c.relevantExperience.length > 0
-        ? ` | Relevant Experience: ${c.relevantExperience.slice(0, 3).map((entry) => `${entry.roleFamily}:${entry.years}y`).join(', ')}`
-        : '';
-      const educationSummary = c.education && c.education.length > 0
-        ? ` | Education: ${c.education.slice(0, 2).map((entry) => entry.degree).join(', ')}`
-        : '';
-      return `${i}. [${c.id}] ${c.title} — ${c.roleArea} (${c.seniority}) | Skills: ${c.skills.slice(0, 8).join(', ')}${langSummary}${certSummary}${relevantExperienceSummary}${educationSummary} | Score: ${req.deterministicScores[i]}`;
-    }).join('\n');
+    const candidateSummaries = req.candidates
+      .map((c, i) => {
+        const langSummary =
+          c.languages && c.languages.length > 0
+            ? ` | Languages: ${c.languages
+                .map((l) => `${l.language}(${l.proficiency})`)
+                .slice(0, 3)
+                .join(", ")}`
+            : "";
+        const certSummary =
+          c.certifications && c.certifications.length > 0
+            ? ` | Certifications: ${c.certifications.slice(0, 3).join(", ")}`
+            : "";
+        const relevantExperienceSummary =
+          c.relevantExperience && c.relevantExperience.length > 0
+            ? ` | Relevant Experience: ${c.relevantExperience
+                .slice(0, 3)
+                .map((entry) => `${entry.roleFamily}:${entry.years}y`)
+                .join(", ")}`
+            : "";
+        const educationSummary =
+          c.education && c.education.length > 0
+            ? ` | Education: ${c.education
+                .slice(0, 2)
+                .map((entry) => entry.degree)
+                .join(", ")}`
+            : "";
+        return `${i}. [${c.id}] ${c.title} — ${c.roleArea} (${c.seniority}) | Skills: ${c.skills.slice(0, 8).join(", ")}${langSummary}${certSummary}${relevantExperienceSummary}${educationSummary} | Score: ${req.deterministicScores[i]}`;
+      })
+      .join("\n");
 
     // Present the job requirements clearly, including must-have and preferred skills and other constraints
-    const mustSkills = job.mustHaveSkills && job.mustHaveSkills.length > 0 ? job.mustHaveSkills.join(', ') : 'none';
-    const prefSkills = job.preferredSkills && job.preferredSkills.length > 0 ? job.preferredSkills.join(', ') : 'none';
-    const jobLangs = job.requiredLanguages && job.requiredLanguages.length > 0 ? job.requiredLanguages.map(l => `${l.language}(${l.proficiency})`).join(', ') : 'none';
-    const jobCerts = job.requiredCertifications && job.requiredCertifications.length > 0 ? job.requiredCertifications.join(', ') : 'none';
-    const jobEdu = job.requiredEducationLevels && job.requiredEducationLevels.length > 0 ? job.requiredEducationLevels.join(', ') : 'none';
-    const jobDomains = job.industries && job.industries.length > 0 ? job.industries.join(', ') : 'none';
-    const jobSalary = job.salaryRange ? `${job.salaryRange.min ?? 'NA'}–${job.salaryRange.max ?? 'NA'} ${job.salaryRange.currency}` : 'not specified';
+    const mustSkills =
+      job.mustHaveSkills && job.mustHaveSkills.length > 0
+        ? job.mustHaveSkills.join(", ")
+        : "none";
+    const prefSkills =
+      job.preferredSkills && job.preferredSkills.length > 0
+        ? job.preferredSkills.join(", ")
+        : "none";
+    const jobLangs =
+      job.requiredLanguages && job.requiredLanguages.length > 0
+        ? job.requiredLanguages
+            .map((l) => `${l.language}(${l.proficiency})`)
+            .join(", ")
+        : "none";
+    const jobCerts =
+      job.requiredCertifications && job.requiredCertifications.length > 0
+        ? job.requiredCertifications.join(", ")
+        : "none";
+    const jobEdu =
+      job.requiredEducationLevels && job.requiredEducationLevels.length > 0
+        ? job.requiredEducationLevels.join(", ")
+        : "none";
+    const jobDomains =
+      job.industries && job.industries.length > 0
+        ? job.industries.join(", ")
+        : "none";
+    const jobSalary = job.salaryRange
+      ? `${job.salaryRange.min ?? "NA"}–${job.salaryRange.max ?? "NA"} ${job.salaryRange.currency}`
+      : "not specified";
 
     return `You are evaluating candidate-job matches for the IntellMatch platform.
 
@@ -125,7 +206,7 @@ JOB:
 - Industries/Domains: ${jobDomains}
 - Work Mode: ${job.workMode}
 - Employment Type: ${job.employmentType}
-- Minimum Experience: ${job.minimumYearsExperience ?? 'not specified'}
+- Minimum Experience: ${job.minimumYearsExperience ?? "not specified"}
 - Salary Range: ${jobSalary}
 
 CANDIDATES:
@@ -157,29 +238,43 @@ Respond ONLY with valid JSON:
 }`;
   }
 
-  private parseValidation(raw: string, origScores: number[], candidates: CandidateProfile[]): JobAIValidationItem[] {
+  private parseValidation(
+    raw: string,
+    origScores: number[],
+    candidates: CandidateProfile[],
+  ): JobAIValidationItem[] {
     try {
       const json = raw.match(/\{[\s\S]*\}/)?.[0];
       if (!json) return this.fallbackValidations(candidates.length, candidates);
       const parsed = JSON.parse(json);
       const items: JobAIValidationItem[] = [];
       for (const v of parsed.validations || []) {
-        const idx = typeof v.index === 'number' ? v.index : -1;
+        const idx = typeof v.index === "number" ? v.index : -1;
         if (idx < 0 || idx >= candidates.length) continue;
         const orig = origScores[idx] || 0;
-        let adj = typeof v.adjustedScore === 'number' ? v.adjustedScore : orig;
+        let adj = typeof v.adjustedScore === "number" ? v.adjustedScore : orig;
         const diff = adj - orig;
         if (Math.abs(diff) > AI_MAX_SCORE_ADJUSTMENT) {
-          adj = orig + (diff > 0 ? AI_MAX_SCORE_ADJUSTMENT : -AI_MAX_SCORE_ADJUSTMENT);
+          adj =
+            orig +
+            (diff > 0 ? AI_MAX_SCORE_ADJUSTMENT : -AI_MAX_SCORE_ADJUSTMENT);
         }
         items.push({
           candidateId: candidates[idx].id,
           originalScore: orig,
           adjustedScore: Math.max(0, Math.min(100, Math.round(adj))),
-          confidence: typeof v.confidence === 'number' ? Math.max(0, Math.min(1, v.confidence)) : 0.5,
-          reasoning: typeof v.reasoning === 'string' ? v.reasoning.slice(0, 500) : '',
-          redFlags: Array.isArray(v.redFlags) ? v.redFlags.filter((f: any) => typeof f === 'string').slice(0, 5) : [],
-          greenFlags: Array.isArray(v.greenFlags) ? v.greenFlags.filter((f: any) => typeof f === 'string').slice(0, 5) : [],
+          confidence:
+            typeof v.confidence === "number"
+              ? Math.max(0, Math.min(1, v.confidence))
+              : 0.5,
+          reasoning:
+            typeof v.reasoning === "string" ? v.reasoning.slice(0, 500) : "",
+          redFlags: Array.isArray(v.redFlags)
+            ? v.redFlags.filter((f: any) => typeof f === "string").slice(0, 5)
+            : [],
+          greenFlags: Array.isArray(v.greenFlags)
+            ? v.greenFlags.filter((f: any) => typeof f === "string").slice(0, 5)
+            : [],
         });
       }
       return items;
@@ -188,13 +283,16 @@ Respond ONLY with valid JSON:
     }
   }
 
-  private fallbackValidations(count: number, candidates: CandidateProfile[] = []): JobAIValidationItem[] {
+  private fallbackValidations(
+    count: number,
+    candidates: CandidateProfile[] = [],
+  ): JobAIValidationItem[] {
     return Array.from({ length: count }, (_, i) => ({
-      candidateId: candidates[i]?.id || '',
+      candidateId: candidates[i]?.id || "",
       originalScore: 0,
       adjustedScore: 0,
       confidence: 0,
-      reasoning: 'AI validation unavailable',
+      reasoning: "AI validation unavailable",
       redFlags: [],
       greenFlags: [],
     }));
@@ -244,7 +342,9 @@ Respond ONLY with valid JSON:
   // UPLOAD EXTRACTION — Candidate (Open to Opportunities)
   // ==========================================================================
 
-  async extractCandidateFields(text: string): Promise<ExtractedCandidateFields> {
+  async extractCandidateFields(
+    text: string,
+  ): Promise<ExtractedCandidateFields> {
     if (!this.primary) return {};
 
     const prompt = `Extract structured candidate/resume fields from the following text. Map to EXACTLY these fields:
@@ -296,21 +396,23 @@ Respond ONLY with valid JSON:
     if (Array.isArray(value)) {
       return value
         .map((item) => this.deepClean(item))
-        .filter((item) => item !== null && item !== undefined && item !== '');
+        .filter((item) => item !== null && item !== undefined && item !== "");
     }
 
-    if (value && typeof value === 'object') {
+    if (value && typeof value === "object") {
       const cleaned: Record<string, any> = {};
-      for (const [key, inner] of Object.entries(value as Record<string, unknown>)) {
+      for (const [key, inner] of Object.entries(
+        value as Record<string, unknown>,
+      )) {
         const sanitized = this.deepClean(inner);
-        if (sanitized !== null && sanitized !== undefined && sanitized !== '') {
+        if (sanitized !== null && sanitized !== undefined && sanitized !== "") {
           cleaned[key] = sanitized;
         }
       }
       return cleaned;
     }
 
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       return value.trim();
     }
 
@@ -336,7 +438,7 @@ Respond ONLY with valid JSON:
         continue;
       }
     }
-    throw new Error('All LLM providers failed');
+    throw new Error("All LLM providers failed");
   }
 
   private async callLLM(cfg: ProviderConfig, prompt: string): Promise<string> {
@@ -346,24 +448,40 @@ Respond ONLY with valid JSON:
     try {
       let url: string, headers: Record<string, string>, body: string;
 
-      if (cfg.provider === 'gemini') {
+      if (cfg.provider === "gemini") {
         url = `${cfg.baseUrl}/${cfg.model}:generateContent?key=${cfg.apiKey}`;
-        headers = { 'Content-Type': 'application/json' };
-        body = JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 2000 } });
+        headers = { "Content-Type": "application/json" };
+        body = JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 2000 },
+        });
       } else {
         url = cfg.baseUrl;
-        headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.apiKey}` };
-        body = JSON.stringify({ model: cfg.model, messages: [{ role: 'user', content: prompt }], max_tokens: 2000, temperature: 0.3 });
+        headers = {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${cfg.apiKey}`,
+        };
+        body = JSON.stringify({
+          model: cfg.model,
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: 2000,
+          temperature: 0.3,
+        });
       }
 
-      const res = await fetch(url, { method: 'POST', headers, body, signal: ctrl.signal });
+      const res = await fetch(url, {
+        method: "POST",
+        headers,
+        body,
+        signal: ctrl.signal,
+      });
       if (!res.ok) throw new Error(`LLM ${cfg.provider} error: ${res.status}`);
-      const data = await res.json();
+      const data: any = await res.json();
 
-      if (cfg.provider === 'gemini') {
-        return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (cfg.provider === "gemini") {
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
       }
-      return data.choices?.[0]?.message?.content || '';
+      return data.choices?.[0]?.message?.content || "";
     } finally {
       clearTimeout(tid);
     }

@@ -3,15 +3,15 @@
  * API endpoints for pitch operations
  */
 
-import { Router } from 'express';
-import multer from 'multer';
-import { authenticate } from '../middleware/auth.middleware.js';
-import { orgContext } from '../middleware/orgContext.middleware';
-import { validate as validateRequest } from '../middleware/validate.middleware.js';
-import { pitchValidators } from '../validators/pitch.validators';
-import * as PitchController from '../controllers/PitchController';
-import { itemizedMatchController } from '../controllers/ItemizedMatchController';
-import { matchingRateLimiter } from '../middleware/rateLimiter';
+import { Router } from "express";
+import multer from "multer";
+import { authenticate } from "../middleware/auth.middleware.js";
+import { orgContext } from "../middleware/orgContext.middleware";
+import { validate as validateRequest } from "../middleware/validate.middleware.js";
+import { pitchValidators } from "../validators/pitch.validators";
+import * as PitchController from "../controllers/PitchController";
+import { itemizedMatchController } from "../controllers/ItemizedMatchController";
+import { matchingRateLimiter } from "../middleware/rateLimiter";
 
 const router = Router();
 
@@ -23,13 +23,15 @@ const upload = multer({
   },
   fileFilter: (req, file, cb) => {
     const allowedMimes = [
-      'application/pdf',
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     ];
     if (allowedMimes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only PDF and PPTX files are supported.'));
+      cb(
+        new Error("Invalid file type. Only PDF and PPTX files are supported."),
+      );
     }
   },
 });
@@ -42,15 +44,19 @@ const documentUpload = multer({
   },
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
-      'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/msword',
-      'text/plain',
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/msword",
+      "text/plain",
     ];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Please upload PDF, DOCX, DOC, or TXT files.'));
+      cb(
+        new Error(
+          "Invalid file type. Please upload PDF, DOCX, DOC, or TXT files.",
+        ),
+      );
     }
   },
 });
@@ -64,7 +70,7 @@ router.use(orgContext);
  * @desc Get PNME preferences
  * @access Private
  */
-router.get('/preferences', PitchController.getPNMEPreferences);
+router.get("/preferences", PitchController.getPNMEPreferences);
 
 /**
  * @route PUT /api/v1/pitches/preferences
@@ -72,7 +78,7 @@ router.get('/preferences', PitchController.getPNMEPreferences);
  * @access Private
  */
 router.put(
-  '/preferences',
+  "/preferences",
   validateRequest(pitchValidators.updatePreferences),
   PitchController.updatePNMEPreferences,
 );
@@ -82,31 +88,25 @@ router.put(
  * @desc Extract pitch data from uploaded document using AI
  * @access Private
  */
-router.post(
-  '/extract-document',
-  documentUpload.single('document'),
-  PitchController.extractPitchFromDocument,
-);
+// router.post(
+//   '/extract-document',
+//   documentUpload.single('document'),
+//   PitchController.extractPitchFromDocument,
+// );
 
 /**
  * @route POST /api/v1/pitches/analyze-text
  * @desc Analyze pitch text and suggest category, sectors, skills using AI
  * @access Private
  */
-router.post(
-  '/analyze-text',
-  PitchController.analyzePitchText,
-);
+router.post("/analyze-text", PitchController.analyzePitchText);
 
 /**
  * @route POST /api/v1/pitches/create
  * @desc Create a new pitch (form-based, no file upload)
  * @access Private
  */
-router.post(
-  '/create',
-  PitchController.createPitch,
-);
+router.post("/create", PitchController.createPitch);
 
 /**
  * @route POST /api/v1/pitches
@@ -114,8 +114,8 @@ router.post(
  * @access Private
  */
 router.post(
-  '/',
-  upload.single('file'),
+  "/",
+  upload.single("file"),
   validateRequest(pitchValidators.upload),
   PitchController.uploadPitch,
 );
@@ -125,21 +125,29 @@ router.post(
  * @desc List user's pitches
  * @access Private
  */
-router.get('/', validateRequest(pitchValidators.list), PitchController.listPitches);
+router.get(
+  "/",
+  validateRequest(pitchValidators.list),
+  PitchController.listPitches,
+);
 
 /**
  * @route GET /api/v1/pitches/discover/all
  * @desc Discover public pitches from other users
  * @access Private
  */
-router.get('/discover/all', PitchController.discoverPitches);
+router.get("/discover/all", PitchController.discoverPitches);
 
 /**
  * @route GET /api/v1/pitches/:id
  * @desc Get pitch status and progress
  * @access Private
  */
-router.get('/:id', validateRequest(pitchValidators.getById), PitchController.getPitchStatus);
+router.get(
+  "/:id",
+  validateRequest(pitchValidators.getById),
+  PitchController.getPitchStatus,
+);
 
 /**
  * @route GET /api/v1/pitches/:id/results
@@ -147,7 +155,7 @@ router.get('/:id', validateRequest(pitchValidators.getById), PitchController.get
  * @access Private
  */
 router.get(
-  '/:id/results',
+  "/:id/results",
   validateRequest(pitchValidators.getResults),
   PitchController.getPitchResults,
 );
@@ -158,7 +166,7 @@ router.get(
  * @access Private
  */
 router.post(
-  '/:id/find-matches',
+  "/:id/find-matches",
   matchingRateLimiter,
   PitchController.findMatches,
 );
@@ -169,7 +177,7 @@ router.post(
  * @access Private
  */
 router.post(
-  '/:id/rematch',
+  "/:id/rematch",
   matchingRateLimiter,
   validateRequest(pitchValidators.rematch),
   PitchController.rematchPitch,
@@ -180,28 +188,40 @@ router.post(
  * @desc Update pitch title/companyName
  * @access Private
  */
-router.put('/:id', validateRequest(pitchValidators.getById), PitchController.updatePitch);
+router.put(
+  "/:id",
+  validateRequest(pitchValidators.getById),
+  PitchController.updatePitch,
+);
 
 /**
  * @route PUT /api/v1/pitches/:id/sections/:sectionId
  * @desc Update a pitch section's title and/or content
  * @access Private
  */
-router.put('/:id/sections/:sectionId', PitchController.updatePitchSection);
+router.put("/:id/sections/:sectionId", PitchController.updatePitchSection);
 
 /**
  * @route PATCH /api/v1/pitches/:id/archive
  * @desc Archive/unarchive a pitch
  * @access Private
  */
-router.patch('/:id/archive', validateRequest(pitchValidators.getById), PitchController.archivePitch);
+router.patch(
+  "/:id/archive",
+  validateRequest(pitchValidators.getById),
+  PitchController.archivePitch,
+);
 
 /**
  * @route DELETE /api/v1/pitches/:id
  * @desc Delete a pitch
  * @access Private
  */
-router.delete('/:id', validateRequest(pitchValidators.getById), PitchController.deletePitch);
+router.delete(
+  "/:id",
+  validateRequest(pitchValidators.getById),
+  PitchController.deletePitch,
+);
 
 /**
  * @route GET /api/v1/pitches/:id/export
@@ -209,7 +229,7 @@ router.delete('/:id', validateRequest(pitchValidators.getById), PitchController.
  * @access Private
  */
 router.get(
-  '/:id/export',
+  "/:id/export",
   validateRequest(pitchValidators.export),
   PitchController.exportPitchResults,
 );
@@ -220,7 +240,7 @@ router.get(
  * @access Private
  */
 router.post(
-  '/:pitchId/sections/:sectionId/contacts/:contactId/outreach',
+  "/:pitchId/sections/:sectionId/contacts/:contactId/outreach",
   validateRequest(pitchValidators.regenerateOutreach),
   PitchController.regenerateOutreach,
 );
@@ -231,7 +251,7 @@ router.post(
  * @access Private
  */
 router.get(
-  '/:pitchId/matches/itemized/:contactId',
+  "/:pitchId/matches/itemized/:contactId",
   itemizedMatchController.getPitchMatch.bind(itemizedMatchController),
 );
 
