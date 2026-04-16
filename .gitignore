@@ -50,3 +50,4 @@ build/
 /generated/prisma
 .env
 .env.*
+!.env.example
