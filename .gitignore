@@ -48,3 +48,5 @@ coverage/
 dist/
 build/
 /generated/prisma
+.env
+.env.*
