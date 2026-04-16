@@ -6,24 +6,35 @@
  * @module presentation/controllers/MessageController
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../../infrastructure/database/prisma/client';
-import { AuthenticationError, NotFoundError, ValidationError } from '../../shared/errors';
-import { logger } from '../../shared/logger';
-import { emitNewMessage, emitMessageRead, emitMessageReaction, emitMessageEdited, emitMessageDeleted, isUserOnline } from '../../infrastructure/websocket/index.js';
-import { getStorageService } from '../../infrastructure/external/storage/index.js';
-import { v4 as uuidv4 } from 'uuid';
+import { Request, Response, NextFunction } from "express";
+import { prisma } from "../../infrastructure/database/prisma/client";
+import {
+  AuthenticationError,
+  NotFoundError,
+  ValidationError,
+} from "../../shared/errors";
+import { logger } from "../../shared/logger";
+import {
+  emitNewMessage,
+  emitMessageRead,
+  emitMessageReaction,
+  emitMessageEdited,
+  emitMessageDeleted,
+  isUserOnline,
+} from "../../infrastructure/websocket/index.js";
+import { getStorageService } from "../../infrastructure/external/storage/index.js";
+import { v4 as uuidv4 } from "uuid";
 
-const ATTACHMENT_BUCKET = 'message-attachments';
+const ATTACHMENT_BUCKET = "message-attachments";
 
 /**
  * Determine message type from MIME type
  */
 function getMessageTypeFromMime(mimeType: string): string {
-  if (mimeType.startsWith('image/')) return 'IMAGE';
-  if (mimeType.startsWith('video/')) return 'VIDEO';
-  if (mimeType.startsWith('audio/')) return 'AUDIO';
-  return 'FILE';
+  if (mimeType.startsWith("image/")) return "IMAGE";
+  if (mimeType.startsWith("video/")) return "VIDEO";
+  if (mimeType.startsWith("audio/")) return "AUDIO";
+  return "FILE";
 }
 
 /**
@@ -53,7 +64,7 @@ class MessageController {
   async listConversations(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any).user?.userId;
-      if (!userId) throw new AuthenticationError('Not authenticated');
+      if (!userId) throw new AuthenticationError("Not authenticated");
 
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
@@ -61,25 +72,34 @@ class MessageController {
 
       const conversations = await prisma.conversation.findMany({
         where: {
-          OR: [
-            { participantOneId: userId },
-            { participantTwoId: userId },
-          ],
+          OR: [{ participantOneId: userId }, { participantTwoId: userId }],
         },
         include: {
           participantOne: {
-            select: { id: true, fullName: true, avatarUrl: true, jobTitle: true, company: true },
+            select: {
+              id: true,
+              fullName: true,
+              avatarUrl: true,
+              jobTitle: true,
+              company: true,
+            },
           },
           participantTwo: {
-            select: { id: true, fullName: true, avatarUrl: true, jobTitle: true, company: true },
+            select: {
+              id: true,
+              fullName: true,
+              avatarUrl: true,
+              jobTitle: true,
+              company: true,
+            },
           },
           messages: {
-            orderBy: { createdAt: 'desc' },
+            orderBy: { createdAt: "desc" },
             take: 1,
             include: messageInclude,
           },
         },
-        orderBy: { lastMessageAt: { sort: 'desc', nulls: 'last' } },
+        orderBy: { lastMessageAt: { sort: "desc", nulls: "last" } },
         skip,
         take: limit,
       });
@@ -91,13 +111,14 @@ class MessageController {
             where: {
               conversationId: conv.id,
               senderId: { not: userId },
-              status: { not: 'READ' },
+              status: { not: "READ" },
             },
           });
 
-          const otherUser = conv.participantOneId === userId
-            ? conv.participantTwo
-            : conv.participantOne;
+          const otherUser =
+            conv.participantOneId === userId
+              ? conv.participantTwo
+              : conv.participantOne;
 
           return {
             id: conv.id,
@@ -110,15 +131,12 @@ class MessageController {
             unreadCount,
             createdAt: conv.createdAt,
           };
-        })
+        }),
       );
 
       const total = await prisma.conversation.count({
         where: {
-          OR: [
-            { participantOneId: userId },
-            { participantTwoId: userId },
-          ],
+          OR: [{ participantOneId: userId }, { participantTwoId: userId }],
         },
       });
 
@@ -146,25 +164,39 @@ class MessageController {
   async createConversation(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any).user?.userId;
-      if (!userId) throw new AuthenticationError('Not authenticated');
+      if (!userId) throw new AuthenticationError("Not authenticated");
 
       const { participantId, message } = req.body;
-      if (!participantId) throw new ValidationError('participantId is required');
-      if (participantId === userId) throw new ValidationError('Cannot create conversation with yourself');
+      if (!participantId)
+        throw new ValidationError("participantId is required");
+      if (participantId === userId)
+        throw new ValidationError("Cannot create conversation with yourself");
 
       // Verify participant exists
       const participant = await prisma.user.findUnique({
         where: { id: participantId },
-        select: { id: true, fullName: true, avatarUrl: true, jobTitle: true, company: true },
+        select: {
+          id: true,
+          fullName: true,
+          avatarUrl: true,
+          jobTitle: true,
+          company: true,
+        },
       });
-      if (!participant) throw new NotFoundError('User not found');
+      if (!participant) throw new NotFoundError("User not found");
 
-      const [participantOneId, participantTwoId] = orderParticipants(userId, participantId);
+      const [participantOneId, participantTwoId] = orderParticipants(
+        userId,
+        participantId,
+      );
 
       // Find or create conversation
       let conversation = await prisma.conversation.findUnique({
         where: {
-          participantOneId_participantTwoId: { participantOneId, participantTwoId },
+          participantOneId_participantTwoId: {
+            participantOneId,
+            participantTwoId,
+          },
         },
       });
 
@@ -195,7 +227,7 @@ class MessageController {
           conversationId: conversation.id,
           senderId: userId,
           content: msg.content,
-          messageType: 'TEXT',
+          messageType: "TEXT",
           status: msg.status,
           createdAt: msg.createdAt,
           attachments: [],
@@ -224,23 +256,36 @@ class MessageController {
   async getConversationByUser(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any).user?.userId;
-      if (!userId) throw new AuthenticationError('Not authenticated');
+      if (!userId) throw new AuthenticationError("Not authenticated");
 
-      const otherUserId = req.params.userId;
-      if (!otherUserId) throw new ValidationError('userId is required');
-      if (otherUserId === userId) throw new ValidationError('Cannot message yourself');
+      const otherUserId = String(req.params.userId);
+      if (!otherUserId) throw new ValidationError("userId is required");
+      if (otherUserId === userId)
+        throw new ValidationError("Cannot message yourself");
 
       const otherUser = await prisma.user.findUnique({
         where: { id: otherUserId },
-        select: { id: true, fullName: true, avatarUrl: true, jobTitle: true, company: true },
+        select: {
+          id: true,
+          fullName: true,
+          avatarUrl: true,
+          jobTitle: true,
+          company: true,
+        },
       });
-      if (!otherUser) throw new NotFoundError('User not found');
+      if (!otherUser) throw new NotFoundError("User not found");
 
-      const [participantOneId, participantTwoId] = orderParticipants(userId, otherUserId);
+      const [participantOneId, participantTwoId] = orderParticipants(
+        userId,
+        otherUserId,
+      );
 
       let conversation = await prisma.conversation.findUnique({
         where: {
-          participantOneId_participantTwoId: { participantOneId, participantTwoId },
+          participantOneId_participantTwoId: {
+            participantOneId,
+            participantTwoId,
+          },
         },
       });
 
@@ -272,30 +317,39 @@ class MessageController {
   async getMessages(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any).user?.userId;
-      if (!userId) throw new AuthenticationError('Not authenticated');
+      if (!userId) throw new AuthenticationError("Not authenticated");
 
-      const { conversationId } = req.params;
+      const { conversationId } = req.params as { conversationId: string };
 
       // Verify user is participant
       const conversation = await prisma.conversation.findFirst({
         where: {
           id: conversationId,
-          OR: [
-            { participantOneId: userId },
-            { participantTwoId: userId },
-          ],
+          OR: [{ participantOneId: userId }, { participantTwoId: userId }],
         },
         include: {
           participantOne: {
-            select: { id: true, fullName: true, avatarUrl: true, jobTitle: true, company: true },
+            select: {
+              id: true,
+              fullName: true,
+              avatarUrl: true,
+              jobTitle: true,
+              company: true,
+            },
           },
           participantTwo: {
-            select: { id: true, fullName: true, avatarUrl: true, jobTitle: true, company: true },
+            select: {
+              id: true,
+              fullName: true,
+              avatarUrl: true,
+              jobTitle: true,
+              company: true,
+            },
           },
         },
       });
 
-      if (!conversation) throw new NotFoundError('Conversation not found');
+      if (!conversation) throw new NotFoundError("Conversation not found");
 
       const limit = parseInt(req.query.limit as string) || 50;
       const before = req.query.before as string | undefined;
@@ -308,16 +362,17 @@ class MessageController {
       const messages = await prisma.message.findMany({
         where: whereClause,
         include: messageInclude,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         take: limit + 1, // Fetch one extra to determine if there are more
       });
 
       const hasMore = messages.length > limit;
       if (hasMore) messages.pop();
 
-      const otherUser = conversation.participantOneId === userId
-        ? conversation.participantTwo
-        : conversation.participantOne;
+      const otherUser =
+        conversation.participantOneId === userId
+          ? conversation.participantTwo
+          : conversation.participantOne;
 
       res.json({
         success: true,
@@ -343,34 +398,31 @@ class MessageController {
   async sendMessage(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any).user?.userId;
-      if (!userId) throw new AuthenticationError('Not authenticated');
+      if (!userId) throw new AuthenticationError("Not authenticated");
 
-      const { conversationId } = req.params;
+      const { conversationId } = req.params as { conversationId: string };
       const content = req.body.content?.trim() || null;
       const files = (req.files as Express.Multer.File[]) || [];
       const duration = req.body.duration ? parseFloat(req.body.duration) : null;
-      let messageType = (req.body.messageType as string) || 'TEXT';
+      let messageType = (req.body.messageType as string) || "TEXT";
 
       // Validate: need content or files
       if (!content && files.length === 0) {
-        throw new ValidationError('Message content or attachments required');
+        throw new ValidationError("Message content or attachments required");
       }
 
       // Verify user is participant
       const conversation = await prisma.conversation.findFirst({
         where: {
           id: conversationId,
-          OR: [
-            { participantOneId: userId },
-            { participantTwoId: userId },
-          ],
+          OR: [{ participantOneId: userId }, { participantTwoId: userId }],
         },
       });
 
-      if (!conversation) throw new NotFoundError('Conversation not found');
+      if (!conversation) throw new NotFoundError("Conversation not found");
 
       // Auto-detect message type from files
-      if (files.length > 0 && messageType === 'TEXT') {
+      if (files.length > 0 && messageType === "TEXT") {
         messageType = getMessageTypeFromMime(files[0].mimetype);
       }
 
@@ -391,7 +443,7 @@ class MessageController {
         await storage.ensureBucket(ATTACHMENT_BUCKET);
 
         for (const file of files) {
-          const ext = file.originalname.split('.').pop() || 'bin';
+          const ext = file.originalname.split(".").pop() || "bin";
           const fileName = `${uuidv4()}.${ext}`;
           const storageKey = `${conversationId}/${fileName}`;
 
@@ -399,7 +451,7 @@ class MessageController {
             ATTACHMENT_BUCKET,
             storageKey,
             file.buffer,
-            { contentType: file.mimetype }
+            { contentType: file.mimetype },
           );
 
           attachmentData.push({
@@ -410,7 +462,10 @@ class MessageController {
             storageKey,
             storageBucket: ATTACHMENT_BUCKET,
             url: result.url,
-            duration: (messageType === 'VOICE' || messageType === 'AUDIO') ? duration : null,
+            duration:
+              messageType === "VOICE" || messageType === "AUDIO"
+                ? duration
+                : null,
           });
         }
       }
@@ -422,9 +477,12 @@ class MessageController {
           senderId: userId,
           content,
           messageType: messageType as any,
-          attachments: attachmentData.length > 0 ? {
-            create: attachmentData,
-          } : undefined,
+          attachments:
+            attachmentData.length > 0
+              ? {
+                  create: attachmentData,
+                }
+              : undefined,
         },
         include: messageInclude,
       });
@@ -436,9 +494,10 @@ class MessageController {
       });
 
       // Emit to the other participant
-      const recipientId = conversation.participantOneId === userId
-        ? conversation.participantTwoId
-        : conversation.participantOneId;
+      const recipientId =
+        conversation.participantOneId === userId
+          ? conversation.participantTwoId
+          : conversation.participantOneId;
 
       emitNewMessage(recipientId, {
         id: message.id,
@@ -467,22 +526,19 @@ class MessageController {
   async markRead(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any).user?.userId;
-      if (!userId) throw new AuthenticationError('Not authenticated');
+      if (!userId) throw new AuthenticationError("Not authenticated");
 
-      const { conversationId } = req.params;
+      const { conversationId } = req.params as { conversationId: string };
 
       // Verify user is participant
       const conversation = await prisma.conversation.findFirst({
         where: {
           id: conversationId,
-          OR: [
-            { participantOneId: userId },
-            { participantTwoId: userId },
-          ],
+          OR: [{ participantOneId: userId }, { participantTwoId: userId }],
         },
       });
 
-      if (!conversation) throw new NotFoundError('Conversation not found');
+      if (!conversation) throw new NotFoundError("Conversation not found");
 
       const now = new Date();
 
@@ -491,19 +547,20 @@ class MessageController {
         where: {
           conversationId,
           senderId: { not: userId },
-          status: { not: 'READ' },
+          status: { not: "READ" },
         },
         data: {
-          status: 'READ',
+          status: "READ",
           readAt: now,
         },
       });
 
       // Notify the sender that their messages were read
       if (result.count > 0) {
-        const senderId = conversation.participantOneId === userId
-          ? conversation.participantTwoId
-          : conversation.participantOneId;
+        const senderId =
+          conversation.participantOneId === userId
+            ? conversation.participantTwoId
+            : conversation.participantOneId;
 
         emitMessageRead(senderId, {
           conversationId,
@@ -528,18 +585,15 @@ class MessageController {
   async getUnreadCount(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any).user?.userId;
-      if (!userId) throw new AuthenticationError('Not authenticated');
+      if (!userId) throw new AuthenticationError("Not authenticated");
 
       const count = await prisma.message.count({
         where: {
           conversation: {
-            OR: [
-              { participantOneId: userId },
-              { participantTwoId: userId },
-            ],
+            OR: [{ participantOneId: userId }, { participantTwoId: userId }],
           },
           senderId: { not: userId },
-          status: { not: 'READ' },
+          status: { not: "READ" },
         },
       });
 
@@ -558,29 +612,29 @@ class MessageController {
   async toggleReaction(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any).user?.userId;
-      if (!userId) throw new AuthenticationError('Not authenticated');
+      if (!userId) throw new AuthenticationError("Not authenticated");
 
-      const { conversationId, messageId } = req.params;
+      const { conversationId, messageId } = req.params as {
+        conversationId: string;
+        messageId: string;
+      };
       const { emoji } = req.body;
-      if (!emoji) throw new ValidationError('emoji is required');
+      if (!emoji) throw new ValidationError("emoji is required");
 
       // Verify user is participant
       const conversation = await prisma.conversation.findFirst({
         where: {
           id: conversationId,
-          OR: [
-            { participantOneId: userId },
-            { participantTwoId: userId },
-          ],
+          OR: [{ participantOneId: userId }, { participantTwoId: userId }],
         },
       });
-      if (!conversation) throw new NotFoundError('Conversation not found');
+      if (!conversation) throw new NotFoundError("Conversation not found");
 
       // Verify message exists in this conversation
       const message = await prisma.message.findFirst({
         where: { id: messageId, conversationId },
       });
-      if (!message) throw new NotFoundError('Message not found');
+      if (!message) throw new NotFoundError("Message not found");
 
       // Toggle: check if reaction already exists
       const existing = await prisma.messageReaction.findUnique({
@@ -604,9 +658,10 @@ class MessageController {
       });
 
       // Emit to other participant
-      const recipientId = conversation.participantOneId === userId
-        ? conversation.participantTwoId
-        : conversation.participantOneId;
+      const recipientId =
+        conversation.participantOneId === userId
+          ? conversation.participantTwoId
+          : conversation.participantOneId;
 
       emitMessageReaction(recipientId, {
         conversationId,
@@ -630,32 +685,36 @@ class MessageController {
   async editMessage(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any).user?.userId;
-      if (!userId) throw new AuthenticationError('Not authenticated');
+      if (!userId) throw new AuthenticationError("Not authenticated");
 
-      const { conversationId, messageId } = req.params;
+      const { conversationId, messageId } = req.params as {
+        conversationId: string;
+        messageId: string;
+      };
       const { content } = req.body;
-      if (!content || !content.trim()) throw new ValidationError('content is required');
+      if (!content || !content.trim())
+        throw new ValidationError("content is required");
 
       // Verify user is participant
       const conversation = await prisma.conversation.findFirst({
         where: {
           id: conversationId,
-          OR: [
-            { participantOneId: userId },
-            { participantTwoId: userId },
-          ],
+          OR: [{ participantOneId: userId }, { participantTwoId: userId }],
         },
       });
-      if (!conversation) throw new NotFoundError('Conversation not found');
+      if (!conversation) throw new NotFoundError("Conversation not found");
 
       // Find message - must be sender, TEXT type, not deleted
       const message = await prisma.message.findFirst({
         where: { id: messageId, conversationId },
       });
-      if (!message) throw new NotFoundError('Message not found');
-      if (message.senderId !== userId) throw new ValidationError('You can only edit your own messages');
-      if (message.messageType !== 'TEXT') throw new ValidationError('Only text messages can be edited');
-      if (message.deletedAt) throw new ValidationError('Cannot edit a deleted message');
+      if (!message) throw new NotFoundError("Message not found");
+      if (message.senderId !== userId)
+        throw new ValidationError("You can only edit your own messages");
+      if (message.messageType !== "TEXT")
+        throw new ValidationError("Only text messages can be edited");
+      if (message.deletedAt)
+        throw new ValidationError("Cannot edit a deleted message");
 
       const updated = await prisma.message.update({
         where: { id: messageId },
@@ -668,9 +727,10 @@ class MessageController {
       });
 
       // Emit to other participant
-      const recipientId = conversation.participantOneId === userId
-        ? conversation.participantTwoId
-        : conversation.participantOneId;
+      const recipientId =
+        conversation.participantOneId === userId
+          ? conversation.participantTwoId
+          : conversation.participantOneId;
 
       emitMessageEdited(recipientId, {
         conversationId,
@@ -696,29 +756,31 @@ class MessageController {
   async deleteMessage(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any).user?.userId;
-      if (!userId) throw new AuthenticationError('Not authenticated');
+      if (!userId) throw new AuthenticationError("Not authenticated");
 
-      const { conversationId, messageId } = req.params;
+      const { conversationId, messageId } = req.params as {
+        conversationId: string;
+        messageId: string;
+      };
 
       // Verify user is participant
       const conversation = await prisma.conversation.findFirst({
         where: {
           id: conversationId,
-          OR: [
-            { participantOneId: userId },
-            { participantTwoId: userId },
-          ],
+          OR: [{ participantOneId: userId }, { participantTwoId: userId }],
         },
       });
-      if (!conversation) throw new NotFoundError('Conversation not found');
+      if (!conversation) throw new NotFoundError("Conversation not found");
 
       // Find message - must be sender
       const message = await prisma.message.findFirst({
         where: { id: messageId, conversationId },
       });
-      if (!message) throw new NotFoundError('Message not found');
-      if (message.senderId !== userId) throw new ValidationError('You can only delete your own messages');
-      if (message.deletedAt) throw new ValidationError('Message already deleted');
+      if (!message) throw new NotFoundError("Message not found");
+      if (message.senderId !== userId)
+        throw new ValidationError("You can only delete your own messages");
+      if (message.deletedAt)
+        throw new ValidationError("Message already deleted");
 
       await prisma.message.update({
         where: { id: messageId },
@@ -729,9 +791,10 @@ class MessageController {
       });
 
       // Emit to other participant
-      const recipientId = conversation.participantOneId === userId
-        ? conversation.participantTwoId
-        : conversation.participantOneId;
+      const recipientId =
+        conversation.participantOneId === userId
+          ? conversation.participantTwoId
+          : conversation.participantOneId;
 
       emitMessageDeleted(recipientId, {
         conversationId,

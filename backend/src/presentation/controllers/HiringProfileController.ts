@@ -4,30 +4,60 @@
  * CRUD operations for v3 Job Matching hiring profiles.
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../../infrastructure/database/prisma/client';
-import { AuthenticationError, NotFoundError, ValidationError } from '../../shared/errors';
-import { logger } from '../../shared/logger';
+import { Request, Response, NextFunction } from "express";
+import { prisma } from "../../infrastructure/database/prisma/client";
+import {
+  AuthenticationError,
+  NotFoundError,
+  ValidationError,
+} from "../../shared/errors";
+import { logger } from "../../shared/logger";
 
 export class HiringProfileController {
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const {
-        title, roleArea, seniority, location, workMode, employmentType,
-        mustHaveSkills, preferredSkills, jobSummaryRequirements,
-        minimumYearsExperience, hiringUrgency, industries,
-        requiredLanguages, requiredCertifications, requiredEducationLevels,
-        salaryRange, fullName,
+        title,
+        roleArea,
+        seniority,
+        location,
+        workMode,
+        employmentType,
+        mustHaveSkills,
+        preferredSkills,
+        jobSummaryRequirements,
+        minimumYearsExperience,
+        hiringUrgency,
+        industries,
+        requiredLanguages,
+        requiredCertifications,
+        requiredEducationLevels,
+        salaryRange,
+        fullName,
       } = req.body;
 
-      if (!title || !roleArea || !seniority || !location || !workMode || !employmentType || !jobSummaryRequirements) {
-        throw new ValidationError('Missing required fields: title, roleArea, seniority, location, workMode, employmentType, jobSummaryRequirements');
+      if (
+        !title ||
+        !roleArea ||
+        !seniority ||
+        !location ||
+        !workMode ||
+        !employmentType ||
+        !jobSummaryRequirements
+      ) {
+        throw new ValidationError(
+          "Missing required fields: title, roleArea, seniority, location, workMode, employmentType, jobSummaryRequirements",
+        );
       }
 
-      if (!mustHaveSkills || !Array.isArray(mustHaveSkills) || mustHaveSkills.length === 0) {
-        throw new ValidationError('At least one must-have skill is required');
+      if (
+        !mustHaveSkills ||
+        !Array.isArray(mustHaveSkills) ||
+        mustHaveSkills.length === 0
+      ) {
+        throw new ValidationError("At least one must-have skill is required");
       }
 
       const orgId = req.orgContext?.organizationId || null;
@@ -60,7 +90,10 @@ export class HiringProfileController {
         },
       });
 
-      logger.info('Hiring profile created', { profileId: profile.id, userId: req.user.userId });
+      logger.info("Hiring profile created", {
+        profileId: profile.id,
+        userId: req.user.userId,
+      });
       res.status(201).json({ success: true, data: profile });
     } catch (error) {
       next(error);
@@ -69,7 +102,7 @@ export class HiringProfileController {
 
   async getAll(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const orgId = req.orgContext?.organizationId || null;
       const where: any = orgId
@@ -78,7 +111,7 @@ export class HiringProfileController {
 
       const profiles = await prisma.hiringProfile.findMany({
         where,
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { updatedAt: "desc" },
         include: {
           _count: { select: { jobMatches: { where: { archived: false } } } },
         },
@@ -90,25 +123,32 @@ export class HiringProfileController {
     }
   }
 
-  async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getById(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const profile = await prisma.hiringProfile.findUnique({
-        where: { id: req.params.id },
+        where: { id: String(req.params.id) },
         include: {
           jobMatches: {
             where: { archived: false },
-            orderBy: { rank: 'asc' },
+            orderBy: { rank: "asc" },
             take: 50,
           },
           _count: { select: { jobMatches: { where: { archived: false } } } },
         },
       });
 
-      if (!profile) throw new NotFoundError('Hiring profile not found');
-      if (profile.userId !== req.user.userId && profile.organizationId !== req.orgContext?.organizationId) {
-        throw new AuthenticationError('Access denied');
+      if (!profile) throw new NotFoundError("Hiring profile not found");
+      if (
+        profile.userId !== req.user.userId &&
+        profile.organizationId !== req.orgContext?.organizationId
+      ) {
+        throw new AuthenticationError("Access denied");
       }
 
       res.json({ success: true, data: profile });
@@ -119,20 +159,38 @@ export class HiringProfileController {
 
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const existing = await prisma.hiringProfile.findUnique({ where: { id: req.params.id } });
-      if (!existing) throw new NotFoundError('Hiring profile not found');
-      if (existing.userId !== req.user.userId && existing.organizationId !== req.orgContext?.organizationId) {
-        throw new AuthenticationError('Access denied');
+      const existing = await prisma.hiringProfile.findUnique({
+        where: { id: String(req.params.id) },
+      });
+      if (!existing) throw new NotFoundError("Hiring profile not found");
+      if (
+        existing.userId !== req.user.userId &&
+        existing.organizationId !== req.orgContext?.organizationId
+      ) {
+        throw new AuthenticationError("Access denied");
       }
 
       const {
-        title, roleArea, seniority, location, workMode, employmentType,
-        mustHaveSkills, preferredSkills, jobSummaryRequirements,
-        minimumYearsExperience, hiringUrgency, industries,
-        requiredLanguages, requiredCertifications, requiredEducationLevels,
-        salaryRange, fullName, isActive,
+        title,
+        roleArea,
+        seniority,
+        location,
+        workMode,
+        employmentType,
+        mustHaveSkills,
+        preferredSkills,
+        jobSummaryRequirements,
+        minimumYearsExperience,
+        hiringUrgency,
+        industries,
+        requiredLanguages,
+        requiredCertifications,
+        requiredEducationLevels,
+        salaryRange,
+        fullName,
+        isActive,
       } = req.body;
 
       const updateData: any = {};
@@ -141,16 +199,24 @@ export class HiringProfileController {
       if (seniority !== undefined) updateData.seniority = seniority;
       if (location !== undefined) updateData.location = location;
       if (workMode !== undefined) updateData.workMode = workMode;
-      if (employmentType !== undefined) updateData.employmentType = employmentType;
-      if (mustHaveSkills !== undefined) updateData.mustHaveSkills = mustHaveSkills;
-      if (preferredSkills !== undefined) updateData.preferredSkills = preferredSkills;
-      if (jobSummaryRequirements !== undefined) updateData.jobSummaryRequirements = jobSummaryRequirements;
-      if (minimumYearsExperience !== undefined) updateData.minimumYearsExperience = minimumYearsExperience;
+      if (employmentType !== undefined)
+        updateData.employmentType = employmentType;
+      if (mustHaveSkills !== undefined)
+        updateData.mustHaveSkills = mustHaveSkills;
+      if (preferredSkills !== undefined)
+        updateData.preferredSkills = preferredSkills;
+      if (jobSummaryRequirements !== undefined)
+        updateData.jobSummaryRequirements = jobSummaryRequirements;
+      if (minimumYearsExperience !== undefined)
+        updateData.minimumYearsExperience = minimumYearsExperience;
       if (hiringUrgency !== undefined) updateData.hiringUrgency = hiringUrgency;
       if (industries !== undefined) updateData.industries = industries;
-      if (requiredLanguages !== undefined) updateData.requiredLanguages = requiredLanguages;
-      if (requiredCertifications !== undefined) updateData.requiredCertifications = requiredCertifications;
-      if (requiredEducationLevels !== undefined) updateData.requiredEducationLevels = requiredEducationLevels;
+      if (requiredLanguages !== undefined)
+        updateData.requiredLanguages = requiredLanguages;
+      if (requiredCertifications !== undefined)
+        updateData.requiredCertifications = requiredCertifications;
+      if (requiredEducationLevels !== undefined)
+        updateData.requiredEducationLevels = requiredEducationLevels;
       if (salaryRange !== undefined) updateData.salaryRange = salaryRange;
       if (fullName !== undefined) updateData.fullName = fullName;
       if (isActive !== undefined) updateData.isActive = isActive;
@@ -160,7 +226,7 @@ export class HiringProfileController {
       updateData.dataQualityScore = computeHiringDataQuality(merged);
 
       const profile = await prisma.hiringProfile.update({
-        where: { id: req.params.id },
+        where: { id: String(req.params.id) },
         data: updateData,
       });
 
@@ -172,20 +238,25 @@ export class HiringProfileController {
 
   async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const existing = await prisma.hiringProfile.findUnique({ where: { id: req.params.id } });
-      if (!existing) throw new NotFoundError('Hiring profile not found');
-      if (existing.userId !== req.user.userId && existing.organizationId !== req.orgContext?.organizationId) {
-        throw new AuthenticationError('Access denied');
+      const existing = await prisma.hiringProfile.findUnique({
+        where: { id: String(req.params.id) },
+      });
+      if (!existing) throw new NotFoundError("Hiring profile not found");
+      if (
+        existing.userId !== req.user.userId &&
+        existing.organizationId !== req.orgContext?.organizationId
+      ) {
+        throw new AuthenticationError("Access denied");
       }
 
       await prisma.hiringProfile.update({
-        where: { id: req.params.id },
+        where: { id: String(req.params.id) },
         data: { isActive: false },
       });
 
-      res.json({ success: true, message: 'Hiring profile deleted' });
+      res.json({ success: true, message: "Hiring profile deleted" });
     } catch (error) {
       next(error);
     }

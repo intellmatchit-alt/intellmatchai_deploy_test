@@ -4,9 +4,9 @@
  * Updated for feature-based collaboration (no missions)
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { logger } from '../../shared/logger';
-import { prisma } from '../../infrastructure/database/prisma/client.js';
+import { Request, Response, NextFunction } from "express";
+import { logger } from "../../shared/logger";
+import { prisma } from "../../infrastructure/database/prisma/client.js";
 
 // Import repositories
 import {
@@ -16,18 +16,18 @@ import {
   PrismaIntroductionRepository,
   PrismaCollaborationLedgerRepository,
   PrismaCollaborationSettingsRepository,
-} from '../../infrastructure/repositories/PrismaCollaborationRepository';
+} from "../../infrastructure/repositories/PrismaCollaborationRepository";
 
 // Import queue service
-import { queueService } from '../../infrastructure/queue/QueueService';
+import { queueService } from "../../infrastructure/queue/QueueService";
 
 // Import WebSocket for real-time notifications
-import { emitToUser } from '../../infrastructure/websocket/index.js';
+import { emitToUser } from "../../infrastructure/websocket/index.js";
 
 // Import wallet and config services for paid collaboration
-import { walletService } from '../../infrastructure/services/WalletService.js';
-import { InsufficientPointsError } from '../../shared/errors/InsufficientPointsError.js';
-import { systemConfigService } from '../../infrastructure/services/SystemConfigService.js';
+import { walletService } from "../../infrastructure/services/WalletService.js";
+import { InsufficientPointsError } from "../../shared/errors/InsufficientPointsError.js";
+import { systemConfigService } from "../../infrastructure/services/SystemConfigService.js";
 
 // Import use cases
 import {
@@ -51,7 +51,7 @@ import {
   AcceptInvitationUseCase,
   ListTeamMembersUseCase,
   RemoveTeamMemberUseCase,
-} from '../../application/use-cases/collaboration';
+} from "../../application/use-cases/collaboration";
 
 import {
   CollaborationRequestStatus,
@@ -59,7 +59,7 @@ import {
   InvitationChannel,
   TeamMemberStatus,
   getSourceId,
-} from '../../domain/entities/Collaboration';
+} from "../../domain/entities/Collaboration";
 
 // Initialize repositories
 const requestRepository = new PrismaCollaborationRequestRepository();
@@ -73,46 +73,63 @@ const settingsRepository = new PrismaCollaborationSettingsRepository();
 const sendRequestUseCase = new SendCollaborationRequestUseCase(
   prisma,
   requestRepository,
-  settingsRepository
+  settingsRepository,
 );
-const acceptRequestUseCase = new AcceptRequestUseCase(requestRepository, sessionRepository);
+const acceptRequestUseCase = new AcceptRequestUseCase(
+  requestRepository,
+  sessionRepository,
+);
 const rejectRequestUseCase = new RejectRequestUseCase(requestRepository);
 const cancelRequestUseCase = new CancelRequestUseCase(requestRepository);
 const listSentRequestsUseCase = new ListSentRequestsUseCase(requestRepository);
-const listReceivedRequestsUseCase = new ListReceivedRequestsUseCase(requestRepository);
+const listReceivedRequestsUseCase = new ListReceivedRequestsUseCase(
+  requestRepository,
+);
 const runMatchingUseCase = new RunMatchingUseCase(
   requestRepository,
   sessionRepository,
   queueService,
-  matchResultRepository
+  matchResultRepository,
 );
-const getSessionStatusUseCase = new GetSessionStatusUseCase(requestRepository, sessionRepository);
-const getMatchResultsUseCase = new GetMatchResultsUseCase(sessionRepository, matchResultRepository);
+const getSessionStatusUseCase = new GetSessionStatusUseCase(
+  requestRepository,
+  sessionRepository,
+);
+const getMatchResultsUseCase = new GetMatchResultsUseCase(
+  sessionRepository,
+  matchResultRepository,
+);
 const createIntroductionUseCase = new CreateIntroductionUseCase(
   requestRepository,
   matchResultRepository,
-  introductionRepository
+  introductionRepository,
 );
 const completeIntroductionUseCase = new CompleteIntroductionUseCase(
   requestRepository,
   introductionRepository,
-  ledgerRepository
+  ledgerRepository,
 );
-const declineIntroductionUseCase = new DeclineIntroductionUseCase(introductionRepository);
+const declineIntroductionUseCase = new DeclineIntroductionUseCase(
+  introductionRepository,
+);
 const respondToIntroductionUseCase = new RespondToIntroductionUseCase(
   introductionRepository,
   requestRepository,
-  ledgerRepository
+  ledgerRepository,
 );
-const getSettingsUseCase = new GetCollaborationSettingsUseCase(settingsRepository);
-const updateSettingsUseCase = new UpdateCollaborationSettingsUseCase(settingsRepository);
+const getSettingsUseCase = new GetCollaborationSettingsUseCase(
+  settingsRepository,
+);
+const updateSettingsUseCase = new UpdateCollaborationSettingsUseCase(
+  settingsRepository,
+);
 const getLedgerUseCase = new GetCollaborationLedgerUseCase(ledgerRepository);
 
 // V2 - Invitation and Team Member use cases
 const sendInvitationUseCase = new SendInvitationUseCase(
   prisma,
   requestRepository,
-  matchResultRepository
+  matchResultRepository,
 );
 const acceptInvitationUseCase = new AcceptInvitationUseCase();
 const listTeamMembersUseCase = new ListTeamMembersUseCase(prisma);
@@ -132,7 +149,7 @@ const removeTeamMemberUseCase = new RemoveTeamMemberUseCase(prisma);
 export async function sendRequest(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
@@ -147,16 +164,25 @@ export async function sendRequest(
     };
 
     // Debit points for collaboration request
-    const collaborationCost = await systemConfigService.getNumber('collaboration_request_cost', 0);
+    const collaborationCost = await systemConfigService.getNumber(
+      "collaboration_request_cost",
+      0,
+    );
     if (collaborationCost > 0) {
       try {
-        await walletService.debit(userId, collaborationCost, 'Collaboration request', null, 'COLLABORATION_REQUEST');
+        await walletService.debit(
+          userId,
+          collaborationCost,
+          "Collaboration request",
+          null,
+          "COLLABORATION_REQUEST",
+        );
       } catch (error) {
         if (error instanceof InsufficientPointsError) {
           res.status(402).json({
             success: false,
             error: {
-              code: 'INSUFFICIENT_POINTS',
+              code: "INSUFFICIENT_POINTS",
               message: error.message,
               details: (error as any).details || { needed: collaborationCost },
             },
@@ -174,9 +200,18 @@ export async function sendRequest(
       // Refund if use case fails after debit
       if (collaborationCost > 0) {
         try {
-          await walletService.credit(userId, collaborationCost, 'Collaboration request failed - refund', null, 'COLLABORATION_REFUND');
+          await walletService.credit(
+            userId,
+            collaborationCost,
+            "Collaboration request failed - refund",
+            null,
+            "COLLABORATION_REFUND",
+          );
         } catch (refundError) {
-          logger.error('Failed to refund collaboration request cost', { userId, error: refundError });
+          logger.error("Failed to refund collaboration request cost", {
+            userId,
+            error: refundError,
+          });
         }
       }
       throw useCaseError;
@@ -194,27 +229,43 @@ export async function sendRequest(
             where: { id: userId },
             select: { fullName: true, company: true },
           });
-          const senderName = sender?.fullName || 'Someone';
-          const { emailService } = await import('../../infrastructure/services/EmailService.js');
-          const frontendUrl = process.env.FRONTEND_URL || 'https://intellmatch.com';
+          const senderName = sender?.fullName || "Someone";
+          const { emailService } =
+            await import("../../infrastructure/services/EmailService.js");
+          const frontendUrl =
+            process.env.FRONTEND_URL || "https://intellmatch.com";
 
           // Get source title
-          let sourceTitle = 'a collaboration';
+          let sourceTitle = "a collaboration";
           try {
-            if (input.sourceType === 'PROJECT') {
-              const p = await prisma.project.findUnique({ where: { id: input.sourceId }, select: { title: true } });
+            if (input.sourceType === "PROJECT") {
+              const p = await prisma.project.findUnique({
+                where: { id: input.sourceId },
+                select: { title: true },
+              });
               if (p?.title) sourceTitle = p.title;
-            } else if (input.sourceType === 'OPPORTUNITY') {
-              const o = await prisma.opportunityIntent.findUnique({ where: { id: input.sourceId }, select: { title: true } });
+            } else if (input.sourceType === "OPPORTUNITY") {
+              const o = await prisma.opportunityIntent.findUnique({
+                where: { id: input.sourceId },
+                select: { title: true },
+              });
               if (o?.title) sourceTitle = o.title;
-            } else if (input.sourceType === 'PITCH') {
-              const p = await prisma.pitch.findUnique({ where: { id: input.sourceId }, select: { title: true } });
+            } else if (input.sourceType === "PITCH") {
+              const p = await prisma.pitch.findUnique({
+                where: { id: input.sourceId },
+                select: { title: true },
+              });
               if (p?.title) sourceTitle = p.title;
-            } else if (input.sourceType === 'DEAL') {
-              const d = await prisma.dealRequest.findUnique({ where: { id: input.sourceId }, select: { title: true } });
+            } else if (input.sourceType === "DEAL") {
+              const d = await prisma.dealRequest.findUnique({
+                where: { id: input.sourceId },
+                select: { title: true },
+              });
               if (d?.title) sourceTitle = d.title;
             }
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
 
           await emailService.sendCollaborationInvitationEmail(contact.email, {
             recipientName: contact.fullName,
@@ -227,14 +278,14 @@ export async function sendRequest(
             invitationUrl: `${frontendUrl}/register`,
             customMessage: input.message || undefined,
           });
-          logger.info('Auto-sent collaboration invitation email', {
+          logger.info("Auto-sent collaboration invitation email", {
             contactId: input.toContactId,
             contactEmail: contact.email,
             requestId: result.id,
           });
         }
       } catch (emailError) {
-        logger.warn('Failed to send collaboration invitation email', {
+        logger.warn("Failed to send collaboration invitation email", {
           contactId: input.toContactId,
           error: emailError,
         });
@@ -249,44 +300,65 @@ export async function sendRequest(
           where: { id: userId },
           select: { fullName: true },
         });
-        const sName = senderUser?.fullName || 'Someone';
+        const sName = senderUser?.fullName || "Someone";
 
-        let sTitle = 'a collaboration';
+        let sTitle = "a collaboration";
         try {
-          if (input.sourceType === 'PROJECT') {
-            const p = await prisma.project.findUnique({ where: { id: input.sourceId }, select: { title: true } });
+          if (input.sourceType === "PROJECT") {
+            const p = await prisma.project.findUnique({
+              where: { id: input.sourceId },
+              select: { title: true },
+            });
             if (p?.title) sTitle = p.title;
-          } else if (input.sourceType === 'OPPORTUNITY') {
-            const o = await prisma.opportunityIntent.findUnique({ where: { id: input.sourceId }, select: { title: true } });
+          } else if (input.sourceType === "OPPORTUNITY") {
+            const o = await prisma.opportunityIntent.findUnique({
+              where: { id: input.sourceId },
+              select: { title: true },
+            });
             if (o?.title) sTitle = o.title;
-          } else if (input.sourceType === 'PITCH') {
-            const p = await prisma.pitch.findUnique({ where: { id: input.sourceId }, select: { title: true } });
+          } else if (input.sourceType === "PITCH") {
+            const p = await prisma.pitch.findUnique({
+              where: { id: input.sourceId },
+              select: { title: true },
+            });
             if (p?.title) sTitle = p.title;
-          } else if (input.sourceType === 'DEAL') {
-            const d = await prisma.dealRequest.findUnique({ where: { id: input.sourceId }, select: { title: true } });
+          } else if (input.sourceType === "DEAL") {
+            const d = await prisma.dealRequest.findUnique({
+              where: { id: input.sourceId },
+              select: { title: true },
+            });
             if (d?.title) sTitle = d.title;
           }
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
 
         await prisma.notification.create({
           data: {
             userId: result.toUserId,
-            type: 'collaboration_request_received',
-            title: 'New Collaboration Request',
+            type: "collaboration_request_received",
+            title: "New Collaboration Request",
             message: `${sName} wants to collaborate on "${sTitle}"`,
-            data: { requestId: result.id, sourceType: input.sourceType, sourceId: input.sourceId, fromUserId: userId },
+            data: {
+              requestId: result.id,
+              sourceType: input.sourceType,
+              sourceId: input.sourceId,
+              fromUserId: userId,
+            },
           },
         });
 
         // Real-time WebSocket push
-        emitToUser(result.toUserId, 'notification:new', {
-          type: 'collaboration_request_received',
-          title: 'New Collaboration Request',
+        emitToUser(result.toUserId, "notification:new", {
+          type: "collaboration_request_received",
+          title: "New Collaboration Request",
           message: `${sName} wants to collaborate on "${sTitle}"`,
           requestId: result.id,
         });
       } catch (notifError) {
-        logger.warn('Failed to create collaboration request notification', { error: notifError });
+        logger.warn("Failed to create collaboration request notification", {
+          error: notifError,
+        });
       }
     }
 
@@ -306,19 +378,26 @@ export async function sendRequest(
 export async function sendBulkRequests(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const { sourceType, sourceId, contactIds, message, voiceMessageUrl } = req.body;
+    const { sourceType, sourceId, contactIds, message, voiceMessageUrl } =
+      req.body;
 
     if (!Array.isArray(contactIds) || contactIds.length === 0) {
-      res.status(400).json({ success: false, error: { message: 'contactIds must be a non-empty array' } });
+      res.status(400).json({
+        success: false,
+        error: { message: "contactIds must be a non-empty array" },
+      });
       return;
     }
 
     if (contactIds.length > 50) {
-      res.status(400).json({ success: false, error: { message: 'Cannot send more than 50 requests at once' } });
+      res.status(400).json({
+        success: false,
+        error: { message: "Cannot send more than 50 requests at once" },
+      });
       return;
     }
 
@@ -327,38 +406,61 @@ export async function sendBulkRequests(
       where: { id: userId },
       select: { fullName: true, company: true },
     });
-    const senderName = sender?.fullName || 'Someone';
+    const senderName = sender?.fullName || "Someone";
 
     // Get source feature title for email
-    let sourceTitle = 'a collaboration';
+    let sourceTitle = "a collaboration";
     try {
-      if (sourceType === 'PROJECT') {
-        const p = await prisma.project.findUnique({ where: { id: sourceId }, select: { title: true } });
+      if (sourceType === "PROJECT") {
+        const p = await prisma.project.findUnique({
+          where: { id: sourceId },
+          select: { title: true },
+        });
         if (p?.title) sourceTitle = p.title;
-      } else if (sourceType === 'OPPORTUNITY') {
-        const o = await prisma.opportunityIntent.findUnique({ where: { id: sourceId }, select: { title: true } });
+      } else if (sourceType === "OPPORTUNITY") {
+        const o = await prisma.opportunityIntent.findUnique({
+          where: { id: sourceId },
+          select: { title: true },
+        });
         if (o?.title) sourceTitle = o.title;
-      } else if (sourceType === 'PITCH') {
-        const p = await prisma.pitch.findUnique({ where: { id: sourceId }, select: { title: true, companyName: true } });
+      } else if (sourceType === "PITCH") {
+        const p = await prisma.pitch.findUnique({
+          where: { id: sourceId },
+          select: { title: true, companyName: true },
+        });
         if (p?.title) sourceTitle = p.title;
-      } else if (sourceType === 'DEAL') {
-        const d = await prisma.dealRequest.findUnique({ where: { id: sourceId }, select: { title: true } });
+      } else if (sourceType === "DEAL") {
+        const d = await prisma.dealRequest.findUnique({
+          where: { id: sourceId },
+          select: { title: true },
+        });
         if (d?.title) sourceTitle = d.title;
       }
-    } catch { /* ignore - use default */ }
+    } catch {
+      /* ignore - use default */
+    }
 
     // Debit points for bulk collaboration requests
-    const collaborationCost = await systemConfigService.getNumber('collaboration_request_cost', 0);
+    const collaborationCost = await systemConfigService.getNumber(
+      "collaboration_request_cost",
+      0,
+    );
     const totalCost = collaborationCost * contactIds.length;
     if (totalCost > 0) {
       try {
-        await walletService.debit(userId, totalCost, `Bulk collaboration requests (${contactIds.length})`, null, 'COLLABORATION_REQUEST');
+        await walletService.debit(
+          userId,
+          totalCost,
+          `Bulk collaboration requests (${contactIds.length})`,
+          null,
+          "COLLABORATION_REQUEST",
+        );
       } catch (error) {
         if (error instanceof InsufficientPointsError) {
           res.status(402).json({
             success: false,
             error: {
-              code: 'INSUFFICIENT_POINTS',
+              code: "INSUFFICIENT_POINTS",
               message: error.message,
               details: (error as any).details || { needed: totalCost },
             },
@@ -369,7 +471,13 @@ export async function sendBulkRequests(
       }
     }
 
-    const results: { contactId: string; success: boolean; requestId?: string; error?: string; emailSent?: boolean }[] = [];
+    const results: {
+      contactId: string;
+      success: boolean;
+      requestId?: string;
+      error?: string;
+      emailSent?: boolean;
+    }[] = [];
 
     for (const contactId of contactIds) {
       try {
@@ -392,29 +500,34 @@ export async function sendBulkRequests(
             });
 
             if (contact?.email) {
-              const { emailService } = await import('../../infrastructure/services/EmailService.js');
-              const frontendUrl = process.env.FRONTEND_URL || 'https://intellmatch.com';
+              const { emailService } =
+                await import("../../infrastructure/services/EmailService.js");
+              const frontendUrl =
+                process.env.FRONTEND_URL || "https://intellmatch.com";
 
-              await emailService.sendCollaborationInvitationEmail(contact.email, {
-                recipientName: contact.fullName,
-                inviterName: senderName,
-                ownerName: senderName,
-                ownerCompany: sender?.company || undefined,
-                sourceType: sourceType,
-                sourceTitle: sourceTitle,
-                sourceDescription: message || undefined,
-                invitationUrl: `${frontendUrl}/register`,
-                customMessage: message || undefined,
-              });
+              await emailService.sendCollaborationInvitationEmail(
+                contact.email,
+                {
+                  recipientName: contact.fullName,
+                  inviterName: senderName,
+                  ownerName: senderName,
+                  ownerCompany: sender?.company || undefined,
+                  sourceType: sourceType,
+                  sourceTitle: sourceTitle,
+                  sourceDescription: message || undefined,
+                  invitationUrl: `${frontendUrl}/register`,
+                  customMessage: message || undefined,
+                },
+              );
               emailSent = true;
-              logger.info('Auto-sent collaboration invitation email', {
+              logger.info("Auto-sent collaboration invitation email", {
                 contactId,
                 contactEmail: contact.email,
                 requestId: result.id,
               });
             }
           } catch (emailError) {
-            logger.warn('Failed to send collaboration invitation email', {
+            logger.warn("Failed to send collaboration invitation email", {
               contactId,
               error: emailError,
             });
@@ -427,40 +540,67 @@ export async function sendBulkRequests(
             await prisma.notification.create({
               data: {
                 userId: result.toUserId,
-                type: 'collaboration_request_received',
-                title: 'New Collaboration Request',
+                type: "collaboration_request_received",
+                title: "New Collaboration Request",
                 message: `${senderName} wants to collaborate on "${sourceTitle}"`,
-                data: { requestId: result.id, sourceType, sourceId, fromUserId: userId },
+                data: {
+                  requestId: result.id,
+                  sourceType,
+                  sourceId,
+                  fromUserId: userId,
+                },
               },
             });
-            emitToUser(result.toUserId, 'notification:new', {
-              type: 'collaboration_request_received',
-              title: 'New Collaboration Request',
+            emitToUser(result.toUserId, "notification:new", {
+              type: "collaboration_request_received",
+              title: "New Collaboration Request",
               message: `${senderName} wants to collaborate on "${sourceTitle}"`,
               requestId: result.id,
             });
           } catch (notifError) {
-            logger.warn('Failed to create bulk collaboration request notification', { error: notifError });
+            logger.warn(
+              "Failed to create bulk collaboration request notification",
+              { error: notifError },
+            );
           }
         }
 
-        results.push({ contactId, success: true, requestId: result.id, emailSent });
+        results.push({
+          contactId,
+          success: true,
+          requestId: result.id,
+          emailSent,
+        });
       } catch (error: any) {
-        results.push({ contactId, success: false, error: error.message || 'Failed to send request' });
+        results.push({
+          contactId,
+          success: false,
+          error: error.message || "Failed to send request",
+        });
       }
     }
 
-    const successCount = results.filter(r => r.success).length;
-    const failedCount = results.filter(r => !r.success).length;
-    const emailsSent = results.filter(r => r.emailSent).length;
+    const successCount = results.filter((r) => r.success).length;
+    const failedCount = results.filter((r) => !r.success).length;
+    const emailsSent = results.filter((r) => r.emailSent).length;
 
     // Refund for failed requests
     if (failedCount > 0 && collaborationCost > 0) {
       const refundAmount = failedCount * collaborationCost;
       try {
-        await walletService.credit(userId, refundAmount, `Collaboration bulk refund (${failedCount} failed)`, null, 'COLLABORATION_REFUND');
+        await walletService.credit(
+          userId,
+          refundAmount,
+          `Collaboration bulk refund (${failedCount} failed)`,
+          null,
+          "COLLABORATION_REFUND",
+        );
       } catch (refundError) {
-        logger.error('Failed to refund bulk collaboration failures', { userId, refundAmount, error: refundError });
+        logger.error("Failed to refund bulk collaboration failures", {
+          userId,
+          refundAmount,
+          error: refundError,
+        });
       }
     }
 
@@ -468,7 +608,12 @@ export async function sendBulkRequests(
       success: true,
       data: {
         results,
-        summary: { total: contactIds.length, sent: successCount, failed: failedCount, emailsSent },
+        summary: {
+          total: contactIds.length,
+          sent: successCount,
+          failed: failedCount,
+          emailsSent,
+        },
       },
     });
   } catch (error) {
@@ -483,7 +628,7 @@ export async function sendBulkRequests(
 export async function listSentRequests(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
@@ -511,7 +656,7 @@ export async function listSentRequests(
 export async function listReceivedRequests(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
@@ -538,26 +683,30 @@ export async function listReceivedRequests(
 export async function getRequest(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
     const requestId = req.params.id;
 
-    const request = await requestRepository.findByIdWithDetails(requestId);
+    const request = await requestRepository.findByIdWithDetails(
+      String(requestId),
+    );
 
     if (!request) {
-      res
-        .status(404)
-        .json({ success: false, error: { code: 'NOT_FOUND', message: 'Request not found' } });
+      res.status(404).json({
+        success: false,
+        error: { code: "NOT_FOUND", message: "Request not found" },
+      });
       return;
     }
 
     // Check if user has access
     if (request.fromUserId !== userId && request.toUserId !== userId) {
-      res
-        .status(403)
-        .json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied' } });
+      res.status(403).json({
+        success: false,
+        error: { code: "FORBIDDEN", message: "Access denied" },
+      });
       return;
     }
 
@@ -612,13 +761,16 @@ export async function getRequest(
 export async function cancelRequest(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
     const requestId = req.params.id;
 
-    const result = await cancelRequestUseCase.execute(userId, requestId);
+    const result = await cancelRequestUseCase.execute(
+      userId,
+      String(requestId),
+    );
 
     res.json({ success: true, data: result });
   } catch (error) {
@@ -633,13 +785,16 @@ export async function cancelRequest(
 export async function acceptRequest(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
     const requestId = req.params.id;
 
-    const result = await acceptRequestUseCase.execute(userId, requestId);
+    const result = await acceptRequestUseCase.execute(
+      userId,
+      String(requestId),
+    );
 
     res.json({ success: true, data: result });
   } catch (error) {
@@ -654,13 +809,16 @@ export async function acceptRequest(
 export async function rejectRequest(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
     const requestId = req.params.id;
 
-    const result = await rejectRequestUseCase.execute(userId, requestId);
+    const result = await rejectRequestUseCase.execute(
+      userId,
+      String(requestId),
+    );
 
     res.json({ success: true, data: result });
   } catch (error) {
@@ -679,13 +837,13 @@ export async function rejectRequest(
 export async function runMatching(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
     const requestId = req.params.id;
 
-    const result = await runMatchingUseCase.execute(userId, requestId);
+    const result = await runMatchingUseCase.execute(userId, String(requestId));
 
     res.json({ success: true, data: result });
   } catch (error) {
@@ -700,13 +858,16 @@ export async function runMatching(
 export async function getSessionStatus(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
     const sessionId = req.params.sessionId;
 
-    const result = await getSessionStatusUseCase.execute(userId, sessionId);
+    const result = await getSessionStatusUseCase.execute(
+      userId,
+      String(sessionId),
+    );
 
     res.json({ success: true, data: result });
   } catch (error) {
@@ -721,25 +882,33 @@ export async function getSessionStatus(
 export async function getMatchResults(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
     const sessionId = req.params.sessionId;
 
     const query = {
-      minScore: req.query.minScore ? parseInt(req.query.minScore as string, 10) : undefined,
+      minScore: req.query.minScore
+        ? parseInt(req.query.minScore as string, 10)
+        : undefined,
       isIntroduced:
         req.query.isIntroduced !== undefined
-          ? req.query.isIntroduced === 'true'
+          ? req.query.isIntroduced === "true"
           : undefined,
       isDismissed:
-        req.query.isDismissed !== undefined ? req.query.isDismissed === 'true' : undefined,
+        req.query.isDismissed !== undefined
+          ? req.query.isDismissed === "true"
+          : undefined,
       limit: req.query.limit ? parseInt(req.query.limit as string, 10) : 50,
       offset: req.query.offset ? parseInt(req.query.offset as string, 10) : 0,
     };
 
-    const result = await getMatchResultsUseCase.execute(userId, sessionId, query);
+    const result = await getMatchResultsUseCase.execute(
+      userId,
+      String(sessionId),
+      query,
+    );
 
     res.json({ success: true, data: result });
   } catch (error) {
@@ -758,16 +927,16 @@ export async function getMatchResults(
 export async function createIntroduction(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const requestId = req.params.id;
+    const requestId = String(req.params.id);
 
     const input = {
       requestId,
       matchResultId: req.body.matchResultId,
-      channel: req.body.channel as 'EMAIL' | 'WHATSAPP' | undefined,
+      channel: req.body.channel as "EMAIL" | "WHATSAPP" | undefined,
       contactEmail: req.body.contactEmail,
       contactPhone: req.body.contactPhone,
       message: req.body.message,
@@ -789,18 +958,21 @@ export async function createIntroduction(
 export async function getIntroductions(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
     const requestId = req.params.id;
 
     // Get request with details to check ownership
-    const request = await requestRepository.findByIdWithDetails(requestId);
+    const request = await requestRepository.findByIdWithDetails(
+      String(requestId),
+    );
     if (!request) {
-      res
-        .status(404)
-        .json({ success: false, error: { code: 'NOT_FOUND', message: 'Request not found' } });
+      res.status(404).json({
+        success: false,
+        error: { code: "NOT_FOUND", message: "Request not found" },
+      });
       return;
     }
 
@@ -810,12 +982,15 @@ export async function getIntroductions(
     if (!isOwner && !isCollaborator) {
       res.status(403).json({
         success: false,
-        error: { code: 'FORBIDDEN', message: 'Access denied' },
+        error: { code: "FORBIDDEN", message: "Access denied" },
       });
       return;
     }
 
-    const introductions = await introductionRepository.findByCollaborationRequestId(requestId);
+    const introductions =
+      await introductionRepository.findByCollaborationRequestId(
+        String(requestId),
+      );
 
     // For feature owner, fetch contact details
     if (isOwner) {
@@ -830,7 +1005,16 @@ export async function getIntroductions(
         },
       });
 
-      const contactMap = new Map(contacts.map((c: { id: string; fullName: string; company: string | null; jobTitle: string | null }) => [c.id, c]));
+      const contactMap = new Map(
+        contacts.map(
+          (c: {
+            id: string;
+            fullName: string;
+            company: string | null;
+            jobTitle: string | null;
+          }) => [c.id, c],
+        ),
+      );
 
       res.json({
         success: true,
@@ -844,11 +1028,13 @@ export async function getIntroductions(
               contactName: i.contactName || contact?.fullName || null,
               completedAt: i.completedAt?.toISOString() || null,
               createdAt: i.createdAt.toISOString(),
-              contact: contact ? {
-                fullName: contact.fullName,
-                company: contact.company,
-                jobTitle: contact.jobTitle,
-              } : null,
+              contact: contact
+                ? {
+                    fullName: contact.fullName,
+                    company: contact.company,
+                    jobTitle: contact.jobTitle,
+                  }
+                : null,
               collaborator: {
                 id: request.toUser.id,
                 fullName: request.toUser.fullName,
@@ -889,13 +1075,16 @@ export async function getIntroductions(
 export async function completeIntroduction(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const introductionId = req.params.id;
+    const introductionId = String(req.params.id);
 
-    const result = await completeIntroductionUseCase.execute(userId, introductionId);
+    const result = await completeIntroductionUseCase.execute(
+      userId,
+      introductionId,
+    );
 
     res.json({ success: true, data: result });
   } catch (error) {
@@ -910,13 +1099,16 @@ export async function completeIntroduction(
 export async function declineIntroduction(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const introductionId = req.params.id;
+    const introductionId = String(req.params.id);
 
-    const result = await declineIntroductionUseCase.execute(userId, introductionId);
+    const result = await declineIntroductionUseCase.execute(
+      userId,
+      introductionId,
+    );
 
     res.json({ success: true, data: result });
   } catch (error) {
@@ -932,28 +1124,33 @@ export async function declineIntroduction(
 export async function addContactFromIntroduction(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const introductionId = req.params.id;
+    const introductionId = String(req.params.id);
 
     // Get the introduction
     const introduction = await introductionRepository.findById(introductionId);
     if (!introduction) {
       res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Introduction not found' },
+        error: { code: "NOT_FOUND", message: "Introduction not found" },
       });
       return;
     }
 
     // Get the collaboration request to verify ownership
-    const request = await requestRepository.findByIdWithDetails(introduction.collaborationRequestId);
+    const request = await requestRepository.findByIdWithDetails(
+      introduction.collaborationRequestId,
+    );
     if (!request) {
       res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Collaboration request not found' },
+        error: {
+          code: "NOT_FOUND",
+          message: "Collaboration request not found",
+        },
       });
       return;
     }
@@ -962,7 +1159,10 @@ export async function addContactFromIntroduction(
     if (request.fromUserId !== userId) {
       res.status(403).json({
         success: false,
-        error: { code: 'FORBIDDEN', message: 'Only the feature owner can add contacts from introductions' },
+        error: {
+          code: "FORBIDDEN",
+          message: "Only the feature owner can add contacts from introductions",
+        },
       });
       return;
     }
@@ -979,7 +1179,7 @@ export async function addContactFromIntroduction(
     if (!sourceContact) {
       res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Source contact not found' },
+        error: { code: "NOT_FOUND", message: "Source contact not found" },
       });
       return;
     }
@@ -1003,7 +1203,10 @@ export async function addContactFromIntroduction(
     if (existingContact) {
       res.status(409).json({
         success: false,
-        error: { code: 'CONFLICT', message: 'Contact already exists in your network' },
+        error: {
+          code: "CONFLICT",
+          message: "Contact already exists in your network",
+        },
         data: { existingContactId: existingContact.id },
       });
       return;
@@ -1011,7 +1214,7 @@ export async function addContactFromIntroduction(
 
     // Get source feature info for notes
     const sourceId = getSourceId(request);
-    const sourceTitle = request.sourceFeature?.title || 'Unknown';
+    const sourceTitle = request.sourceFeature?.title || "Unknown";
 
     // Create the new contact for the feature owner
     const newContact = await prisma.contact.create({
@@ -1027,7 +1230,7 @@ export async function addContactFromIntroduction(
         location: sourceContact.location,
         bio: sourceContact.bio,
         bioSummary: sourceContact.bioSummary,
-        source: 'COLLABORATION',
+        source: "COLLABORATION",
         introducedByUserId: request.toUserId,
         introductionId: introductionId,
         notes: `Introduced by ${request.toUser.fullName} for ${request.sourceType.toLowerCase()}: ${sourceTitle}`,
@@ -1041,7 +1244,7 @@ export async function addContactFromIntroduction(
         data: sourceContact.contactSectors.map((cs: { sectorId: string }) => ({
           contactId: newContact.id,
           sectorId: cs.sectorId,
-          source: 'AI',
+          source: "AI",
         })),
         skipDuplicates: true,
       });
@@ -1053,7 +1256,7 @@ export async function addContactFromIntroduction(
         data: sourceContact.contactSkills.map((cs: { skillId: string }) => ({
           contactId: newContact.id,
           skillId: cs.skillId,
-          source: 'AI',
+          source: "AI",
         })),
         skipDuplicates: true,
       });
@@ -1094,7 +1297,7 @@ export async function addContactFromIntroduction(
 export async function getSettings(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
@@ -1114,14 +1317,16 @@ export async function getSettings(
 export async function updateSettings(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
 
     const input = {
       globalCollaborationEnabled: req.body.globalCollaborationEnabled,
-      allowedSourceTypes: req.body.allowedSourceTypes as CollaborationSourceType[] | undefined,
+      allowedSourceTypes: req.body.allowedSourceTypes as
+        | CollaborationSourceType[]
+        | undefined,
       blockedUserIds: req.body.blockedUserIds,
       allowedUserIds: req.body.allowedUserIds,
       perTypeOverrides: req.body.perTypeOverrides,
@@ -1146,7 +1351,7 @@ export async function updateSettings(
 export async function getLedger(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
@@ -1166,11 +1371,11 @@ export async function getLedger(
 export async function getLedgerWithUser(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const otherUserId = req.params.userId;
+    const otherUserId = String(req.params.userId);
 
     const result = await getLedgerUseCase.getWithUser(userId, otherUserId);
 
@@ -1192,11 +1397,11 @@ export async function getLedgerWithUser(
 export async function sendInvitation(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const collaborationRequestId = req.params.id;
+    const collaborationRequestId = String(req.params.id);
 
     const input = {
       collaborationRequestId,
@@ -1215,7 +1420,10 @@ export async function sendInvitation(
     } else {
       res.status(400).json({
         success: false,
-        error: { code: 'INVITATION_FAILED', message: result.error || 'Failed to send invitation' },
+        error: {
+          code: "INVITATION_FAILED",
+          message: result.error || "Failed to send invitation",
+        },
       });
     }
   } catch (error) {
@@ -1230,10 +1438,10 @@ export async function sendInvitation(
 export async function getInvitationByToken(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
-    const token = req.params.token;
+    const token = String(req.params.token);
 
     const result = await acceptInvitationUseCase.getInvitation({ token });
 
@@ -1251,10 +1459,10 @@ export async function getInvitationByToken(
 export async function acceptInvitation(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
-    const token = req.params.token;
+    const token = String(req.params.token);
     const acceptedByUserId = req.body.acceptedByUserId || req.user?.userId;
 
     const result = await acceptInvitationUseCase.accept({
@@ -1267,7 +1475,10 @@ export async function acceptInvitation(
     } else {
       res.status(400).json({
         success: false,
-        error: { code: 'ACCEPT_FAILED', message: result.error || 'Failed to accept invitation' },
+        error: {
+          code: "ACCEPT_FAILED",
+          message: result.error || "Failed to accept invitation",
+        },
       });
     }
   } catch (error) {
@@ -1283,20 +1494,23 @@ export async function acceptInvitation(
 export async function declineInvitationByToken(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
-    const token = req.params.token;
+    const token = String(req.params.token);
     const reason = req.body.reason;
 
     const result = await acceptInvitationUseCase.decline({ token, reason });
 
     if (result.success) {
-      res.json({ success: true, data: { message: 'Invitation declined' } });
+      res.json({ success: true, data: { message: "Invitation declined" } });
     } else {
       res.status(400).json({
         success: false,
-        error: { code: 'DECLINE_FAILED', message: result.error || 'Failed to decline invitation' },
+        error: {
+          code: "DECLINE_FAILED",
+          message: result.error || "Failed to decline invitation",
+        },
       });
     }
   } catch (error) {
@@ -1316,12 +1530,14 @@ export async function declineInvitationByToken(
 export async function listTeamMembers(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const sourceType = req.params.sourceType.toUpperCase() as CollaborationSourceType;
-    const sourceId = req.params.sourceId;
+    const sourceType = String(
+      req.params.sourceType,
+    ).toUpperCase() as CollaborationSourceType;
+    const sourceId = String(req.params.sourceId);
     const status = req.query.status as TeamMemberStatus | undefined;
 
     const result = await listTeamMembersUseCase.execute(userId, {
@@ -1344,13 +1560,15 @@ export async function listTeamMembers(
 export async function removeTeamMember(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const sourceType = req.params.sourceType.toUpperCase() as CollaborationSourceType;
-    const sourceId = req.params.sourceId;
-    const memberId = req.params.memberId;
+    const sourceType = String(
+      req.params.sourceType,
+    ).toUpperCase() as CollaborationSourceType;
+    const sourceId = String(req.params.sourceId);
+    const memberId = String(req.params.memberId);
     const reason = req.body.reason;
 
     const result = await removeTeamMemberUseCase.execute(userId, {
@@ -1377,10 +1595,10 @@ export async function removeTeamMember(
 export async function getIntroductionByToken(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
-    const token = req.params.token;
+    const token = String(req.params.token);
 
     const result = await respondToIntroductionUseCase.getByToken(token);
 
@@ -1397,10 +1615,10 @@ export async function getIntroductionByToken(
 export async function acceptIntroductionByToken(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
-    const token = req.params.token;
+    const token = String(req.params.token);
 
     const result = await respondToIntroductionUseCase.accept(token);
 
@@ -1417,10 +1635,10 @@ export async function acceptIntroductionByToken(
 export async function declineIntroductionByToken(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
-    const token = req.params.token;
+    const token = String(req.params.token);
 
     const result = await respondToIntroductionUseCase.decline(token);
 
@@ -1443,7 +1661,7 @@ export async function declineIntroductionByToken(
 export async function uploadVoice(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
@@ -1451,39 +1669,42 @@ export async function uploadVoice(
     if (!req.file) {
       res.status(400).json({
         success: false,
-        error: { code: 'NO_FILE', message: 'No audio file provided' },
+        error: { code: "NO_FILE", message: "No audio file provided" },
       });
       return;
     }
 
-    const mimeType = req.file.mimetype || 'audio/webm';
-    const ext = req.file.originalname?.split('.').pop() || 'webm';
+    const mimeType = req.file.mimetype || "audio/webm";
+    const ext = req.file.originalname?.split(".").pop() || "webm";
 
     let mediaUrl: string;
     try {
-      const { getStorageService } = await import('../../infrastructure/external/storage/index.js');
+      const { getStorageService } =
+        await import("../../infrastructure/external/storage/index.js");
       const storage = getStorageService();
 
-      const bucket = 'collaboration-voice';
+      const bucket = "collaboration-voice";
       const key = `${userId}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${ext}`;
 
       await storage.ensureBucket(bucket);
 
-      const result = await storage.upload(
-        bucket,
-        key,
-        req.file.buffer,
-        { contentType: mimeType }
-      );
+      const result = await storage.upload(bucket, key, req.file.buffer, {
+        contentType: mimeType,
+      });
       mediaUrl = result.url;
     } catch (storageError) {
       // Fallback to base64 data URL
-      logger.warn('Storage upload failed for voice, using base64', { error: storageError });
-      const base64 = req.file.buffer.toString('base64');
+      logger.warn("Storage upload failed for voice, using base64", {
+        error: storageError,
+      });
+      const base64 = req.file.buffer.toString("base64");
       mediaUrl = `data:${mimeType};base64,${base64}`;
     }
 
-    logger.info('Voice message uploaded for collaboration', { userId, url: mediaUrl.substring(0, 100) });
+    logger.info("Voice message uploaded for collaboration", {
+      userId,
+      url: mediaUrl.substring(0, 100),
+    });
 
     res.status(201).json({
       success: true,

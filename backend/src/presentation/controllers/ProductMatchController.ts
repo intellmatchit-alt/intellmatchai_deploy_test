@@ -3,8 +3,8 @@
  * Handles HTTP requests for Product Match operations
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { logger } from '../../shared/logger';
+import { Request, Response, NextFunction } from "express";
+import { logger } from "../../shared/logger";
 
 // Import repositories
 import {
@@ -12,11 +12,14 @@ import {
   PrismaProductMatchRunRepository,
   PrismaProductMatchResultRepository,
   PrismaContactMatchingRepository,
-} from '../../infrastructure/repositories/PrismaProductMatchRepository';
+} from "../../infrastructure/repositories/PrismaProductMatchRepository";
 
 // Import services
-import { ProductMatchingService } from '../../infrastructure/services/product/ProductMatchingService';
-import { queueService, QueueName } from '../../infrastructure/queue/QueueService';
+import { ProductMatchingService } from "../../infrastructure/services/product/ProductMatchingService";
+import {
+  queueService,
+  QueueName,
+} from "../../infrastructure/queue/QueueService";
 
 // Import use cases
 import {
@@ -27,9 +30,12 @@ import {
   GetProductMatchResultsUseCase,
   GetProductMatchContactDetailUseCase,
   UpdateProductMatchResultUseCase,
-} from '../../application/use-cases/product-match';
+} from "../../application/use-cases/product-match";
 
-import { ProductType, ProductMatchBadge } from '../../domain/entities/ProductMatch';
+import {
+  ProductType,
+  ProductMatchBadge,
+} from "../../domain/entities/ProductMatch";
 
 // Initialize repositories
 const profileRepository = new PrismaProductProfileRepository();
@@ -52,12 +58,21 @@ const startMatchRunUseCase = new StartProductMatchRunUseCase(
   resultRepository,
   contactMatchingRepository,
   productMatchingService,
-  productMatchQueue // Pass queue for async processing of large networks
+  productMatchQueue, // Pass queue for async processing of large networks
 );
 const getMatchRunUseCase = new GetProductMatchRunUseCase(runRepository);
-const getResultsUseCase = new GetProductMatchResultsUseCase(runRepository, resultRepository);
-const getContactDetailUseCase = new GetProductMatchContactDetailUseCase(runRepository, resultRepository);
-const updateResultUseCase = new UpdateProductMatchResultUseCase(runRepository, resultRepository);
+const getResultsUseCase = new GetProductMatchResultsUseCase(
+  runRepository,
+  resultRepository,
+);
+const getContactDetailUseCase = new GetProductMatchContactDetailUseCase(
+  runRepository,
+  resultRepository,
+);
+const updateResultUseCase = new UpdateProductMatchResultUseCase(
+  runRepository,
+  resultRepository,
+);
 
 /**
  * Get or create product profile
@@ -66,7 +81,7 @@ const updateResultUseCase = new UpdateProductMatchResultUseCase(runRepository, r
 export async function getProductProfile(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
@@ -89,7 +104,7 @@ export async function getProductProfile(
 export async function upsertProductProfile(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
@@ -122,7 +137,7 @@ export async function upsertProductProfile(
 export async function startMatchRun(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
@@ -145,11 +160,11 @@ export async function startMatchRun(
 export async function getMatchRun(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const runId = req.params.runId;
+    const runId = String(req.params.runId);
 
     const run = await getMatchRunUseCase.execute(userId, runId);
 
@@ -180,7 +195,7 @@ export async function getMatchRun(
 export async function getLatestMatchRun(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
@@ -222,16 +237,18 @@ export async function getLatestMatchRun(
 export async function getMatchResults(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const runId = req.params.runId;
+    const runId = String(req.params.runId);
 
     const options = {
       badge: req.query.badge as ProductMatchBadge | undefined,
-      minScore: req.query.minScore ? parseInt(req.query.minScore as string, 10) : undefined,
-      excludeDismissed: req.query.excludeDismissed === 'true',
+      minScore: req.query.minScore
+        ? parseInt(req.query.minScore as string, 10)
+        : undefined,
+      excludeDismissed: req.query.excludeDismissed === "true",
       limit: req.query.limit ? parseInt(req.query.limit as string, 10) : 20,
       offset: req.query.offset ? parseInt(req.query.offset as string, 10) : 0,
     };
@@ -254,22 +271,29 @@ export async function getMatchResults(
 export async function getContactMatchDetail(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const contactId = req.params.contactId;
+    const contactId = String(req.params.contactId);
     const runId = req.query.runId as string;
 
     if (!runId) {
       res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'runId query parameter is required' },
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "runId query parameter is required",
+        },
       });
       return;
     }
 
-    const result = await getContactDetailUseCase.execute(userId, contactId, runId);
+    const result = await getContactDetailUseCase.execute(
+      userId,
+      contactId,
+      runId,
+    );
 
     res.json({
       success: true,
@@ -287,11 +311,11 @@ export async function getContactMatchDetail(
 export async function updateMatchResult(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const resultId = req.params.resultId;
+    const resultId = String(req.params.resultId);
 
     const input = {
       isSaved: req.body.isSaved,

@@ -6,10 +6,10 @@
  * @module presentation/routes/invitation
  */
 
-import { Router, Request, Response, NextFunction } from 'express';
-import { authenticate } from '../middleware/auth.middleware';
-import { inviteContactService } from '../../application/use-cases/invitation';
-import { logger } from '../../shared/logger';
+import { Router, Request, Response, NextFunction } from "express";
+import { authenticate } from "../middleware/auth.middleware";
+import { inviteContactService } from "../../application/use-cases/invitation";
+import { logger } from "../../shared/logger";
 
 export const invitationRoutes = Router();
 
@@ -29,14 +29,14 @@ export const invitationRoutes = Router();
  * - invitationSent: boolean - Whether the invitation was sent
  */
 invitationRoutes.post(
-  '/send',
+  "/send",
   authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.user) {
         res.status(401).json({
           success: false,
-          error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+          error: { code: "UNAUTHORIZED", message: "Authentication required" },
         });
         return;
       }
@@ -46,28 +46,34 @@ invitationRoutes.post(
       if (!contactId) {
         res.status(400).json({
           success: false,
-          error: { code: 'MISSING_CONTACT_ID', message: 'contactId is required' },
+          error: {
+            code: "MISSING_CONTACT_ID",
+            message: "contactId is required",
+          },
         });
         return;
       }
 
-      if (!method || !['email', 'sms'].includes(method)) {
+      if (!method || !["email", "sms"].includes(method)) {
         res.status(400).json({
           success: false,
-          error: { code: 'INVALID_METHOD', message: 'method must be "email" or "sms"' },
+          error: {
+            code: "INVALID_METHOD",
+            message: 'method must be "email" or "sms"',
+          },
         });
         return;
       }
 
       const result = await inviteContactService.inviteContact(
         { contactId, method, message },
-        req.user.userId
+        req.user.userId,
       );
 
       if (!result.success) {
         res.status(400).json({
           success: false,
-          error: { code: 'INVITATION_FAILED', message: result.error },
+          error: { code: "INVITATION_FAILED", message: result.error },
         });
         return;
       }
@@ -81,10 +87,10 @@ invitationRoutes.post(
         },
       });
     } catch (error) {
-      logger.error('Send invitation failed', { error });
+      logger.error("Send invitation failed", { error });
       next(error);
     }
-  }
+  },
 );
 
 /**
@@ -97,17 +103,20 @@ invitationRoutes.post(
  * - preAccount: Pre-filled account data if valid
  */
 invitationRoutes.get(
-  '/verify/:token',
+  "/verify/:token",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { token } = req.params;
+      const { token } = req.params as { token: string };
 
       const result = await inviteContactService.verifyInvitationToken(token);
 
       if (!result.valid) {
         res.status(404).json({
           success: false,
-          error: { code: 'INVALID_TOKEN', message: 'Invalid or expired invitation' },
+          error: {
+            code: "INVALID_TOKEN",
+            message: "Invalid or expired invitation",
+          },
         });
         return;
       }
@@ -117,10 +126,10 @@ invitationRoutes.get(
         data: result.preAccount,
       });
     } catch (error) {
-      logger.error('Verify invitation token failed', { error });
+      logger.error("Verify invitation token failed", { error });
       next(error);
     }
-  }
+  },
 );
 
 /**
@@ -137,7 +146,7 @@ invitationRoutes.get(
  * - userId: string - ID of the activated user
  */
 invitationRoutes.post(
-  '/accept',
+  "/accept",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { token, password } = req.body;
@@ -145,7 +154,7 @@ invitationRoutes.post(
       if (!token) {
         res.status(400).json({
           success: false,
-          error: { code: 'MISSING_TOKEN', message: 'token is required' },
+          error: { code: "MISSING_TOKEN", message: "token is required" },
         });
         return;
       }
@@ -153,17 +162,23 @@ invitationRoutes.post(
       if (!password || password.length < 8) {
         res.status(400).json({
           success: false,
-          error: { code: 'INVALID_PASSWORD', message: 'Password must be at least 8 characters' },
+          error: {
+            code: "INVALID_PASSWORD",
+            message: "Password must be at least 8 characters",
+          },
         });
         return;
       }
 
-      const result = await inviteContactService.acceptInvitation({ token, password });
+      const result = await inviteContactService.acceptInvitation({
+        token,
+        password,
+      });
 
       if (!result.success) {
         res.status(400).json({
           success: false,
-          error: { code: 'ACCEPT_FAILED', message: result.error },
+          error: { code: "ACCEPT_FAILED", message: result.error },
         });
         return;
       }
@@ -176,10 +191,10 @@ invitationRoutes.post(
         },
       });
     } catch (error) {
-      logger.error('Accept invitation failed', { error });
+      logger.error("Accept invitation failed", { error });
       next(error);
     }
-  }
+  },
 );
 
 /**
@@ -188,29 +203,31 @@ invitationRoutes.post(
  * Get pending invitations sent by the current user.
  */
 invitationRoutes.get(
-  '/pending',
+  "/pending",
   authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.user) {
         res.status(401).json({
           success: false,
-          error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+          error: { code: "UNAUTHORIZED", message: "Authentication required" },
         });
         return;
       }
 
-      const invitations = await inviteContactService.getPendingInvitations(req.user.userId);
+      const invitations = await inviteContactService.getPendingInvitations(
+        req.user.userId,
+      );
 
       res.json({
         success: true,
         data: invitations,
       });
     } catch (error) {
-      logger.error('Get pending invitations failed', { error });
+      logger.error("Get pending invitations failed", { error });
       next(error);
     }
-  }
+  },
 );
 
 /**
@@ -219,39 +236,45 @@ invitationRoutes.get(
  * Cancel a pending invitation.
  */
 invitationRoutes.delete(
-  '/:id',
+  "/:id",
   authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.user) {
         res.status(401).json({
           success: false,
-          error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+          error: { code: "UNAUTHORIZED", message: "Authentication required" },
         });
         return;
       }
 
       const { id } = req.params;
 
-      const success = await inviteContactService.cancelInvitation(id, req.user.userId);
+      const success = await inviteContactService.cancelInvitation(
+        String(id),
+        req.user.userId,
+      );
 
       if (!success) {
         res.status(400).json({
           success: false,
-          error: { code: 'CANCEL_FAILED', message: 'Unable to cancel invitation' },
+          error: {
+            code: "CANCEL_FAILED",
+            message: "Unable to cancel invitation",
+          },
         });
         return;
       }
 
       res.json({
         success: true,
-        message: 'Invitation cancelled',
+        message: "Invitation cancelled",
       });
     } catch (error) {
-      logger.error('Cancel invitation failed', { error });
+      logger.error("Cancel invitation failed", { error });
       next(error);
     }
-  }
+  },
 );
 
 export default invitationRoutes;

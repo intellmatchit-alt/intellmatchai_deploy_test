@@ -1,11 +1,15 @@
-import { Request, Response, NextFunction } from 'express';
-import { affiliateService } from '../../infrastructure/services/AffiliateService.js';
+import { Request, Response, NextFunction } from "express";
+import { affiliateService } from "../../infrastructure/services/AffiliateService.js";
 
 class AffiliateController {
   /**
    * GET /affiliate/terms — Public: get terms & policy content
    */
-  async getTerms(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getTerms(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const settings = await affiliateService.getSettings();
       res.json({
@@ -24,9 +28,13 @@ class AffiliateController {
   /**
    * GET /affiliate/validate/:code — Public: validate a referral code
    */
-  async validateCode(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async validateCode(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      const { code } = req.params;
+      const { code } = req.params as { code: string };
       const result = await affiliateService.validateCode(code);
       if (!result) {
         res.json({ success: true, data: { valid: false } });
@@ -54,7 +62,11 @@ class AffiliateController {
   /**
    * GET /affiliate/me — Get my affiliate profile
    */
-  async getMyAffiliate(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getMyAffiliate(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const userId = req.user!.userId;
       const affiliate = await affiliateService.getAffiliateByUserId(userId);
@@ -83,32 +95,52 @@ class AffiliateController {
   /**
    * POST /affiliate/codes — Create a referral code
    */
-  async createCode(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async createCode(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const userId = req.user!.userId;
       const { code, discountPercent, name } = req.body;
 
-      if (!code || typeof discountPercent !== 'number') {
-        res.status(400).json({ success: false, error: 'Code and discountPercent are required' });
+      if (!code || typeof discountPercent !== "number") {
+        res.status(400).json({
+          success: false,
+          error: "Code and discountPercent are required",
+        });
         return;
       }
 
       // Validate code format
       if (!/^[A-Za-z0-9_-]{3,30}$/.test(code)) {
-        res.status(400).json({ success: false, error: 'Code must be 3-30 alphanumeric characters' });
+        res.status(400).json({
+          success: false,
+          error: "Code must be 3-30 alphanumeric characters",
+        });
         return;
       }
 
       const affiliate = await affiliateService.getAffiliateByUserId(userId);
-      if (!affiliate || affiliate.status !== 'APPROVED') {
-        res.status(403).json({ success: false, error: 'Affiliate account is not active' });
+      if (!affiliate || affiliate.status !== "APPROVED") {
+        res
+          .status(403)
+          .json({ success: false, error: "Affiliate account is not active" });
         return;
       }
 
-      const created = await affiliateService.createCode(affiliate.id, code, discountPercent, name);
+      const created = await affiliateService.createCode(
+        affiliate.id,
+        code,
+        discountPercent,
+        name,
+      );
       res.status(201).json({ success: true, data: created });
     } catch (error: any) {
-      if (error.message?.includes('already taken') || error.message?.includes('must be between')) {
+      if (
+        error.message?.includes("already taken") ||
+        error.message?.includes("must be between")
+      ) {
         res.status(400).json({ success: false, error: error.message });
         return;
       }
@@ -119,7 +151,11 @@ class AffiliateController {
   /**
    * GET /affiliate/codes — List my codes
    */
-  async getCodes(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getCodes(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const userId = req.user!.userId;
       const affiliate = await affiliateService.getAffiliateByUserId(userId);
@@ -137,27 +173,37 @@ class AffiliateController {
   /**
    * PATCH /affiliate/codes/:id/status — Pause/resume a code
    */
-  async updateCodeStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async updateCodeStatus(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const userId = req.user!.userId;
       const { id } = req.params;
       const { status } = req.body;
 
-      if (!['ACTIVE', 'PAUSED'].includes(status)) {
-        res.status(400).json({ success: false, error: 'Status must be ACTIVE or PAUSED' });
+      if (!["ACTIVE", "PAUSED"].includes(status)) {
+        res
+          .status(400)
+          .json({ success: false, error: "Status must be ACTIVE or PAUSED" });
         return;
       }
 
       const affiliate = await affiliateService.getAffiliateByUserId(userId);
       if (!affiliate) {
-        res.status(404).json({ success: false, error: 'Affiliate not found' });
+        res.status(404).json({ success: false, error: "Affiliate not found" });
         return;
       }
 
-      const updated = await affiliateService.updateCodeStatus(affiliate.id, id, status);
+      const updated = await affiliateService.updateCodeStatus(
+        affiliate.id,
+        String(id),
+        status,
+      );
       res.json({ success: true, data: updated });
     } catch (error: any) {
-      if (error.message === 'Code not found') {
+      if (error.message === "Code not found") {
         res.status(404).json({ success: false, error: error.message });
         return;
       }
@@ -168,12 +214,19 @@ class AffiliateController {
   /**
    * GET /affiliate/referrals — List my referrals
    */
-  async getReferrals(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getReferrals(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const userId = req.user!.userId;
       const affiliate = await affiliateService.getAffiliateByUserId(userId);
       if (!affiliate) {
-        res.json({ success: true, data: { referrals: [], total: 0, page: 1, totalPages: 0 } });
+        res.json({
+          success: true,
+          data: { referrals: [], total: 0, page: 1, totalPages: 0 },
+        });
         return;
       }
 
@@ -181,7 +234,12 @@ class AffiliateController {
       const limit = parseInt(req.query.limit as string) || 20;
       const codeId = req.query.codeId as string | undefined;
 
-      const result = await affiliateService.getReferrals(affiliate.id, codeId, page, limit);
+      const result = await affiliateService.getReferrals(
+        affiliate.id,
+        codeId,
+        page,
+        limit,
+      );
       res.json({ success: true, data: result });
     } catch (error) {
       next(error);
@@ -191,12 +249,16 @@ class AffiliateController {
   /**
    * GET /affiliate/stats — Dashboard stats
    */
-  async getStats(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getStats(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const userId = req.user!.userId;
       const affiliate = await affiliateService.getAffiliateByUserId(userId);
       if (!affiliate) {
-        res.status(404).json({ success: false, error: 'Affiliate not found' });
+        res.status(404).json({ success: false, error: "Affiliate not found" });
         return;
       }
       const stats = await affiliateService.getStats(affiliate.id);
@@ -209,19 +271,30 @@ class AffiliateController {
   /**
    * GET /affiliate/payouts — Payout history
    */
-  async getPayouts(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getPayouts(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const userId = req.user!.userId;
       const affiliate = await affiliateService.getAffiliateByUserId(userId);
       if (!affiliate) {
-        res.json({ success: true, data: { payouts: [], total: 0, page: 1, totalPages: 0 } });
+        res.json({
+          success: true,
+          data: { payouts: [], total: 0, page: 1, totalPages: 0 },
+        });
         return;
       }
 
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
 
-      const result = await affiliateService.getPayouts(affiliate.id, page, limit);
+      const result = await affiliateService.getPayouts(
+        affiliate.id,
+        page,
+        limit,
+      );
       res.json({ success: true, data: result });
     } catch (error) {
       next(error);
@@ -231,19 +304,23 @@ class AffiliateController {
   /**
    * POST /affiliate/payouts — Request a payout
    */
-  async requestPayout(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async requestPayout(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const userId = req.user!.userId;
       const affiliate = await affiliateService.getAffiliateByUserId(userId);
       if (!affiliate) {
-        res.status(404).json({ success: false, error: 'Affiliate not found' });
+        res.status(404).json({ success: false, error: "Affiliate not found" });
         return;
       }
 
       const payout = await affiliateService.requestPayout(affiliate.id);
       res.status(201).json({ success: true, data: payout });
     } catch (error: any) {
-      if (error.message?.includes('No') && error.message?.includes('balance')) {
+      if (error.message?.includes("No") && error.message?.includes("balance")) {
         res.status(400).json({ success: false, error: error.message });
         return;
       }

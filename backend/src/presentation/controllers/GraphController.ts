@@ -6,18 +6,18 @@
  * @module presentation/controllers/GraphController
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../../infrastructure/database/prisma/client.js';
-import { AuthenticationError } from '../../shared/errors/index.js';
-import { logger } from '../../shared/logger/index.js';
-import { neo4jGraphService } from '../../infrastructure/database/neo4j/GraphService.js';
+import { Request, Response, NextFunction } from "express";
+import { prisma } from "../../infrastructure/database/prisma/client.js";
+import { AuthenticationError } from "../../shared/errors/index.js";
+import { logger } from "../../shared/logger/index.js";
+import { neo4jGraphService } from "../../infrastructure/database/neo4j/GraphService.js";
 
 /**
  * Node type for graph visualization
  */
 interface GraphNode {
   id: string;
-  type: 'user' | 'contact' | 'sector';
+  type: "user" | "contact" | "sector";
   label: string;
   data: {
     name?: string;
@@ -36,7 +36,7 @@ interface GraphEdge {
   id: string;
   source: string;
   target: string;
-  type: 'owns' | 'sector' | 'skill';
+  type: "owns" | "sector" | "skill";
   weight: number;
 }
 
@@ -46,7 +46,7 @@ interface GraphEdge {
 interface Cluster {
   id: string;
   label: string;
-  type: 'sector' | 'company' | 'location';
+  type: "sector" | "company" | "location";
   contacts: Array<{
     id: string;
     name: string;
@@ -73,13 +73,19 @@ export class GraphController {
    * - sector: filter by sector ID
    * - limit: max contacts (default 100)
    */
-  async getNetwork(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getNetwork(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 100;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string, 10)
+        : 100;
       const sectorFilter = req.query.sector as string | undefined;
 
       // Get user data
@@ -93,7 +99,7 @@ export class GraphController {
       if (!user) {
         res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'User not found' },
+          error: { code: "NOT_FOUND", message: "User not found" },
         });
         return;
       }
@@ -112,7 +118,7 @@ export class GraphController {
         include: {
           contactSectors: { include: { sector: true } },
         },
-        orderBy: { matchScore: 'desc' },
+        orderBy: { matchScore: "desc" },
         take: limit,
       });
 
@@ -124,7 +130,7 @@ export class GraphController {
       // Add user node
       nodes.push({
         id: user.id,
-        type: 'user',
+        type: "user",
         label: user.fullName,
         data: {
           name: user.fullName,
@@ -139,7 +145,7 @@ export class GraphController {
         if (!sectorNodes.has(us.sectorId)) {
           sectorNodes.set(us.sectorId, {
             id: `sector-${us.sectorId}`,
-            type: 'sector',
+            type: "sector",
             label: us.sector.name,
             data: {
               contactCount: 0,
@@ -153,13 +159,15 @@ export class GraphController {
         // Add contact node
         nodes.push({
           id: contact.id,
-          type: 'contact',
+          type: "contact",
           label: contact.fullName,
           data: {
             name: contact.fullName,
             company: contact.company || undefined,
             jobTitle: contact.jobTitle || undefined,
-            matchScore: contact.matchScore ? Number(contact.matchScore) : undefined,
+            matchScore: contact.matchScore
+              ? Number(contact.matchScore)
+              : undefined,
           },
         });
 
@@ -168,7 +176,7 @@ export class GraphController {
           id: `edge-${user.id}-${contact.id}`,
           source: user.id,
           target: contact.id,
-          type: 'owns',
+          type: "owns",
           weight: contact.matchScore ? Number(contact.matchScore) / 100 : 0.5,
         });
 
@@ -178,7 +186,7 @@ export class GraphController {
           if (!sectorNodes.has(cs.sectorId)) {
             sectorNodes.set(cs.sectorId, {
               id: `sector-${cs.sectorId}`,
-              type: 'sector',
+              type: "sector",
               label: cs.sector.name,
               data: {
                 contactCount: 0,
@@ -188,14 +196,15 @@ export class GraphController {
 
           // Update contact count
           const sectorNode = sectorNodes.get(cs.sectorId)!;
-          sectorNode.data.contactCount = (sectorNode.data.contactCount || 0) + 1;
+          sectorNode.data.contactCount =
+            (sectorNode.data.contactCount || 0) + 1;
 
           // Add edge from contact to sector
           edges.push({
             id: `edge-${contact.id}-sector-${cs.sectorId}`,
             source: contact.id,
             target: `sector-${cs.sectorId}`,
-            type: 'sector',
+            type: "sector",
             weight: Number(cs.confidence) || 0.8,
           });
         }
@@ -230,20 +239,24 @@ export class GraphController {
    * Query params:
    * - groupBy: 'sector' | 'company' | 'location' (default 'sector')
    */
-  async getClusters(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getClusters(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const groupBy = (req.query.groupBy as string) || 'sector';
+      const groupBy = (req.query.groupBy as string) || "sector";
 
       let clusters: Cluster[] = [];
 
-      if (groupBy === 'sector') {
+      if (groupBy === "sector") {
         // Get sector distribution
         const sectorGroups = await prisma.contactSector.groupBy({
-          by: ['sectorId'],
+          by: ["sectorId"],
           where: {
             contact: { ownerId: req.user.userId },
           },
@@ -266,7 +279,7 @@ export class GraphController {
               fullName: true,
               matchScore: true,
             },
-            orderBy: { matchScore: 'desc' },
+            orderBy: { matchScore: "desc" },
             take: 10,
           });
 
@@ -274,7 +287,7 @@ export class GraphController {
             clusters.push({
               id: group.sectorId,
               label: sector.name,
-              type: 'sector',
+              type: "sector",
               contacts: contacts.map((c) => ({
                 id: c.id,
                 name: c.fullName,
@@ -284,10 +297,10 @@ export class GraphController {
             });
           }
         }
-      } else if (groupBy === 'company') {
+      } else if (groupBy === "company") {
         // Get company distribution
         const companyGroups = await prisma.contact.groupBy({
-          by: ['company'],
+          by: ["company"],
           where: {
             ownerId: req.user.userId,
             company: { not: null },
@@ -308,14 +321,14 @@ export class GraphController {
               fullName: true,
               matchScore: true,
             },
-            orderBy: { matchScore: 'desc' },
+            orderBy: { matchScore: "desc" },
             take: 10,
           });
 
           clusters.push({
             id: `company-${group.company}`,
             label: group.company,
-            type: 'company',
+            type: "company",
             contacts: contacts.map((c) => ({
               id: c.id,
               name: c.fullName,
@@ -354,15 +367,23 @@ export class GraphController {
    * - minScore: minimum match score (default 50)
    * - limit: max results (default 20)
    */
-  async getUnderutilized(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getUnderutilized(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const days = req.query.days ? parseInt(req.query.days as string, 10) : 30;
-      const minScore = req.query.minScore ? parseInt(req.query.minScore as string, 10) : 50;
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
+      const minScore = req.query.minScore
+        ? parseInt(req.query.minScore as string, 10)
+        : 50;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string, 10)
+        : 20;
 
       const thresholdDate = new Date();
       thresholdDate.setDate(thresholdDate.getDate() - days);
@@ -384,7 +405,7 @@ export class GraphController {
           matchScore: true,
           lastInteractionAt: true,
         },
-        orderBy: { matchScore: 'desc' },
+        orderBy: { matchScore: "desc" },
         take: limit,
       });
 
@@ -399,7 +420,10 @@ export class GraphController {
             matchScore: c.matchScore ? Number(c.matchScore) : undefined,
             lastInteractionAt: c.lastInteractionAt?.toISOString(),
             daysSinceContact: c.lastInteractionAt
-              ? Math.floor((Date.now() - c.lastInteractionAt.getTime()) / (1000 * 60 * 60 * 24))
+              ? Math.floor(
+                  (Date.now() - c.lastInteractionAt.getTime()) /
+                    (1000 * 60 * 60 * 24),
+                )
               : null,
           })),
           criteria: { days, minScore },
@@ -417,10 +441,14 @@ export class GraphController {
    *
    * Returns summary statistics about the user's network.
    */
-  async getStats(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getStats(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       // Get total contact count
@@ -453,7 +481,7 @@ export class GraphController {
 
       // Get sector distribution
       const sectorDistribution = await prisma.contactSector.groupBy({
-        by: ['sectorId'],
+        by: ["sectorId"],
         where: {
           contact: { ownerId: req.user.userId },
         },
@@ -472,17 +500,19 @@ export class GraphController {
 
       const topSectorsWithCount = topSectorIds.map((sectorId) => {
         const sector = topSectors.find((s) => s.id === sectorId);
-        const distribution = sectorDistribution.find((d) => d.sectorId === sectorId);
+        const distribution = sectorDistribution.find(
+          (d) => d.sectorId === sectorId,
+        );
         return {
           id: sectorId,
-          name: sector?.name || 'Unknown',
+          name: sector?.name || "Unknown",
           count: distribution?._count || 0,
         };
       });
 
       // Get contacts by source
       const sourceDistribution = await prisma.contact.groupBy({
-        by: ['source'],
+        by: ["source"],
         where: { ownerId: req.user.userId },
         _count: true,
       });
@@ -519,15 +549,19 @@ export class GraphController {
    * Uses Neo4j for efficient path finding when available.
    * Falls back to basic connection check when Neo4j is not available.
    */
-  async findPath(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async findPath(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const targetId = req.params.targetId;
 
-      logger.info('Path finding requested', {
+      logger.info("Path finding requested", {
         userId: req.user.userId,
         targetId,
       });
@@ -535,7 +569,10 @@ export class GraphController {
       // Check if Neo4j is available
       if (neo4jGraphService.isAvailable()) {
         // Use Neo4j for path finding
-        const paths = await neo4jGraphService.findShortestPath(req.user.userId, targetId);
+        const paths = await neo4jGraphService.findShortestPath(
+          req.user.userId,
+          String(targetId),
+        );
 
         if (paths.length > 0) {
           res.status(200).json({
@@ -548,7 +585,7 @@ export class GraphController {
                 length: p.length,
                 degreesOfSeparation: p.length - 1,
               })),
-              source: 'neo4j',
+              source: "neo4j",
             },
           });
           return;
@@ -558,7 +595,7 @@ export class GraphController {
       // Fallback: Check if target is a direct contact
       const directContact = await prisma.contact.findFirst({
         where: {
-          id: targetId,
+          id: String(targetId),
           ownerId: req.user.userId,
         },
         select: {
@@ -576,15 +613,19 @@ export class GraphController {
             paths: [
               {
                 nodes: [
-                  { id: req.user.userId, type: 'User', name: 'You' },
-                  { id: directContact.id, type: 'Contact', name: directContact.fullName },
+                  { id: req.user.userId, type: "User", name: "You" },
+                  {
+                    id: directContact.id,
+                    type: "Contact",
+                    name: directContact.fullName,
+                  },
                 ],
-                relationships: [{ type: 'OWNS' }],
+                relationships: [{ type: "OWNS" }],
                 length: 1,
                 degreesOfSeparation: 0,
               },
             ],
-            source: 'direct',
+            source: "direct",
           },
         });
         return;
@@ -596,8 +637,8 @@ export class GraphController {
         data: {
           targetId,
           paths: [],
-          message: 'No connection path found to this contact',
-          source: neo4jGraphService.isAvailable() ? 'neo4j' : 'fallback',
+          message: "No connection path found to this contact",
+          source: neo4jGraphService.isAvailable() ? "neo4j" : "fallback",
         },
       });
     } catch (error) {
@@ -612,22 +653,31 @@ export class GraphController {
    *
    * Returns potential connections based on mutual contacts and shared sectors.
    */
-  async getSuggestions(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getSuggestions(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string, 10)
+        : 10;
 
       if (neo4jGraphService.isAvailable()) {
-        const suggestions = await neo4jGraphService.getSuggestedConnections(req.user.userId, limit);
+        const suggestions = await neo4jGraphService.getSuggestedConnections(
+          req.user.userId,
+          limit,
+        );
 
         res.status(200).json({
           success: true,
           data: {
             suggestions,
-            source: 'neo4j',
+            source: "neo4j",
           },
         });
         return;
@@ -638,8 +688,8 @@ export class GraphController {
         success: true,
         data: {
           suggestions: [],
-          message: 'Connection suggestions require Neo4j',
-          source: 'fallback',
+          message: "Connection suggestions require Neo4j",
+          source: "fallback",
         },
       });
     } catch (error) {
@@ -654,16 +704,23 @@ export class GraphController {
    *
    * Manually triggers syncing a contact to the Neo4j graph database.
    */
-  async syncContact(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async syncContact(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       if (!neo4jGraphService.isAvailable()) {
         res.status(503).json({
           success: false,
-          error: { code: 'SERVICE_UNAVAILABLE', message: 'Neo4j is not available' },
+          error: {
+            code: "SERVICE_UNAVAILABLE",
+            message: "Neo4j is not available",
+          },
         });
         return;
       }
@@ -673,7 +730,7 @@ export class GraphController {
       // Get contact with sectors
       const contact = await prisma.contact.findFirst({
         where: {
-          id: contactId,
+          id: String(contactId),
           ownerId: req.user.userId,
         },
         include: {
@@ -684,7 +741,7 @@ export class GraphController {
       if (!contact) {
         res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Contact not found' },
+          error: { code: "NOT_FOUND", message: "Contact not found" },
         });
         return;
       }
@@ -698,15 +755,23 @@ export class GraphController {
 
       // Sync sectors
       for (const cs of contact.contactSectors) {
-        await neo4jGraphService.upsertSector(cs.sectorId, cs.sector.name, cs.sector.nameAr || undefined);
-        await neo4jGraphService.linkContactToSector(contact.id, cs.sectorId, Number(cs.confidence));
+        await neo4jGraphService.upsertSector(
+          cs.sectorId,
+          cs.sector.name,
+          cs.sector.nameAr || undefined,
+        );
+        await neo4jGraphService.linkContactToSector(
+          contact.id,
+          cs.sectorId,
+          Number(cs.confidence),
+        );
       }
 
-      logger.info('Contact synced to Neo4j', { contactId });
+      logger.info("Contact synced to Neo4j", { contactId });
 
       res.status(200).json({
         success: true,
-        message: 'Contact synced to graph database',
+        message: "Contact synced to graph database",
       });
     } catch (error) {
       next(error);
@@ -721,13 +786,19 @@ export class GraphController {
    * Returns combined graph data for all team members.
    * Requires TEAM plan and org membership.
    */
-  async getTeamNetwork(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getTeamNetwork(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 200;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string, 10)
+        : 200;
 
       // Get user's organization
       const membership = await prisma.organizationMember.findFirst({
@@ -736,7 +807,17 @@ export class GraphController {
           organization: {
             include: {
               members: {
-                select: { userId: true, user: { select: { id: true, fullName: true, company: true, avatarUrl: true } } },
+                select: {
+                  userId: true,
+                  user: {
+                    select: {
+                      id: true,
+                      fullName: true,
+                      company: true,
+                      avatarUrl: true,
+                    },
+                  },
+                },
               },
             },
           },
@@ -746,23 +827,31 @@ export class GraphController {
       if (!membership) {
         res.status(403).json({
           success: false,
-          error: { code: 'NO_ORG', message: 'Not a member of any organization' },
+          error: {
+            code: "NO_ORG",
+            message: "Not a member of any organization",
+          },
         });
         return;
       }
 
-      const memberUserIds = membership.organization.members.map((m) => m.userId);
+      const memberUserIds = membership.organization.members.map(
+        (m) => m.userId,
+      );
       const memberMap = new Map(
-        membership.organization.members.map((m) => [m.userId, m.user])
+        membership.organization.members.map((m) => [m.userId, m.user]),
       );
 
       // Try Neo4j first
       if (neo4jGraphService.isAvailable()) {
-        const graphData = await neo4jGraphService.getTeamNetwork(memberUserIds, limit);
+        const graphData = await neo4jGraphService.getTeamNetwork(
+          memberUserIds,
+          limit,
+        );
 
         // Enrich user nodes with member data
         for (const node of graphData.nodes) {
-          if (node.type === 'User' && memberMap.has(node.id)) {
+          if (node.type === "User" && memberMap.has(node.id)) {
             const member = memberMap.get(node.id)!;
             node.name = member.fullName;
             node.properties = {
@@ -789,7 +878,7 @@ export class GraphController {
               totalEdges: graphData.edges.length,
               memberCount: memberUserIds.length,
             },
-            source: 'neo4j',
+            source: "neo4j",
           },
         });
         return;
@@ -801,7 +890,7 @@ export class GraphController {
         include: {
           contactSectors: { include: { sector: true } },
         },
-        orderBy: { matchScore: 'desc' },
+        orderBy: { matchScore: "desc" },
         take: limit,
       });
 
@@ -812,7 +901,7 @@ export class GraphController {
       for (const member of membership.organization.members) {
         nodes.push({
           id: member.userId,
-          type: 'User',
+          type: "User",
           name: member.user.fullName,
           properties: {
             company: member.user.company,
@@ -825,20 +914,22 @@ export class GraphController {
       for (const contact of contacts) {
         nodes.push({
           id: contact.id,
-          type: 'Contact',
+          type: "Contact",
           name: contact.fullName,
           ownerId: contact.ownerId,
           properties: {
             company: contact.company,
             jobTitle: contact.jobTitle,
-            matchScore: contact.matchScore ? Number(contact.matchScore) : undefined,
+            matchScore: contact.matchScore
+              ? Number(contact.matchScore)
+              : undefined,
           },
         });
 
         edges.push({
           source: contact.ownerId,
           target: contact.id,
-          type: 'OWNS',
+          type: "OWNS",
           properties: {},
         });
       }
@@ -849,7 +940,7 @@ export class GraphController {
           edges.push({
             source: memberUserIds[i],
             target: memberUserIds[j],
-            type: 'TEAMMATE',
+            type: "TEAMMATE",
             properties: {},
           });
         }
@@ -871,7 +962,7 @@ export class GraphController {
             totalEdges: edges.length,
             memberCount: memberUserIds.length,
           },
-          source: 'mysql',
+          source: "mysql",
         },
       });
     } catch (error) {
@@ -884,10 +975,14 @@ export class GraphController {
    *
    * GET /api/v1/graph/team/stats
    */
-  async getTeamStats(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getTeamStats(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const membership = await prisma.organizationMember.findFirst({
@@ -902,12 +997,17 @@ export class GraphController {
       if (!membership) {
         res.status(403).json({
           success: false,
-          error: { code: 'NO_ORG', message: 'Not a member of any organization' },
+          error: {
+            code: "NO_ORG",
+            message: "Not a member of any organization",
+          },
         });
         return;
       }
 
-      const memberUserIds = membership.organization.members.map((m) => m.userId);
+      const memberUserIds = membership.organization.members.map(
+        (m) => m.userId,
+      );
 
       // Get total unique contacts
       const totalUniqueContacts = await prisma.contact.count({
@@ -916,7 +1016,7 @@ export class GraphController {
 
       // Get sectors reached
       const sectorGroups = await prisma.contactSector.groupBy({
-        by: ['sectorId'],
+        by: ["sectorId"],
         where: {
           contact: { ownerId: { in: memberUserIds } },
         },
@@ -931,13 +1031,20 @@ export class GraphController {
       // Per-member stats
       const memberStats = await Promise.all(
         memberUserIds.map(async (userId) => {
-          const count = await prisma.contact.count({ where: { ownerId: userId } });
+          const count = await prisma.contact.count({
+            where: { ownerId: userId },
+          });
           const user = await prisma.user.findUnique({
             where: { id: userId },
             select: { fullName: true, avatarUrl: true },
           });
-          return { userId, fullName: user?.fullName || '', avatarUrl: user?.avatarUrl, contactCount: count };
-        })
+          return {
+            userId,
+            fullName: user?.fullName || "",
+            avatarUrl: user?.avatarUrl,
+            contactCount: count,
+          };
+        }),
       );
 
       res.status(200).json({
@@ -960,10 +1067,14 @@ export class GraphController {
    *
    * GET /api/v1/graph/team/overlap
    */
-  async getTeamOverlap(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getTeamOverlap(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const membership = await prisma.organizationMember.findFirst({
@@ -978,12 +1089,17 @@ export class GraphController {
       if (!membership) {
         res.status(403).json({
           success: false,
-          error: { code: 'NO_ORG', message: 'Not a member of any organization' },
+          error: {
+            code: "NO_ORG",
+            message: "Not a member of any organization",
+          },
         });
         return;
       }
 
-      const memberUserIds = membership.organization.members.map((m) => m.userId);
+      const memberUserIds = membership.organization.members.map(
+        (m) => m.userId,
+      );
 
       // Find contacts that share the same email across multiple team members
       // This is the MySQL fallback for mutual contacts detection
@@ -1021,10 +1137,12 @@ export class GraphController {
           email,
           contactName: contacts[0].fullName,
           company: contacts[0].company,
-          owners: [...new Set(contacts.map((c) => c.ownerId))].map((ownerId) => {
-            const contact = contacts.find((c) => c.ownerId === ownerId)!;
-            return { userId: ownerId, userName: contact.owner.fullName };
-          }),
+          owners: [...new Set(contacts.map((c) => c.ownerId))].map(
+            (ownerId) => {
+              const contact = contacts.find((c) => c.ownerId === ownerId)!;
+              return { userId: ownerId, userName: contact.owner.fullName };
+            },
+          ),
         }))
         .slice(0, 50);
 

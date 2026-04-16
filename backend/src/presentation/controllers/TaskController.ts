@@ -6,11 +6,11 @@
  * @module presentation/controllers/TaskController
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../../infrastructure/database/prisma/client.js';
-import { AuthenticationError } from '../../shared/errors/index.js';
-import { logger } from '../../shared/logger/index.js';
-import ical, { ICalCalendarMethod } from 'ical-generator';
+import { Request, Response, NextFunction } from "express";
+import { prisma } from "../../infrastructure/database/prisma/client.js";
+import { AuthenticationError } from "../../shared/errors/index.js";
+import { logger } from "../../shared/logger/index.js";
+import ical, { ICalCalendarMethod } from "ical-generator";
 
 export class TaskController {
   /**
@@ -19,7 +19,7 @@ export class TaskController {
    */
   async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const {
         status,
@@ -27,10 +27,10 @@ export class TaskController {
         category,
         contactId,
         search,
-        sort = 'dueDate',
-        order = 'asc',
-        page = '1',
-        limit = '50',
+        sort = "dueDate",
+        order = "asc",
+        page = "1",
+        limit = "50",
         dateFrom,
         dateTo,
         filter, // 'today' | 'thisWeek' | 'overdue' | 'noDate'
@@ -81,39 +81,43 @@ export class TaskController {
       // Quick filters
       if (filter) {
         const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const today = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+        );
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
         const nextWeek = new Date(today);
         nextWeek.setDate(nextWeek.getDate() + 7);
 
         switch (filter) {
-          case 'today':
+          case "today":
             where.dueDate = { gte: today, lt: tomorrow };
-            where.status = { in: ['PENDING', 'IN_PROGRESS'] };
+            where.status = { in: ["PENDING", "IN_PROGRESS"] };
             break;
-          case 'thisWeek':
+          case "thisWeek":
             where.dueDate = { gte: today, lt: nextWeek };
-            where.status = { in: ['PENDING', 'IN_PROGRESS'] };
+            where.status = { in: ["PENDING", "IN_PROGRESS"] };
             break;
-          case 'overdue':
+          case "overdue":
             where.dueDate = { lt: today, not: null };
-            where.status = { in: ['PENDING', 'IN_PROGRESS'] };
+            where.status = { in: ["PENDING", "IN_PROGRESS"] };
             break;
-          case 'noDate':
+          case "noDate":
             where.dueDate = null;
-            where.status = { in: ['PENDING', 'IN_PROGRESS'] };
+            where.status = { in: ["PENDING", "IN_PROGRESS"] };
             break;
-          case 'highPriority':
-            where.priority = { in: ['HIGH', 'URGENT'] };
-            where.status = { in: ['PENDING', 'IN_PROGRESS'] };
+          case "highPriority":
+            where.priority = { in: ["HIGH", "URGENT"] };
+            where.status = { in: ["PENDING", "IN_PROGRESS"] };
             break;
         }
       }
 
       // Assigned to filter
       if (assignedTo) {
-        if (assignedTo === 'me') {
+        if (assignedTo === "me") {
           where.assignedToId = req.user.userId;
         } else {
           where.assignedToId = assignedTo;
@@ -122,9 +126,17 @@ export class TaskController {
 
       // Sort
       const orderBy: any[] = [];
-      const sortField = ['dueDate', 'priority', 'createdAt', 'title', 'status'].includes(sort) ? sort : 'dueDate';
-      orderBy.push({ [sortField]: order === 'desc' ? 'desc' : 'asc' });
-      if (sortField !== 'createdAt') orderBy.push({ createdAt: 'desc' });
+      const sortField = [
+        "dueDate",
+        "priority",
+        "createdAt",
+        "title",
+        "status",
+      ].includes(sort)
+        ? sort
+        : "dueDate";
+      orderBy.push({ [sortField]: order === "desc" ? "desc" : "asc" });
+      if (sortField !== "createdAt") orderBy.push({ createdAt: "desc" });
 
       const [tasks, total] = await Promise.all([
         prisma.contactTask.findMany({
@@ -137,10 +149,19 @@ export class TaskController {
               select: { id: true, fullName: true, avatarUrl: true },
             },
             reminders: {
-              orderBy: { reminderAt: 'asc' },
+              orderBy: { reminderAt: "asc" },
             },
             assignees: {
-              include: { contact: { select: { id: true, fullName: true, company: true, avatarUrl: true } } },
+              include: {
+                contact: {
+                  select: {
+                    id: true,
+                    fullName: true,
+                    company: true,
+                    avatarUrl: true,
+                  },
+                },
+              },
             },
           },
           orderBy,
@@ -170,21 +191,30 @@ export class TaskController {
    */
   async get(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const task = await prisma.contactTask.findFirst({
-        where: { id: req.params.id, userId: req.user.userId },
+        where: { id: String(req.params.id), userId: req.user.userId },
         include: {
           contact: {
             select: { id: true, fullName: true, company: true },
           },
           reminders: {
-            orderBy: { reminderAt: 'asc' },
+            orderBy: { reminderAt: "asc" },
           },
           recurrence: true,
           assignees: {
-            include: { contact: { select: { id: true, fullName: true, company: true, avatarUrl: true } } },
-            orderBy: { createdAt: 'asc' },
+            include: {
+              contact: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  company: true,
+                  avatarUrl: true,
+                },
+              },
+            },
+            orderBy: { createdAt: "asc" },
           },
         },
       });
@@ -192,7 +222,7 @@ export class TaskController {
       if (!task) {
         res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Task not found' },
+          error: { code: "NOT_FOUND", message: "Task not found" },
         });
         return;
       }
@@ -209,7 +239,7 @@ export class TaskController {
    */
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const {
         title,
@@ -229,7 +259,7 @@ export class TaskController {
       if (!title || !title.trim()) {
         res.status(400).json({
           success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'Title is required' },
+          error: { code: "VALIDATION_ERROR", message: "Title is required" },
         });
         return;
       }
@@ -242,7 +272,7 @@ export class TaskController {
         if (!contact) {
           res.status(404).json({
             success: false,
-            error: { code: 'NOT_FOUND', message: 'Contact not found' },
+            error: { code: "NOT_FOUND", message: "Contact not found" },
           });
           return;
         }
@@ -256,8 +286,8 @@ export class TaskController {
           description,
           dueDate: dueDate ? new Date(dueDate) : undefined,
           reminderAt: reminderAt ? new Date(reminderAt) : undefined,
-          priority: priority || 'MEDIUM',
-          status: status || 'PENDING',
+          priority: priority || "MEDIUM",
+          status: status || "PENDING",
           category,
           categoryColor,
           imageUrls: imageUrls || undefined,
@@ -285,22 +315,34 @@ export class TaskController {
       }
 
       // Log activity
-      await prisma.taskActivity.create({ data: { taskId: task.id, userId: req.user.userId, action: 'created' } });
+      await prisma.taskActivity.create({
+        data: { taskId: task.id, userId: req.user.userId, action: "created" },
+      });
 
       // Notify assigned user
       if (assignedToId && assignedToId !== req.user.userId) {
-        await prisma.notification.create({
-          data: {
-            userId: assignedToId,
-            type: 'task_assigned',
-            title: 'Task assigned to you',
-            message: `You've been assigned: "${task.title}"`,
-            data: { taskId: task.id },
-          },
-        }).catch((e: any) => logger.error('Failed to create assignment notification', { error: e }));
+        await prisma.notification
+          .create({
+            data: {
+              userId: assignedToId,
+              type: "task_assigned",
+              title: "Task assigned to you",
+              message: `You've been assigned: "${task.title}"`,
+              data: { taskId: task.id },
+            },
+          })
+          .catch((e: any) =>
+            logger.error("Failed to create assignment notification", {
+              error: e,
+            }),
+          );
       }
 
-      logger.info('Task created', { userId: req.user.userId, taskId: task.id, contactId });
+      logger.info("Task created", {
+        userId: req.user.userId,
+        taskId: task.id,
+        contactId,
+      });
 
       res.status(201).json({ success: true, data: task });
     } catch (error) {
@@ -313,16 +355,16 @@ export class TaskController {
    */
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const existing = await prisma.contactTask.findFirst({
-        where: { id: req.params.id, userId: req.user.userId },
+        where: { id: String(req.params.id), userId: req.user.userId },
       });
 
       if (!existing) {
         res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Task not found' },
+          error: { code: "NOT_FOUND", message: "Task not found" },
         });
         return;
       }
@@ -345,26 +387,29 @@ export class TaskController {
       const updateData: any = {};
       if (title !== undefined) updateData.title = title;
       if (description !== undefined) updateData.description = description;
-      if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
-      if (reminderAt !== undefined) updateData.reminderAt = reminderAt ? new Date(reminderAt) : null;
+      if (dueDate !== undefined)
+        updateData.dueDate = dueDate ? new Date(dueDate) : null;
+      if (reminderAt !== undefined)
+        updateData.reminderAt = reminderAt ? new Date(reminderAt) : null;
       if (priority !== undefined) updateData.priority = priority;
       if (contactId !== undefined) updateData.contactId = contactId || null;
       if (category !== undefined) updateData.category = category;
       if (categoryColor !== undefined) updateData.categoryColor = categoryColor;
       if (imageUrls !== undefined) updateData.imageUrls = imageUrls;
-      if (assignedToId !== undefined) updateData.assignedToId = assignedToId || null;
+      if (assignedToId !== undefined)
+        updateData.assignedToId = assignedToId || null;
 
       if (status !== undefined) {
         updateData.status = status;
-        if (status === 'COMPLETED') {
+        if (status === "COMPLETED") {
           updateData.completedAt = new Date();
-        } else if (existing.status === 'COMPLETED') {
+        } else if (existing.status === "COMPLETED") {
           updateData.completedAt = null;
         }
       }
 
       const task = await prisma.contactTask.update({
-        where: { id: req.params.id },
+        where: { id: String(req.params.id) },
         data: updateData,
         include: {
           contact: {
@@ -374,18 +419,29 @@ export class TaskController {
             select: { id: true, fullName: true, avatarUrl: true },
           },
           reminders: {
-            orderBy: { reminderAt: 'asc' },
+            orderBy: { reminderAt: "asc" },
           },
           assignees: {
-            include: { contact: { select: { id: true, fullName: true, company: true, avatarUrl: true } } },
-            orderBy: { createdAt: 'asc' },
+            include: {
+              contact: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  company: true,
+                  avatarUrl: true,
+                },
+              },
+            },
+            orderBy: { createdAt: "asc" },
           },
         },
       });
 
       // Sync assignees (contacts assigned to this task)
       if (assigneeIds && Array.isArray(assigneeIds)) {
-        await prisma.taskAssignee.deleteMany({ where: { taskId: task.id, contactId: { notIn: assigneeIds } } });
+        await prisma.taskAssignee.deleteMany({
+          where: { taskId: task.id, contactId: { notIn: assigneeIds } },
+        });
         for (const cId of assigneeIds) {
           await prisma.taskAssignee.upsert({
             where: { taskId_contactId: { taskId: task.id, contactId: cId } },
@@ -396,27 +452,51 @@ export class TaskController {
       }
 
       // Log activity
-      await prisma.taskActivity.create({ data: { taskId: task.id, userId: req.user.userId, action: 'updated', details: { fields: Object.keys(updateData) } } });
+      await prisma.taskActivity.create({
+        data: {
+          taskId: task.id,
+          userId: req.user.userId,
+          action: "updated",
+          details: { fields: Object.keys(updateData) },
+        },
+      });
 
       // Notify assigned user if changed
-      if (assignedToId && assignedToId !== existing.assignedToId && assignedToId !== req.user.userId) {
-        await prisma.notification.create({
-          data: {
-            userId: assignedToId,
-            type: 'task_assigned',
-            title: 'Task assigned to you',
-            message: `You've been assigned: "${task.title}"`,
-            data: { taskId: task.id },
-          },
-        }).catch((e: any) => logger.error('Failed to create assignment notification', { error: e }));
+      if (
+        assignedToId &&
+        assignedToId !== existing.assignedToId &&
+        assignedToId !== req.user.userId
+      ) {
+        await prisma.notification
+          .create({
+            data: {
+              userId: assignedToId,
+              type: "task_assigned",
+              title: "Task assigned to you",
+              message: `You've been assigned: "${task.title}"`,
+              data: { taskId: task.id },
+            },
+          })
+          .catch((e: any) =>
+            logger.error("Failed to create assignment notification", {
+              error: e,
+            }),
+          );
       }
 
-      logger.info('Task updated', { userId: req.user.userId, taskId: task.id });
+      logger.info("Task updated", { userId: req.user.userId, taskId: task.id });
 
       // Generate next recurring task if completed
       let nextTask = null;
-      if (status === 'COMPLETED' && existing.status !== 'COMPLETED' && existing.recurrenceId) {
-        nextTask = await this.generateNextRecurringTask(existing.id, req.user.userId);
+      if (
+        status === "COMPLETED" &&
+        existing.status !== "COMPLETED" &&
+        existing.recurrenceId
+      ) {
+        nextTask = await this.generateNextRecurringTask(
+          existing.id,
+          req.user.userId,
+        );
       }
 
       res.status(200).json({ success: true, data: task, nextTask });
@@ -430,25 +510,28 @@ export class TaskController {
    */
   async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const task = await prisma.contactTask.findFirst({
-        where: { id: req.params.id, userId: req.user.userId },
+        where: { id: String(req.params.id), userId: req.user.userId },
       });
 
       if (!task) {
         res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Task not found' },
+          error: { code: "NOT_FOUND", message: "Task not found" },
         });
         return;
       }
 
-      await prisma.contactTask.delete({ where: { id: req.params.id } });
+      await prisma.contactTask.delete({ where: { id: String(req.params.id) } });
 
-      logger.info('Task deleted', { userId: req.user.userId, taskId: req.params.id });
+      logger.info("Task deleted", {
+        userId: req.user.userId,
+        taskId: String(req.params.id),
+      });
 
-      res.status(200).json({ success: true, message: 'Task deleted' });
+      res.status(200).json({ success: true, message: "Task deleted" });
     } catch (error) {
       next(error);
     }
@@ -458,16 +541,23 @@ export class TaskController {
    * PATCH /api/v1/tasks/bulk
    * Bulk update tasks (status, priority, category, delete)
    */
-  async bulkUpdate(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async bulkUpdate(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const { taskIds, action, value } = req.body;
 
       if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {
         res.status(400).json({
           success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'taskIds array is required' },
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "taskIds array is required",
+          },
         });
         return;
       }
@@ -475,7 +565,7 @@ export class TaskController {
       if (!action) {
         res.status(400).json({
           success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'action is required' },
+          error: { code: "VALIDATION_ERROR", message: "action is required" },
         });
         return;
       }
@@ -484,9 +574,9 @@ export class TaskController {
 
       let result;
       switch (action) {
-        case 'updateStatus': {
+        case "updateStatus": {
           const updateData: any = { status: value };
-          if (value === 'COMPLETED') updateData.completedAt = new Date();
+          if (value === "COMPLETED") updateData.completedAt = new Date();
           else updateData.completedAt = null;
           result = await prisma.contactTask.updateMany({
             where: whereBase,
@@ -494,30 +584,37 @@ export class TaskController {
           });
           break;
         }
-        case 'updatePriority':
+        case "updatePriority":
           result = await prisma.contactTask.updateMany({
             where: whereBase,
             data: { priority: value },
           });
           break;
-        case 'updateCategory':
+        case "updateCategory":
           result = await prisma.contactTask.updateMany({
             where: whereBase,
-            data: { category: value?.name || null, categoryColor: value?.color || null },
+            data: {
+              category: value?.name || null,
+              categoryColor: value?.color || null,
+            },
           });
           break;
-        case 'delete':
+        case "delete":
           result = await prisma.contactTask.deleteMany({ where: whereBase });
           break;
         default:
           res.status(400).json({
             success: false,
-            error: { code: 'VALIDATION_ERROR', message: 'Invalid action' },
+            error: { code: "VALIDATION_ERROR", message: "Invalid action" },
           });
           return;
       }
 
-      logger.info('Bulk task update', { userId: req.user.userId, action, count: result.count });
+      logger.info("Bulk task update", {
+        userId: req.user.userId,
+        action,
+        count: result.count,
+      });
 
       res.status(200).json({ success: true, data: { count: result.count } });
     } catch (error) {
@@ -529,41 +626,51 @@ export class TaskController {
    * PATCH /api/v1/tasks/:id/status
    * Quick status update (for Kanban drag)
    */
-  async updateStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async updateStatus(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const { status } = req.body;
 
-      if (!status || !['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'].includes(status)) {
+      if (
+        !status ||
+        !["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"].includes(status)
+      ) {
         res.status(400).json({
           success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'Valid status is required' },
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Valid status is required",
+          },
         });
         return;
       }
 
       const existing = await prisma.contactTask.findFirst({
-        where: { id: req.params.id, userId: req.user.userId },
+        where: { id: String(req.params.id), userId: req.user.userId },
       });
 
       if (!existing) {
         res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Task not found' },
+          error: { code: "NOT_FOUND", message: "Task not found" },
         });
         return;
       }
 
       const updateData: any = { status };
-      if (status === 'COMPLETED') {
+      if (status === "COMPLETED") {
         updateData.completedAt = new Date();
-      } else if (existing.status === 'COMPLETED') {
+      } else if (existing.status === "COMPLETED") {
         updateData.completedAt = null;
       }
 
       const task = await prisma.contactTask.update({
-        where: { id: req.params.id },
+        where: { id: String(req.params.id) },
         data: updateData,
         include: {
           contact: {
@@ -573,12 +680,22 @@ export class TaskController {
       });
 
       // Log activity
-      await prisma.taskActivity.create({ data: { taskId: req.params.id, userId: req.user.userId, action: 'status_changed', details: { from: existing.status, to: status } } });
+      await prisma.taskActivity.create({
+        data: {
+          taskId: String(req.params.id),
+          userId: req.user.userId,
+          action: "status_changed",
+          details: { from: existing.status, to: status },
+        },
+      });
 
       // Generate next recurring task if completed
       let nextTask = null;
-      if (status === 'COMPLETED' && existing.recurrenceId) {
-        nextTask = await this.generateNextRecurringTask(existing.id, req.user.userId);
+      if (status === "COMPLETED" && existing.recurrenceId) {
+        nextTask = await this.generateNextRecurringTask(
+          existing.id,
+          req.user.userId,
+        );
       }
 
       res.status(200).json({ success: true, data: task, nextTask });
@@ -591,9 +708,13 @@ export class TaskController {
    * GET /api/v1/tasks/stats
    * Dashboard widget stats
    */
-  async getStats(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getStats(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -603,13 +724,28 @@ export class TaskController {
       nextWeek.setDate(nextWeek.getDate() + 7);
 
       const userId = req.user.userId;
-      const pendingStatuses = { in: ['PENDING', 'IN_PROGRESS'] as any };
+      const pendingStatuses = { in: ["PENDING", "IN_PROGRESS"] as any };
 
-      const [total, pending, overdue, todayCount, thisWeek, completed, byStatus, byPriority] = await Promise.all([
+      const [
+        total,
+        pending,
+        overdue,
+        todayCount,
+        thisWeek,
+        completed,
+        byStatus,
+        byPriority,
+      ] = await Promise.all([
         prisma.contactTask.count({ where: { userId } }),
-        prisma.contactTask.count({ where: { userId, status: pendingStatuses } }),
         prisma.contactTask.count({
-          where: { userId, status: pendingStatuses, dueDate: { lt: today, not: null } },
+          where: { userId, status: pendingStatuses },
+        }),
+        prisma.contactTask.count({
+          where: {
+            userId,
+            status: pendingStatuses,
+            dueDate: { lt: today, not: null },
+          },
         }),
         prisma.contactTask.count({
           where: {
@@ -625,14 +761,14 @@ export class TaskController {
             dueDate: { gte: today, lt: nextWeek },
           },
         }),
-        prisma.contactTask.count({ where: { userId, status: 'COMPLETED' } }),
+        prisma.contactTask.count({ where: { userId, status: "COMPLETED" } }),
         prisma.contactTask.groupBy({
-          by: ['status'],
+          by: ["status"],
           where: { userId },
           _count: true,
         }),
         prisma.contactTask.groupBy({
-          by: ['priority'],
+          by: ["priority"],
           where: { userId, status: pendingStatuses },
           _count: true,
         }),
@@ -672,9 +808,9 @@ export class TaskController {
    */
   async search(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const q = (req.query.q as string || '').trim();
+      const q = ((req.query.q as string) || "").trim();
       const limit = Math.min(50, parseInt(req.query.limit as string, 10) || 20);
 
       if (!q) {
@@ -685,17 +821,14 @@ export class TaskController {
       const tasks = await prisma.contactTask.findMany({
         where: {
           userId: req.user.userId,
-          OR: [
-            { title: { contains: q } },
-            { description: { contains: q } },
-          ],
+          OR: [{ title: { contains: q } }, { description: { contains: q } }],
         },
         include: {
           contact: {
             select: { id: true, fullName: true, company: true },
           },
         },
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { updatedAt: "desc" },
         take: limit,
       });
 
@@ -712,18 +845,22 @@ export class TaskController {
   /**
    * POST /api/v1/tasks/:id/reminders
    */
-  async addReminder(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async addReminder(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const task = await prisma.contactTask.findFirst({
-        where: { id: req.params.id, userId: req.user.userId },
+        where: { id: String(req.params.id), userId: req.user.userId },
       });
 
       if (!task) {
         res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Task not found' },
+          error: { code: "NOT_FOUND", message: "Task not found" },
         });
         return;
       }
@@ -733,16 +870,19 @@ export class TaskController {
       if (!reminderAt) {
         res.status(400).json({
           success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'reminderAt is required' },
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "reminderAt is required",
+          },
         });
         return;
       }
 
       const reminder = await prisma.taskReminder.create({
         data: {
-          taskId: req.params.id,
+          taskId: String(req.params.id),
           reminderAt: new Date(reminderAt),
-          type: type || 'IN_APP',
+          type: type || "IN_APP",
         },
       });
 
@@ -755,27 +895,31 @@ export class TaskController {
   /**
    * DELETE /api/v1/tasks/:id/reminders/:reminderId
    */
-  async deleteReminder(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async deleteReminder(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const task = await prisma.contactTask.findFirst({
-        where: { id: req.params.id, userId: req.user.userId },
+        where: { id: String(req.params.id), userId: req.user.userId },
       });
 
       if (!task) {
         res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Task not found' },
+          error: { code: "NOT_FOUND", message: "Task not found" },
         });
         return;
       }
 
       await prisma.taskReminder.delete({
-        where: { id: req.params.reminderId },
+        where: { id: String(req.params.reminderId) },
       });
 
-      res.status(200).json({ success: true, message: 'Reminder deleted' });
+      res.status(200).json({ success: true, message: "Reminder deleted" });
     } catch (error) {
       next(error);
     }
@@ -784,18 +928,22 @@ export class TaskController {
   /**
    * PATCH /api/v1/tasks/:id/reminders/:reminderId/snooze
    */
-  async snoozeReminder(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async snoozeReminder(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const task = await prisma.contactTask.findFirst({
-        where: { id: req.params.id, userId: req.user.userId },
+        where: { id: String(req.params.id), userId: req.user.userId },
       });
 
       if (!task) {
         res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Task not found' },
+          error: { code: "NOT_FOUND", message: "Task not found" },
         });
         return;
       }
@@ -803,7 +951,7 @@ export class TaskController {
       const { snoozeUntil } = req.body;
 
       const reminder = await prisma.taskReminder.update({
-        where: { id: req.params.reminderId },
+        where: { id: String(req.params.reminderId) },
         data: {
           snoozeUntil: new Date(snoozeUntil),
           isSent: false,
@@ -823,13 +971,17 @@ export class TaskController {
   /**
    * GET /api/v1/tasks/categories
    */
-  async listCategories(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async listCategories(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const categories = await prisma.taskCategory.findMany({
         where: { userId: req.user.userId },
-        orderBy: { name: 'asc' },
+        orderBy: { name: "asc" },
       });
 
       res.status(200).json({ success: true, data: categories });
@@ -841,16 +993,23 @@ export class TaskController {
   /**
    * POST /api/v1/tasks/categories
    */
-  async createCategory(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async createCategory(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const { name, color } = req.body;
 
       if (!name || !color) {
         res.status(400).json({
           success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'name and color are required' },
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "name and color are required",
+          },
         });
         return;
       }
@@ -865,10 +1024,13 @@ export class TaskController {
 
       res.status(201).json({ success: true, data: category });
     } catch (error: any) {
-      if (error.code === 'P2002') {
+      if (error.code === "P2002") {
         res.status(409).json({
           success: false,
-          error: { code: 'DUPLICATE', message: 'Category with this name already exists' },
+          error: {
+            code: "DUPLICATE",
+            message: "Category with this name already exists",
+          },
         });
         return;
       }
@@ -879,18 +1041,22 @@ export class TaskController {
   /**
    * PUT /api/v1/tasks/categories/:id
    */
-  async updateCategory(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async updateCategory(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const existing = await prisma.taskCategory.findFirst({
-        where: { id: req.params.id, userId: req.user.userId },
+        where: { id: String(req.params.id), userId: req.user.userId },
       });
 
       if (!existing) {
         res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Category not found' },
+          error: { code: "NOT_FOUND", message: "Category not found" },
         });
         return;
       }
@@ -901,7 +1067,10 @@ export class TaskController {
       if (name && name !== existing.name) {
         await prisma.contactTask.updateMany({
           where: { userId: req.user.userId, category: existing.name },
-          data: { category: name.trim(), categoryColor: color || existing.color },
+          data: {
+            category: name.trim(),
+            categoryColor: color || existing.color,
+          },
         });
       } else if (color && color !== existing.color) {
         await prisma.contactTask.updateMany({
@@ -911,7 +1080,7 @@ export class TaskController {
       }
 
       const category = await prisma.taskCategory.update({
-        where: { id: req.params.id },
+        where: { id: String(req.params.id) },
         data: {
           ...(name && { name: name.trim() }),
           ...(color && { color }),
@@ -920,10 +1089,13 @@ export class TaskController {
 
       res.status(200).json({ success: true, data: category });
     } catch (error: any) {
-      if (error.code === 'P2002') {
+      if (error.code === "P2002") {
         res.status(409).json({
           success: false,
-          error: { code: 'DUPLICATE', message: 'Category with this name already exists' },
+          error: {
+            code: "DUPLICATE",
+            message: "Category with this name already exists",
+          },
         });
         return;
       }
@@ -934,18 +1106,22 @@ export class TaskController {
   /**
    * DELETE /api/v1/tasks/categories/:id
    */
-  async deleteCategory(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async deleteCategory(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const existing = await prisma.taskCategory.findFirst({
-        where: { id: req.params.id, userId: req.user.userId },
+        where: { id: String(req.params.id), userId: req.user.userId },
       });
 
       if (!existing) {
         res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Category not found' },
+          error: { code: "NOT_FOUND", message: "Category not found" },
         });
         return;
       }
@@ -956,9 +1132,11 @@ export class TaskController {
         data: { category: null, categoryColor: null },
       });
 
-      await prisma.taskCategory.delete({ where: { id: req.params.id } });
+      await prisma.taskCategory.delete({
+        where: { id: String(req.params.id) },
+      });
 
-      res.status(200).json({ success: true, message: 'Category deleted' });
+      res.status(200).json({ success: true, message: "Category deleted" });
     } catch (error) {
       next(error);
     }
@@ -970,33 +1148,42 @@ export class TaskController {
   /**
    * Calculate next due date based on recurrence pattern
    */
-  private calculateNextDueDate(currentDueDate: Date, pattern: string, interval: number, daysOfWeek?: number[]): Date {
+  private calculateNextDueDate(
+    currentDueDate: Date,
+    pattern: string,
+    interval: number,
+    daysOfWeek?: number[],
+  ): Date {
     const next = new Date(currentDueDate);
 
     switch (pattern) {
-      case 'DAILY':
+      case "DAILY":
         next.setDate(next.getDate() + interval);
         break;
-      case 'WEEKLY':
+      case "WEEKLY":
         if (daysOfWeek && daysOfWeek.length > 0) {
           // Find next matching day of week
           const currentDay = next.getDay();
           const sortedDays = [...daysOfWeek].sort((a, b) => a - b);
-          const nextDay = sortedDays.find(d => d > currentDay);
+          const nextDay = sortedDays.find((d) => d > currentDay);
           if (nextDay !== undefined) {
             next.setDate(next.getDate() + (nextDay - currentDay));
           } else {
             // Wrap to next week
-            next.setDate(next.getDate() + (7 - currentDay + sortedDays[0]) + (interval - 1) * 7);
+            next.setDate(
+              next.getDate() +
+                (7 - currentDay + sortedDays[0]) +
+                (interval - 1) * 7,
+            );
           }
         } else {
           next.setDate(next.getDate() + 7 * interval);
         }
         break;
-      case 'MONTHLY':
+      case "MONTHLY":
         next.setMonth(next.getMonth() + interval);
         break;
-      case 'YEARLY':
+      case "YEARLY":
         next.setFullYear(next.getFullYear() + interval);
         break;
       default:
@@ -1009,7 +1196,10 @@ export class TaskController {
   /**
    * Generate next task from recurrence when a task is completed
    */
-  private async generateNextRecurringTask(taskId: string, userId: string): Promise<any> {
+  private async generateNextRecurringTask(
+    taskId: string,
+    userId: string,
+  ): Promise<any> {
     const task = await prisma.contactTask.findFirst({
       where: { id: taskId, userId },
       include: { recurrence: true },
@@ -1022,16 +1212,30 @@ export class TaskController {
 
     // Check limits
     if (recurrence.endDate && new Date() > recurrence.endDate) {
-      await prisma.taskRecurrence.update({ where: { id: recurrence.id }, data: { isActive: false } });
+      await prisma.taskRecurrence.update({
+        where: { id: recurrence.id },
+        data: { isActive: false },
+      });
       return null;
     }
-    if (recurrence.maxOccurrences && recurrence.occurrenceCount >= recurrence.maxOccurrences) {
-      await prisma.taskRecurrence.update({ where: { id: recurrence.id }, data: { isActive: false } });
+    if (
+      recurrence.maxOccurrences &&
+      recurrence.occurrenceCount >= recurrence.maxOccurrences
+    ) {
+      await prisma.taskRecurrence.update({
+        where: { id: recurrence.id },
+        data: { isActive: false },
+      });
       return null;
     }
 
     const daysOfWeek = recurrence.daysOfWeek as number[] | null;
-    const nextDueDate = this.calculateNextDueDate(task.dueDate, recurrence.pattern, recurrence.interval, daysOfWeek || undefined);
+    const nextDueDate = this.calculateNextDueDate(
+      task.dueDate,
+      recurrence.pattern,
+      recurrence.interval,
+      daysOfWeek || undefined,
+    );
 
     // Calculate reminder offset from original task
     let nextReminderAt: Date | null = null;
@@ -1050,7 +1254,7 @@ export class TaskController {
         dueDate: nextDueDate,
         reminderAt: nextReminderAt,
         priority: task.priority,
-        status: 'PENDING',
+        status: "PENDING",
         category: task.category,
         categoryColor: task.categoryColor,
         recurrenceId: recurrence.id,
@@ -1076,35 +1280,49 @@ export class TaskController {
    * POST /api/v1/tasks/:id/recurrence
    * Set recurrence on an existing task
    */
-  async setRecurrence(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async setRecurrence(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { pattern, interval, daysOfWeek, endDate, maxOccurrences } = req.body;
+      const { pattern, interval, daysOfWeek, endDate, maxOccurrences } =
+        req.body;
 
-      if (!pattern || !['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY', 'CUSTOM'].includes(pattern)) {
+      if (
+        !pattern ||
+        !["DAILY", "WEEKLY", "MONTHLY", "YEARLY", "CUSTOM"].includes(pattern)
+      ) {
         res.status(400).json({
           success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'Valid pattern is required (DAILY, WEEKLY, MONTHLY, YEARLY, CUSTOM)' },
+          error: {
+            code: "VALIDATION_ERROR",
+            message:
+              "Valid pattern is required (DAILY, WEEKLY, MONTHLY, YEARLY, CUSTOM)",
+          },
         });
         return;
       }
 
       const task = await prisma.contactTask.findFirst({
-        where: { id: req.params.id, userId: req.user.userId },
+        where: { id: String(req.params.id), userId: req.user.userId },
       });
 
       if (!task) {
         res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Task not found' },
+          error: { code: "NOT_FOUND", message: "Task not found" },
         });
         return;
       }
 
       // Remove existing recurrence if any
       if (task.recurrenceId) {
-        await prisma.taskRecurrence.delete({ where: { id: task.recurrenceId } });
+        await prisma.taskRecurrence.delete({
+          where: { id: task.recurrenceId },
+        });
       }
 
       const recurrence = await prisma.taskRecurrence.create({
@@ -1139,18 +1357,22 @@ export class TaskController {
    * DELETE /api/v1/tasks/:id/recurrence
    * Remove recurrence from a task
    */
-  async removeRecurrence(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async removeRecurrence(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const task = await prisma.contactTask.findFirst({
-        where: { id: req.params.id, userId: req.user.userId },
+        where: { id: String(req.params.id), userId: req.user.userId },
       });
 
       if (!task) {
         res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Task not found' },
+          error: { code: "NOT_FOUND", message: "Task not found" },
         });
         return;
       }
@@ -1160,10 +1382,12 @@ export class TaskController {
           where: { id: task.id },
           data: { recurrenceId: null },
         });
-        await prisma.taskRecurrence.delete({ where: { id: task.recurrenceId } });
+        await prisma.taskRecurrence.delete({
+          where: { id: task.recurrenceId },
+        });
       }
 
-      res.status(200).json({ success: true, message: 'Recurrence removed' });
+      res.status(200).json({ success: true, message: "Recurrence removed" });
     } catch (error) {
       next(error);
     }
@@ -1173,19 +1397,23 @@ export class TaskController {
    * GET /api/v1/tasks/:id/recurrence
    * Get recurrence details for a task
    */
-  async getRecurrence(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getRecurrence(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const task = await prisma.contactTask.findFirst({
-        where: { id: req.params.id, userId: req.user.userId },
+        where: { id: String(req.params.id), userId: req.user.userId },
         include: { recurrence: true },
       });
 
       if (!task) {
         res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Task not found' },
+          error: { code: "NOT_FOUND", message: "Task not found" },
         });
         return;
       }
@@ -1200,14 +1428,29 @@ export class TaskController {
   // TASK SHARING
   // ============================================
 
-  async shareTask(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async shareTask(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
-      const task = await prisma.contactTask.findFirst({ where: { id: req.params.id, userId: req.user.userId } });
-      if (!task) { res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Task not found' } }); return; }
+      if (!req.user) throw new AuthenticationError("Authentication required");
+      const task = await prisma.contactTask.findFirst({
+        where: { id: String(req.params.id), userId: req.user.userId },
+      });
+      if (!task) {
+        res.status(404).json({
+          success: false,
+          error: { code: "NOT_FOUND", message: "Task not found" },
+        });
+        return;
+      }
 
       const { userId, email, permission } = req.body;
-      const shareToken = !userId && !email ? crypto.randomUUID().replace(/-/g, '').slice(0, 32) : null;
+      const shareToken =
+        !userId && !email
+          ? crypto.randomUUID().replace(/-/g, "").slice(0, 32)
+          : null;
 
       const share = await prisma.taskShare.create({
         data: {
@@ -1216,144 +1459,295 @@ export class TaskController {
           sharedWithId: userId || null,
           sharedEmail: email || null,
           shareToken,
-          permission: permission || 'VIEW',
+          permission: permission || "VIEW",
         },
         include: { sharedWith: { select: { id: true, fullName: true } } },
       });
 
       res.status(201).json({ success: true, data: share });
-    } catch (error) { next(error); }
+    } catch (error) {
+      next(error);
+    }
   }
 
-  async revokeShare(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async revokeShare(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
-      const task = await prisma.contactTask.findFirst({ where: { id: req.params.id, userId: req.user.userId } });
-      if (!task) { res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Task not found' } }); return; }
-      await prisma.taskShare.delete({ where: { id: req.params.shareId } });
-      res.status(200).json({ success: true, message: 'Share revoked' });
-    } catch (error) { next(error); }
+      if (!req.user) throw new AuthenticationError("Authentication required");
+      const task = await prisma.contactTask.findFirst({
+        where: { id: String(req.params.id), userId: req.user.userId },
+      });
+      if (!task) {
+        res.status(404).json({
+          success: false,
+          error: { code: "NOT_FOUND", message: "Task not found" },
+        });
+        return;
+      }
+      await prisma.taskShare.delete({
+        where: { id: String(req.params.shareId) },
+      });
+      res.status(200).json({ success: true, message: "Share revoked" });
+    } catch (error) {
+      next(error);
+    }
   }
 
-  async listShares(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async listShares(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
-      const task = await prisma.contactTask.findFirst({ where: { id: req.params.id, userId: req.user.userId } });
-      if (!task) { res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Task not found' } }); return; }
+      if (!req.user) throw new AuthenticationError("Authentication required");
+      const task = await prisma.contactTask.findFirst({
+        where: { id: String(req.params.id), userId: req.user.userId },
+      });
+      if (!task) {
+        res.status(404).json({
+          success: false,
+          error: { code: "NOT_FOUND", message: "Task not found" },
+        });
+        return;
+      }
       const shares = await prisma.taskShare.findMany({
         where: { taskId: task.id },
         include: { sharedWith: { select: { id: true, fullName: true } } },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       });
       res.status(200).json({ success: true, data: shares });
-    } catch (error) { next(error); }
+    } catch (error) {
+      next(error);
+    }
   }
 
-  async getSharedWithMe(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getSharedWithMe(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
       const shares = await prisma.taskShare.findMany({
         where: { sharedWithId: req.user.userId },
         include: {
-          task: { include: { contact: { select: { id: true, fullName: true, company: true } } } },
+          task: {
+            include: {
+              contact: { select: { id: true, fullName: true, company: true } },
+            },
+          },
           sharedBy: { select: { id: true, fullName: true } },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       });
       res.status(200).json({ success: true, data: shares });
-    } catch (error) { next(error); }
+    } catch (error) {
+      next(error);
+    }
   }
 
-  async getByShareToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getByShareToken(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const share = await prisma.taskShare.findUnique({
-        where: { shareToken: req.params.token },
+        where: { shareToken: String(req.params.token) },
         include: {
           task: true,
           sharedBy: { select: { fullName: true } },
         },
       });
-      if (!share) { res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Shared task not found' } }); return; }
+      if (!share) {
+        res.status(404).json({
+          success: false,
+          error: { code: "NOT_FOUND", message: "Shared task not found" },
+        });
+        return;
+      }
       res.status(200).json({ success: true, data: share });
-    } catch (error) { next(error); }
+    } catch (error) {
+      next(error);
+    }
   }
 
   // ============================================
   // TASK COMMENTS
   // ============================================
 
-  async listComments(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async listComments(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
-      const task = await prisma.contactTask.findFirst({ where: { id: req.params.id, userId: req.user.userId } });
-      if (!task) { res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Task not found' } }); return; }
+      if (!req.user) throw new AuthenticationError("Authentication required");
+      const task = await prisma.contactTask.findFirst({
+        where: { id: String(req.params.id), userId: req.user.userId },
+      });
+      if (!task) {
+        res.status(404).json({
+          success: false,
+          error: { code: "NOT_FOUND", message: "Task not found" },
+        });
+        return;
+      }
       const comments = await prisma.taskComment.findMany({
         where: { taskId: task.id },
-        include: { user: { select: { id: true, fullName: true, avatarUrl: true } } },
-        orderBy: { createdAt: 'asc' },
+        include: {
+          user: { select: { id: true, fullName: true, avatarUrl: true } },
+        },
+        orderBy: { createdAt: "asc" },
       });
       res.status(200).json({ success: true, data: comments });
-    } catch (error) { next(error); }
+    } catch (error) {
+      next(error);
+    }
   }
 
-  async addComment(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async addComment(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
-      const task = await prisma.contactTask.findFirst({ where: { id: req.params.id, userId: req.user.userId } });
-      if (!task) { res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Task not found' } }); return; }
+      if (!req.user) throw new AuthenticationError("Authentication required");
+      const task = await prisma.contactTask.findFirst({
+        where: { id: String(req.params.id), userId: req.user.userId },
+      });
+      if (!task) {
+        res.status(404).json({
+          success: false,
+          error: { code: "NOT_FOUND", message: "Task not found" },
+        });
+        return;
+      }
       const { content } = req.body;
-      if (!content?.trim()) { res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Content is required' } }); return; }
+      if (!content?.trim()) {
+        res.status(400).json({
+          success: false,
+          error: { code: "VALIDATION_ERROR", message: "Content is required" },
+        });
+        return;
+      }
       const comment = await prisma.taskComment.create({
-        data: { taskId: task.id, userId: req.user.userId, content: content.trim() },
-        include: { user: { select: { id: true, fullName: true, avatarUrl: true } } },
+        data: {
+          taskId: task.id,
+          userId: req.user.userId,
+          content: content.trim(),
+        },
+        include: {
+          user: { select: { id: true, fullName: true, avatarUrl: true } },
+        },
       });
       // Log activity
-      await prisma.taskActivity.create({ data: { taskId: task.id, userId: req.user.userId, action: 'commented', details: { commentId: comment.id } } });
+      await prisma.taskActivity.create({
+        data: {
+          taskId: task.id,
+          userId: req.user.userId,
+          action: "commented",
+          details: { commentId: comment.id },
+        },
+      });
       res.status(201).json({ success: true, data: comment });
-    } catch (error) { next(error); }
+    } catch (error) {
+      next(error);
+    }
   }
 
-  async updateComment(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async updateComment(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
-      const existing = await prisma.taskComment.findFirst({ where: { id: req.params.commentId, userId: req.user.userId } });
-      if (!existing) { res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Comment not found' } }); return; }
+      if (!req.user) throw new AuthenticationError("Authentication required");
+      const existing = await prisma.taskComment.findFirst({
+        where: { id: String(req.params.commentId), userId: req.user.userId },
+      });
+      if (!existing) {
+        res.status(404).json({
+          success: false,
+          error: { code: "NOT_FOUND", message: "Comment not found" },
+        });
+        return;
+      }
       const comment = await prisma.taskComment.update({
-        where: { id: req.params.commentId },
+        where: { id: String(req.params.commentId) },
         data: { content: req.body.content.trim() },
-        include: { user: { select: { id: true, fullName: true, avatarUrl: true } } },
+        include: {
+          user: { select: { id: true, fullName: true, avatarUrl: true } },
+        },
       });
       res.status(200).json({ success: true, data: comment });
-    } catch (error) { next(error); }
+    } catch (error) {
+      next(error);
+    }
   }
 
-  async deleteComment(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async deleteComment(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
-      const existing = await prisma.taskComment.findFirst({ where: { id: req.params.commentId, userId: req.user.userId } });
-      if (!existing) { res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Comment not found' } }); return; }
-      await prisma.taskComment.delete({ where: { id: req.params.commentId } });
-      res.status(200).json({ success: true, message: 'Comment deleted' });
-    } catch (error) { next(error); }
+      if (!req.user) throw new AuthenticationError("Authentication required");
+      const existing = await prisma.taskComment.findFirst({
+        where: { id: String(req.params.commentId), userId: req.user.userId },
+      });
+      if (!existing) {
+        res.status(404).json({
+          success: false,
+          error: { code: "NOT_FOUND", message: "Comment not found" },
+        });
+        return;
+      }
+      await prisma.taskComment.delete({
+        where: { id: String(req.params.commentId) },
+      });
+      res.status(200).json({ success: true, message: "Comment deleted" });
+    } catch (error) {
+      next(error);
+    }
   }
 
   // ============================================
   // TASK ACTIVITY
   // ============================================
 
-  async getActivity(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getActivity(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
-      const task = await prisma.contactTask.findFirst({ where: { id: req.params.id, userId: req.user.userId } });
-      if (!task) { res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Task not found' } }); return; }
+      if (!req.user) throw new AuthenticationError("Authentication required");
+      const task = await prisma.contactTask.findFirst({
+        where: { id: String(req.params.id), userId: req.user.userId },
+      });
+      if (!task) {
+        res.status(404).json({
+          success: false,
+          error: { code: "NOT_FOUND", message: "Task not found" },
+        });
+        return;
+      }
       const activities = await prisma.taskActivity.findMany({
         where: { taskId: task.id },
-        include: { user: { select: { id: true, fullName: true, avatarUrl: true } } },
-        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { id: true, fullName: true, avatarUrl: true } },
+        },
+        orderBy: { createdAt: "desc" },
         take: 50,
       });
       res.status(200).json({ success: true, data: activities });
-    } catch (error) { next(error); }
+    } catch (error) {
+      next(error);
+    }
   }
   // ============================================
   // ICAL EXPORT
@@ -1363,20 +1757,30 @@ export class TaskController {
    * GET /api/v1/tasks/:id/ical
    * Export a single task as .ics file
    */
-  async exportTaskIcal(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async exportTaskIcal(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const task = await prisma.contactTask.findFirst({
-        where: { id: req.params.id, userId: req.user.userId },
+        where: { id: String(req.params.id), userId: req.user.userId },
       });
 
       if (!task) {
-        res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Task not found' } });
+        res.status(404).json({
+          success: false,
+          error: { code: "NOT_FOUND", message: "Task not found" },
+        });
         return;
       }
 
-      const cal = ical({ name: 'IntellMatch Tasks', method: ICalCalendarMethod.PUBLISH });
+      const cal = ical({
+        name: "IntellMatch Tasks",
+        method: ICalCalendarMethod.PUBLISH,
+      });
       const start = task.dueDate || task.createdAt;
       const end = new Date(start.getTime() + 60 * 60 * 1000); // 1 hour duration
 
@@ -1389,8 +1793,11 @@ export class TaskController {
         allDay: !task.dueDate,
       });
 
-      res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename="task-${task.id}.ics"`);
+      res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="task-${task.id}.ics"`,
+      );
       res.send(cal.toString());
     } catch (error) {
       next(error);
@@ -1401,17 +1808,27 @@ export class TaskController {
    * GET /api/v1/tasks/ical
    * Export all active tasks as .ics file
    */
-  async exportAllTasksIcal(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async exportAllTasksIcal(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const tasks = await prisma.contactTask.findMany({
-        where: { userId: req.user.userId, status: { in: ['PENDING', 'IN_PROGRESS'] } },
-        orderBy: { dueDate: 'asc' },
+        where: {
+          userId: req.user.userId,
+          status: { in: ["PENDING", "IN_PROGRESS"] },
+        },
+        orderBy: { dueDate: "asc" },
         take: 500,
       });
 
-      const cal = ical({ name: 'IntellMatch Tasks', method: ICalCalendarMethod.PUBLISH });
+      const cal = ical({
+        name: "IntellMatch Tasks",
+        method: ICalCalendarMethod.PUBLISH,
+      });
 
       for (const task of tasks) {
         const start = task.dueDate || task.createdAt;
@@ -1427,8 +1844,11 @@ export class TaskController {
         });
       }
 
-      res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
-      res.setHeader('Content-Disposition', 'attachment; filename="intellmatch-tasks.ics"');
+      res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+      res.setHeader(
+        "Content-Disposition",
+        'attachment; filename="intellmatch-tasks.ics"',
+      );
       res.send(cal.toString());
     } catch (error) {
       next(error);
@@ -1443,49 +1863,66 @@ export class TaskController {
    * POST /api/v1/tasks/parse
    * Parse natural language text into task fields
    */
-  async parseNaturalLanguage(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async parseNaturalLanguage(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const { text } = req.body;
       if (!text?.trim()) {
-        res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'text is required' } });
+        res.status(400).json({
+          success: false,
+          error: { code: "VALIDATION_ERROR", message: "text is required" },
+        });
         return;
       }
 
       let title = text.trim();
       let dueDate: string | null = null;
       let dueTime: string | null = null;
-      let priority: string = 'MEDIUM';
+      let priority: string = "MEDIUM";
 
       const now = new Date();
 
       // Extract priority
       if (/\b(urgent|asap|critical)\b/i.test(title)) {
-        priority = 'URGENT';
-        title = title.replace(/\b(urgent|asap|critical)\b/i, '').trim();
+        priority = "URGENT";
+        title = title.replace(/\b(urgent|asap|critical)\b/i, "").trim();
       } else if (/\b(important|high\s*priority)\b/i.test(title)) {
-        priority = 'HIGH';
-        title = title.replace(/\b(important|high\s*priority)\b/i, '').trim();
+        priority = "HIGH";
+        title = title.replace(/\b(important|high\s*priority)\b/i, "").trim();
       }
 
       // Extract "tomorrow"
       if (/\btomorrow\b/i.test(title)) {
         const d = new Date(now);
         d.setDate(d.getDate() + 1);
-        dueDate = d.toISOString().split('T')[0];
-        title = title.replace(/\btomorrow\b/i, '').trim();
+        dueDate = d.toISOString().split("T")[0];
+        title = title.replace(/\btomorrow\b/i, "").trim();
       }
 
       // Extract "today"
       if (/\btoday\b/i.test(title)) {
-        dueDate = now.toISOString().split('T')[0];
-        title = title.replace(/\btoday\b/i, '').trim();
+        dueDate = now.toISOString().split("T")[0];
+        title = title.replace(/\btoday\b/i, "").trim();
       }
 
       // Extract "next monday/tuesday/..."
-      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-      const nextDayMatch = title.match(/\bnext\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i);
+      const dayNames = [
+        "sunday",
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+      ];
+      const nextDayMatch = title.match(
+        /\bnext\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i,
+      );
       if (nextDayMatch) {
         const targetDay = dayNames.indexOf(nextDayMatch[1].toLowerCase());
         const d = new Date(now);
@@ -1493,34 +1930,44 @@ export class TaskController {
         let daysAhead = targetDay - currentDay;
         if (daysAhead <= 0) daysAhead += 7;
         d.setDate(d.getDate() + daysAhead);
-        dueDate = d.toISOString().split('T')[0];
-        title = title.replace(/\bnext\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i, '').trim();
+        dueDate = d.toISOString().split("T")[0];
+        title = title
+          .replace(
+            /\bnext\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i,
+            "",
+          )
+          .trim();
       }
 
       // Extract "next week"
       if (/\bnext\s+week\b/i.test(title)) {
         const d = new Date(now);
         d.setDate(d.getDate() + 7);
-        dueDate = d.toISOString().split('T')[0];
-        title = title.replace(/\bnext\s+week\b/i, '').trim();
+        dueDate = d.toISOString().split("T")[0];
+        title = title.replace(/\bnext\s+week\b/i, "").trim();
       }
 
       // Extract time: "3pm", "3:30pm", "15:00", "at 3"
-      const timeMatch = title.match(/\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b/i);
+      const timeMatch = title.match(
+        /\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b/i,
+      );
       if (timeMatch) {
         let hours = parseInt(timeMatch[1], 10);
         const minutes = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
         const ampm = timeMatch[3]?.toLowerCase();
-        if (ampm === 'pm' && hours < 12) hours += 12;
-        if (ampm === 'am' && hours === 12) hours = 0;
+        if (ampm === "pm" && hours < 12) hours += 12;
+        if (ampm === "am" && hours === 12) hours = 0;
         if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
-          dueTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-          title = title.replace(timeMatch[0], '').trim();
+          dueTime = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+          title = title.replace(timeMatch[0], "").trim();
         }
       }
 
       // Clean up extra spaces and trailing prepositions
-      title = title.replace(/\b(at|on|by)\s*$/i, '').replace(/\s+/g, ' ').trim();
+      title = title
+        .replace(/\b(at|on|by)\s*$/i, "")
+        .replace(/\s+/g, " ")
+        .trim();
 
       res.status(200).json({
         success: true,
@@ -1538,25 +1985,39 @@ export class TaskController {
    * POST /api/v1/tasks/:id/assignees
    * Add a contact as assignee to a task
    */
-  async addAssignee(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async addAssignee(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
       const { contactId } = req.body;
       const userId = req.user.userId;
 
       // Verify task belongs to user
-      const task = await prisma.contactTask.findFirst({ where: { id, userId } });
+      const task = await prisma.contactTask.findFirst({
+        where: { id, userId },
+      });
       if (!task) {
-        res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Task not found' } });
+        res.status(404).json({
+          success: false,
+          error: { code: "NOT_FOUND", message: "Task not found" },
+        });
         return;
       }
 
       // Verify contact belongs to user
-      const contact = await prisma.contact.findFirst({ where: { id: contactId, ownerId: userId } });
+      const contact = await prisma.contact.findFirst({
+        where: { id: contactId, ownerId: userId },
+      });
       if (!contact) {
-        res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Contact not found' } });
+        res.status(404).json({
+          success: false,
+          error: { code: "NOT_FOUND", message: "Contact not found" },
+        });
         return;
       }
 
@@ -1564,10 +2025,19 @@ export class TaskController {
         where: { taskId_contactId: { taskId: id, contactId } },
         create: { taskId: id, contactId },
         update: {},
-        include: { contact: { select: { id: true, fullName: true, company: true, avatarUrl: true } } },
+        include: {
+          contact: {
+            select: {
+              id: true,
+              fullName: true,
+              company: true,
+              avatarUrl: true,
+            },
+          },
+        },
       });
 
-      logger.info('Task assignee added', { userId, taskId: id, contactId });
+      logger.info("Task assignee added", { userId, taskId: id, contactId });
 
       res.json({ success: true, data: assignee });
     } catch (error) {
@@ -1579,22 +2049,33 @@ export class TaskController {
    * DELETE /api/v1/tasks/:id/assignees/:contactId
    * Remove a contact assignee from a task
    */
-  async removeAssignee(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async removeAssignee(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id, contactId } = req.params;
+      const { id, contactId } = req.params as { id: string; contactId: string };
       const userId = req.user.userId;
 
-      const task = await prisma.contactTask.findFirst({ where: { id, userId } });
+      const task = await prisma.contactTask.findFirst({
+        where: { id, userId },
+      });
       if (!task) {
-        res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Task not found' } });
+        res.status(404).json({
+          success: false,
+          error: { code: "NOT_FOUND", message: "Task not found" },
+        });
         return;
       }
 
-      await prisma.taskAssignee.deleteMany({ where: { taskId: id, contactId } });
+      await prisma.taskAssignee.deleteMany({
+        where: { taskId: id, contactId },
+      });
 
-      logger.info('Task assignee removed', { userId, taskId: id, contactId });
+      logger.info("Task assignee removed", { userId, taskId: id, contactId });
 
       res.json({ success: true });
     } catch (error) {
@@ -1606,23 +2087,41 @@ export class TaskController {
    * GET /api/v1/tasks/:id/assignees
    * Get all assignees for a task
    */
-  async getAssignees(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getAssignees(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
       const userId = req.user.userId;
 
-      const task = await prisma.contactTask.findFirst({ where: { id, userId } });
+      const task = await prisma.contactTask.findFirst({
+        where: { id, userId },
+      });
       if (!task) {
-        res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Task not found' } });
+        res.status(404).json({
+          success: false,
+          error: { code: "NOT_FOUND", message: "Task not found" },
+        });
         return;
       }
 
       const assignees = await prisma.taskAssignee.findMany({
         where: { taskId: id },
-        include: { contact: { select: { id: true, fullName: true, company: true, avatarUrl: true } } },
-        orderBy: { createdAt: 'asc' },
+        include: {
+          contact: {
+            select: {
+              id: true,
+              fullName: true,
+              company: true,
+              avatarUrl: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "asc" },
       });
 
       res.json({ success: true, data: assignees });
@@ -1639,11 +2138,15 @@ export class TaskController {
    * POST /api/v1/tasks/:id/attachments/voice
    * Upload voice note for a task
    */
-  async uploadVoiceNote(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async uploadVoiceNote(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
 
       // Verify task ownership
       const task = await prisma.contactTask.findFirst({
@@ -1653,7 +2156,7 @@ export class TaskController {
       if (!task) {
         res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Task not found' },
+          error: { code: "NOT_FOUND", message: "Task not found" },
         });
         return;
       }
@@ -1661,7 +2164,7 @@ export class TaskController {
       if (!req.file) {
         res.status(400).json({
           success: false,
-          error: { code: 'NO_FILE', message: 'No audio file provided' },
+          error: { code: "NO_FILE", message: "No audio file provided" },
         });
         return;
       }
@@ -1669,25 +2172,25 @@ export class TaskController {
       let voiceNoteUrl: string;
 
       try {
-        const { getStorageService } = await import('../../infrastructure/external/storage/index.js');
+        const { getStorageService } =
+          await import("../../infrastructure/external/storage/index.js");
         const storage = getStorageService();
 
-        const bucket = 'task-attachments';
+        const bucket = "task-attachments";
         const key = `${req.user.userId}/${id}-${Date.now()}.webm`;
 
         await storage.ensureBucket(bucket);
 
-        const result = await storage.upload(
-          bucket,
-          key,
-          req.file.buffer,
-          { contentType: req.file.mimetype || 'audio/webm' }
-        );
+        const result = await storage.upload(bucket, key, req.file.buffer, {
+          contentType: req.file.mimetype || "audio/webm",
+        });
         voiceNoteUrl = result.url;
       } catch (storageError) {
-        logger.warn('Storage upload failed, using base64', { error: storageError });
-        const base64 = req.file.buffer.toString('base64');
-        voiceNoteUrl = `data:${req.file.mimetype || 'audio/webm'};base64,${base64}`;
+        logger.warn("Storage upload failed, using base64", {
+          error: storageError,
+        });
+        const base64 = req.file.buffer.toString("base64");
+        voiceNoteUrl = `data:${req.file.mimetype || "audio/webm"};base64,${base64}`;
       }
 
       const updatedTask = await prisma.contactTask.update({
@@ -1696,12 +2199,24 @@ export class TaskController {
         include: {
           contact: { select: { id: true, fullName: true, company: true } },
           assignees: {
-            include: { contact: { select: { id: true, fullName: true, company: true, avatarUrl: true } } },
+            include: {
+              contact: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  company: true,
+                  avatarUrl: true,
+                },
+              },
+            },
           },
         },
       });
 
-      logger.info('Task voice note uploaded', { userId: req.user.userId, taskId: id });
+      logger.info("Task voice note uploaded", {
+        userId: req.user.userId,
+        taskId: id,
+      });
 
       res.status(200).json({ success: true, data: updatedTask });
     } catch (error) {
@@ -1713,11 +2228,15 @@ export class TaskController {
    * POST /api/v1/tasks/:id/attachments/image
    * Upload image attachment for a task
    */
-  async uploadImage(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async uploadImage(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
 
       // Verify task ownership
       const task = await prisma.contactTask.findFirst({
@@ -1727,7 +2246,7 @@ export class TaskController {
       if (!task) {
         res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Task not found' },
+          error: { code: "NOT_FOUND", message: "Task not found" },
         });
         return;
       }
@@ -1735,7 +2254,7 @@ export class TaskController {
       if (!req.file) {
         res.status(400).json({
           success: false,
-          error: { code: 'NO_FILE', message: 'No image file provided' },
+          error: { code: "NO_FILE", message: "No image file provided" },
         });
         return;
       }
@@ -1743,25 +2262,25 @@ export class TaskController {
       let imageUrl: string;
 
       try {
-        const { getStorageService } = await import('../../infrastructure/external/storage/index.js');
+        const { getStorageService } =
+          await import("../../infrastructure/external/storage/index.js");
         const storage = getStorageService();
 
-        const bucket = 'task-attachments';
-        const ext = req.file.originalname.split('.').pop() || 'jpg';
+        const bucket = "task-attachments";
+        const ext = req.file.originalname.split(".").pop() || "jpg";
         const key = `${req.user.userId}/${id}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${ext}`;
 
         await storage.ensureBucket(bucket);
 
-        const result = await storage.upload(
-          bucket,
-          key,
-          req.file.buffer,
-          { contentType: req.file.mimetype }
-        );
+        const result = await storage.upload(bucket, key, req.file.buffer, {
+          contentType: req.file.mimetype,
+        });
         imageUrl = result.url;
       } catch (storageError) {
-        logger.warn('Storage upload failed, using base64', { error: storageError });
-        const base64 = req.file.buffer.toString('base64');
+        logger.warn("Storage upload failed, using base64", {
+          error: storageError,
+        });
+        const base64 = req.file.buffer.toString("base64");
         imageUrl = `data:${req.file.mimetype};base64,${base64}`;
       }
 
@@ -1773,12 +2292,24 @@ export class TaskController {
         include: {
           contact: { select: { id: true, fullName: true, company: true } },
           assignees: {
-            include: { contact: { select: { id: true, fullName: true, company: true, avatarUrl: true } } },
+            include: {
+              contact: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  company: true,
+                  avatarUrl: true,
+                },
+              },
+            },
           },
         },
       });
 
-      logger.info('Task image uploaded', { userId: req.user.userId, taskId: id });
+      logger.info("Task image uploaded", {
+        userId: req.user.userId,
+        taskId: id,
+      });
 
       res.status(200).json({ success: true, data: updatedTask });
     } catch (error) {

@@ -454,7 +454,7 @@ export class ContactController {
       const orgId = req.orgContext?.organizationId || null;
       const contact = await getContactUseCase.execute(
         req.user.userId,
-        req.params.id,
+        String(req.params.id),
         orgId,
       );
 
@@ -481,7 +481,7 @@ export class ContactController {
       const orgId = req.orgContext?.organizationId || null;
       const contact = await updateContactUseCase.execute(
         req.user.userId,
-        req.params.id,
+        String(req.params.id),
         req.body,
         orgId,
       );
@@ -507,7 +507,11 @@ export class ContactController {
       }
 
       const orgId = req.orgContext?.organizationId || null;
-      await deleteContactUseCase.execute(req.user.userId, req.params.id, orgId);
+      await deleteContactUseCase.execute(
+        req.user.userId,
+        String(req.params.id),
+        orgId,
+      );
 
       res.status(200).json({
         success: true,
@@ -535,7 +539,7 @@ export class ContactController {
 
       const contact = await addInteractionUseCase.execute(
         req.user.userId,
-        req.params.id,
+        String(req.params.id),
         req.body,
       );
 
@@ -634,7 +638,7 @@ export class ContactController {
         throw new AuthenticationError("Authentication required");
       }
 
-      const contactId = req.params.id;
+      const contactId = String(req.params.id);
 
       logger.info("Enrichment requested", {
         userId: req.user.userId,
@@ -1530,7 +1534,7 @@ export class ContactController {
 
       const contact = await prisma.contact.findFirst({
         where: {
-          id: req.params.id,
+          id: String(req.params.id),
           ownerId: req.user.userId,
         },
         include: {
@@ -1900,7 +1904,7 @@ Respond in JSON format:
         throw new AuthenticationError("Authentication required");
       }
 
-      const contactId = req.params.id;
+      const contactId = String(req.params.id);
       const {
         title,
         description,
@@ -1972,7 +1976,7 @@ Respond in JSON format:
         throw new AuthenticationError("Authentication required");
       }
 
-      const contactId = req.params.id;
+      const contactId = String(req.params.id);
       const status = req.query.status as string | undefined;
 
       // Verify contact ownership
@@ -2022,7 +2026,7 @@ Respond in JSON format:
         throw new AuthenticationError("Authentication required");
       }
 
-      const { taskId } = req.params;
+      const { taskId } = req.params as { taskId: string };
       const {
         title,
         description,
@@ -2100,7 +2104,7 @@ Respond in JSON format:
         throw new AuthenticationError("Authentication required");
       }
 
-      const { taskId } = req.params;
+      const { taskId } = req.params as { taskId: string };
 
       // Verify task ownership
       const task = await prisma.contactTask.findFirst({
@@ -2197,7 +2201,10 @@ Respond in JSON format:
         throw new AuthenticationError("Authentication required");
       }
 
-      const { id: contactId, taskId } = req.params;
+      const { id: contactId, taskId } = req.params as {
+        id: string;
+        taskId: string;
+      };
 
       // Get task with contact info
       const task = await prisma.contactTask.findFirst({
@@ -2303,7 +2310,7 @@ Respond in JSON format:
         throw new AuthenticationError("Authentication required");
       }
 
-      const contactId = req.params.id;
+      const contactId = String(req.params.id);
       const { title, description, reminderAt } = req.body;
 
       if (!reminderAt) {
@@ -2375,7 +2382,7 @@ Respond in JSON format:
         throw new AuthenticationError("Authentication required");
       }
 
-      const contactId = req.params.id;
+      const contactId = String(req.params.id);
       const includeCompleted = req.query.includeCompleted === "true";
 
       // Verify contact ownership
@@ -2425,7 +2432,7 @@ Respond in JSON format:
         throw new AuthenticationError("Authentication required");
       }
 
-      const { reminderId } = req.params;
+      const { reminderId } = req.params as { reminderId: string };
       const { title, description, reminderAt, isCompleted } = req.body;
 
       // Verify reminder ownership
@@ -2491,7 +2498,7 @@ Respond in JSON format:
         throw new AuthenticationError("Authentication required");
       }
 
-      const { reminderId } = req.params;
+      const { reminderId } = req.params as { reminderId: string };
 
       // Verify reminder ownership
       const reminder = await prisma.contactReminder.findFirst({
@@ -2586,7 +2593,7 @@ Respond in JSON format:
         throw new AuthenticationError("Authentication required");
       }
 
-      const { taskId } = req.params;
+      const { taskId } = req.params as { taskId: string };
 
       // Verify task ownership
       const task = await prisma.contactTask.findFirst({
@@ -2674,7 +2681,7 @@ Respond in JSON format:
         throw new AuthenticationError("Authentication required");
       }
 
-      const { taskId } = req.params;
+      const { taskId } = req.params as { taskId: string };
 
       // Verify task ownership
       const task = await prisma.contactTask.findFirst({
@@ -2777,7 +2784,10 @@ Respond in JSON format:
         throw new AuthenticationError("Authentication required");
       }
 
-      const { taskId, imageIndex } = req.params;
+      const { taskId, imageIndex } = req.params as {
+        taskId: string;
+        imageIndex: string;
+      };
       const index = parseInt(imageIndex, 10);
 
       // Verify task ownership
@@ -2846,7 +2856,7 @@ Respond in JSON format:
         throw new AuthenticationError("Authentication required");
       }
 
-      const { reminderId } = req.params;
+      const { reminderId } = req.params as { reminderId: string };
 
       // Verify reminder ownership
       const reminder = await prisma.contactReminder.findFirst({
@@ -2949,7 +2959,10 @@ Respond in JSON format:
         throw new AuthenticationError("Authentication required");
       }
 
-      const { reminderId, imageIndex } = req.params;
+      const { reminderId, imageIndex } = req.params as {
+        reminderId: string;
+        imageIndex: string;
+      };
       const index = parseInt(imageIndex, 10);
 
       // Verify reminder ownership
@@ -3022,7 +3035,7 @@ Respond in JSON format:
         throw new AuthenticationError("Authentication required");
       }
 
-      const contactId = req.params.id;
+      const contactId = String(req.params.id);
       const type = req.query.type as string | undefined;
       const limit = req.query.limit
         ? parseInt(req.query.limit as string, 10)
@@ -3076,7 +3089,7 @@ Respond in JSON format:
         throw new AuthenticationError("Authentication required");
       }
 
-      const contactId = req.params.id;
+      const contactId = String(req.params.id);
       const { content } = req.body;
 
       if (!content || !content.trim()) {
@@ -3142,7 +3155,7 @@ Respond in JSON format:
         throw new AuthenticationError("Authentication required");
       }
 
-      const contactId = req.params.id;
+      const contactId = String(req.params.id);
       const { content } = req.body; // Optional caption
 
       // Verify contact ownership
@@ -3241,7 +3254,7 @@ Respond in JSON format:
         throw new AuthenticationError("Authentication required");
       }
 
-      const contactId = req.params.id;
+      const contactId = String(req.params.id);
       const { duration } = req.body; // Duration in seconds
 
       // Verify contact ownership
@@ -3340,7 +3353,7 @@ Respond in JSON format:
         throw new AuthenticationError("Authentication required");
       }
 
-      const contactId = req.params.id;
+      const contactId = String(req.params.id);
       const { content } = req.body; // Optional description
 
       // Verify contact ownership
@@ -3440,7 +3453,7 @@ Respond in JSON format:
         throw new AuthenticationError("Authentication required");
       }
 
-      const { noteId } = req.params;
+      const { noteId } = req.params as { noteId: string };
 
       // Verify note ownership
       const note = await prisma.contactNote.findFirst({
@@ -3504,7 +3517,7 @@ Respond in JSON format:
         throw new AuthenticationError("Authentication required");
       }
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
 
       if (!req.file) {
         res.status(400).json({

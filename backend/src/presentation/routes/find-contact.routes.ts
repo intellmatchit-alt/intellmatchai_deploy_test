@@ -6,12 +6,16 @@
  * @module presentation/routes/find-contact
  */
 
-import { Router, Request, Response, NextFunction } from 'express';
-import multer from 'multer';
-import { authenticate } from '../middleware/auth.middleware';
-import { FindContactService, FindContactInput, FeedbackInput } from '../../application/use-cases/find-contact';
-import { SearchIntent } from '@prisma/client';
-import { logger } from '../../shared/logger';
+import { Router, Request, Response, NextFunction } from "express";
+import multer from "multer";
+import { authenticate } from "../middleware/auth.middleware";
+import {
+  FindContactService,
+  FindContactInput,
+  FeedbackInput,
+} from "../../application/use-cases/find-contact";
+import { SearchIntent } from "@prisma/client";
+import { logger } from "../../shared/logger";
 
 export const findContactRoutes = Router();
 
@@ -26,11 +30,11 @@ const imageUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
   fileFilter: (_req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Only JPEG, PNG, WebP, and GIF images are allowed'));
+      cb(new Error("Only JPEG, PNG, WebP, and GIF images are allowed"));
     }
   },
 });
@@ -58,25 +62,35 @@ const imageUpload = multer({
  * - openingSentences: Array of 3 opening sentences for top result
  */
 findContactRoutes.post(
-  '/search',
-  imageUpload.single('image'),
+  "/search",
+  imageUpload.single("image"),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.user) {
-        res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required' } });
+        res.status(401).json({
+          success: false,
+          error: { code: "UNAUTHORIZED", message: "Authentication required" },
+        });
         return;
       }
 
       const { query, intent, intentNote, consentFaceMatch } = req.body;
 
       // Validate intent
-      const validIntents: SearchIntent[] = ['MEETING', 'COLLABORATION', 'FOLLOW_UP', 'SALES', 'SUPPORT', 'OTHER'];
+      const validIntents: SearchIntent[] = [
+        "MEETING",
+        "COLLABORATION",
+        "FOLLOW_UP",
+        "SALES",
+        "SUPPORT",
+        "OTHER",
+      ];
       if (!intent || !validIntents.includes(intent as SearchIntent)) {
         res.status(400).json({
           success: false,
           error: {
-            code: 'INVALID_INTENT',
-            message: `Intent must be one of: ${validIntents.join(', ')}`,
+            code: "INVALID_INTENT",
+            message: `Intent must be one of: ${validIntents.join(", ")}`,
           },
         });
         return;
@@ -87,8 +101,8 @@ findContactRoutes.post(
         res.status(400).json({
           success: false,
           error: {
-            code: 'MISSING_INPUT',
-            message: 'Either query text or image is required',
+            code: "MISSING_INPUT",
+            message: "Either query text or image is required",
           },
         });
         return;
@@ -100,7 +114,7 @@ findContactRoutes.post(
         // In production, this would upload to S3/MinIO and return the key
         // For now, we'll generate a temporary ID
         imageUploadId = `img_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-        logger.info('Image uploaded for find-contact', {
+        logger.info("Image uploaded for find-contact", {
           userId: req.user.userId,
           imageId: imageUploadId,
           size: req.file.size,
@@ -113,7 +127,8 @@ findContactRoutes.post(
         intent: intent as SearchIntent,
         intentNote: intentNote?.toString(),
         imageUploadId,
-        consentFaceMatch: consentFaceMatch === 'true' || consentFaceMatch === true,
+        consentFaceMatch:
+          consentFaceMatch === "true" || consentFaceMatch === true,
       };
 
       const result = await findContactService.search(input, req.user.userId);
@@ -123,10 +138,10 @@ findContactRoutes.post(
         data: result,
       });
     } catch (error) {
-      logger.error('Find contact search failed', { error });
+      logger.error("Find contact search failed", { error });
       next(error);
     }
-  }
+  },
 );
 
 /**
@@ -139,22 +154,25 @@ findContactRoutes.post(
  * - Same structure as search response
  */
 findContactRoutes.get(
-  '/request/:id',
+  "/request/:id",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.user) {
-        res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required' } });
+        res.status(401).json({
+          success: false,
+          error: { code: "UNAUTHORIZED", message: "Authentication required" },
+        });
         return;
       }
 
       const { id } = req.params;
 
-      const result = await findContactService.getRequestStatus(id);
+      const result = await findContactService.getRequestStatus(String(id));
 
       if (!result) {
         res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Request not found' },
+          error: { code: "NOT_FOUND", message: "Request not found" },
         });
         return;
       }
@@ -164,10 +182,10 @@ findContactRoutes.get(
         data: result,
       });
     } catch (error) {
-      logger.error('Get request status failed', { error });
+      logger.error("Get request status failed", { error });
       next(error);
     }
-  }
+  },
 );
 
 /**
@@ -183,20 +201,32 @@ findContactRoutes.get(
  * - notes?: string - Additional feedback
  */
 findContactRoutes.post(
-  '/feedback',
+  "/feedback",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.user) {
-        res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required' } });
+        res.status(401).json({
+          success: false,
+          error: { code: "UNAUTHORIZED", message: "Authentication required" },
+        });
         return;
       }
 
-      const { requestId, confirmedCandidateId, confirmedType, rejectedCandidateIds, notes } = req.body;
+      const {
+        requestId,
+        confirmedCandidateId,
+        confirmedType,
+        rejectedCandidateIds,
+        notes,
+      } = req.body;
 
       if (!requestId) {
         res.status(400).json({
           success: false,
-          error: { code: 'MISSING_REQUEST_ID', message: 'requestId is required' },
+          error: {
+            code: "MISSING_REQUEST_ID",
+            message: "requestId is required",
+          },
         });
         return;
       }
@@ -213,13 +243,13 @@ findContactRoutes.post(
 
       res.json({
         success: true,
-        message: 'Feedback submitted successfully',
+        message: "Feedback submitted successfully",
       });
     } catch (error) {
-      logger.error('Submit feedback failed', { error });
+      logger.error("Submit feedback failed", { error });
       next(error);
     }
-  }
+  },
 );
 
 /**
@@ -233,11 +263,14 @@ findContactRoutes.post(
  * - candidateType: CandidateType (required)
  */
 findContactRoutes.post(
-  '/enrich',
+  "/enrich",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.user) {
-        res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required' } });
+        res.status(401).json({
+          success: false,
+          error: { code: "UNAUTHORIZED", message: "Authentication required" },
+        });
         return;
       }
 
@@ -246,7 +279,10 @@ findContactRoutes.post(
       if (!requestId || !candidateId || !candidateType) {
         res.status(400).json({
           success: false,
-          error: { code: 'MISSING_FIELDS', message: 'requestId, candidateId, and candidateType are required' },
+          error: {
+            code: "MISSING_FIELDS",
+            message: "requestId, candidateId, and candidateType are required",
+          },
         });
         return;
       }
@@ -254,7 +290,7 @@ findContactRoutes.post(
       // TODO: Implement enrichment trigger
       // This would queue a job to enrich the candidate using PDL or other services
 
-      logger.info('Enrichment requested', {
+      logger.info("Enrichment requested", {
         userId: req.user.userId,
         requestId,
         candidateId,
@@ -263,13 +299,13 @@ findContactRoutes.post(
 
       res.json({
         success: true,
-        message: 'Enrichment queued. Check back shortly for updated results.',
+        message: "Enrichment queued. Check back shortly for updated results.",
       });
     } catch (error) {
-      logger.error('Enrich request failed', { error });
+      logger.error("Enrich request failed", { error });
       next(error);
     }
-  }
+  },
 );
 
 export default findContactRoutes;

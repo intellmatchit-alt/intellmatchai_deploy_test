@@ -6,13 +6,13 @@
  * @module presentation/controllers/ImportController
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { logger } from '../../shared/logger/index.js';
-import { InsufficientPointsError } from '../../shared/errors/InsufficientPointsError.js';
-import { walletService } from '../../infrastructure/services/WalletService.js';
-import { systemConfigService } from '../../infrastructure/services/SystemConfigService.js';
-import { prisma } from '../../infrastructure/database/prisma/client.js';
-import { getContactLimitForUser } from '../../shared/helpers/planLimits.js';
+import { Request, Response, NextFunction } from "express";
+import { logger } from "../../shared/logger/index.js";
+import { InsufficientPointsError } from "../../shared/errors/InsufficientPointsError.js";
+import { walletService } from "../../infrastructure/services/WalletService.js";
+import { systemConfigService } from "../../infrastructure/services/SystemConfigService.js";
+import { prisma } from "../../infrastructure/database/prisma/client.js";
+import { getContactLimitForUser } from "../../shared/helpers/planLimits.js";
 import {
   CreateImportBatchUseCase,
   UploadChunkUseCase,
@@ -20,7 +20,7 @@ import {
   GetBatchStatusUseCase,
   RollbackBatchUseCase,
   ListBatchesUseCase,
-} from '../../application/use-cases/import/index.js';
+} from "../../application/use-cases/import/index.js";
 
 // Initialize use cases
 const createBatchUseCase = new CreateImportBatchUseCase();
@@ -37,7 +37,7 @@ const listBatchesUseCase = new ListBatchesUseCase();
 export async function createBatch(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
@@ -47,7 +47,7 @@ export async function createBatch(
       enrichmentEnabled: req.body.enrichmentEnabled,
       aiSummaryEnabled: req.body.aiSummaryEnabled,
       ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
+      userAgent: req.headers["user-agent"],
     };
 
     const result = await createBatchUseCase.execute(userId, input);
@@ -65,11 +65,11 @@ export async function createBatch(
 export async function uploadChunk(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const batchId = req.params.id;
+    const batchId = String(req.params.id);
 
     const input = {
       batchId,
@@ -93,22 +93,25 @@ export async function uploadChunk(
 export async function commitBatch(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const batchId = req.params.id;
+    const batchId = String(req.params.id);
 
     // Check contact limit before committing
-    const batch = await prisma.contactImportBatch.findUnique({ where: { id: batchId } });
+    const batch = await prisma.contactImportBatch.findUnique({
+      where: { id: batchId },
+    });
     if (batch) {
-      const { limit, current, remaining } = await getContactLimitForUser(userId);
+      const { limit, current, remaining } =
+        await getContactLimitForUser(userId);
       const contactCount = batch.totalReceived;
       if (contactCount > remaining) {
         res.status(400).json({
           success: false,
           error: {
-            code: 'CONTACT_LIMIT_EXCEEDED',
+            code: "CONTACT_LIMIT_EXCEEDED",
             message: `Import would exceed your contact limit. You can import ${remaining} more contacts (${current}/${limit} used).`,
           },
         });
@@ -119,7 +122,10 @@ export async function commitBatch(
     // Check points cost before committing
     if (batch) {
       const contactCount = batch.totalReceived;
-      const costPerContact = await systemConfigService.getNumber('contact_upload_cost', 2);
+      const costPerContact = await systemConfigService.getNumber(
+        "contact_upload_cost",
+        2,
+      );
       const totalCost = contactCount * costPerContact;
 
       if (totalCost > 0) {
@@ -129,13 +135,17 @@ export async function commitBatch(
             totalCost,
             `Contact import (${contactCount} contacts)`,
             batchId,
-            'IMPORT',
+            "IMPORT",
           );
         } catch (error) {
           if (error instanceof InsufficientPointsError) {
             res.status(402).json({
               success: false,
-              error: { code: 'INSUFFICIENT_POINTS', message: error.message, details: error.details },
+              error: {
+                code: "INSUFFICIENT_POINTS",
+                message: error.message,
+                details: error.details,
+              },
             });
             return;
           }
@@ -159,30 +169,84 @@ export async function commitBatch(
 export async function getBatchStatus(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const batchId = req.params.id;
+    const batchId = String(req.params.id);
 
     const result = await getBatchStatusUseCase.execute(userId, batchId);
 
     if (!result) {
       res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Import batch not found' },
+        error: { code: "NOT_FOUND", message: "Import batch not found" },
       });
       return;
     }
 
     // Transform to match frontend expected format
     const stages = [
-      { name: 'normalize', status: getStageStatus(result.currentStage, 'normalize', result.status), progress: result.currentStage === 'normalize' ? result.stageProgress : (isStageComplete('normalize', result.currentStage) ? 100 : 0) },
-      { name: 'dedupe', status: getStageStatus(result.currentStage, 'dedupe', result.status), progress: result.currentStage === 'dedupe' ? result.stageProgress : (isStageComplete('dedupe', result.currentStage) ? 100 : 0) },
-      { name: 'enrich', status: getStageStatus(result.currentStage, 'enrich', result.status), progress: result.currentStage === 'enrich' ? result.stageProgress : (isStageComplete('enrich', result.currentStage) ? 100 : 0) },
-      { name: 'tag', status: getStageStatus(result.currentStage, 'tag', result.status), progress: result.currentStage === 'tag' ? result.stageProgress : (isStageComplete('tag', result.currentStage) ? 100 : 0) },
-      { name: 'summary', status: getStageStatus(result.currentStage, 'summary', result.status), progress: result.currentStage === 'summary' ? result.stageProgress : (isStageComplete('summary', result.currentStage) ? 100 : 0) },
-      { name: 'match', status: getStageStatus(result.currentStage, 'match', result.status), progress: result.currentStage === 'match' ? result.stageProgress : (isStageComplete('match', result.currentStage) ? 100 : 0) },
+      {
+        name: "normalize",
+        status: getStageStatus(result.currentStage, "normalize", result.status),
+        progress:
+          result.currentStage === "normalize"
+            ? result.stageProgress
+            : isStageComplete("normalize", result.currentStage)
+              ? 100
+              : 0,
+      },
+      {
+        name: "dedupe",
+        status: getStageStatus(result.currentStage, "dedupe", result.status),
+        progress:
+          result.currentStage === "dedupe"
+            ? result.stageProgress
+            : isStageComplete("dedupe", result.currentStage)
+              ? 100
+              : 0,
+      },
+      {
+        name: "enrich",
+        status: getStageStatus(result.currentStage, "enrich", result.status),
+        progress:
+          result.currentStage === "enrich"
+            ? result.stageProgress
+            : isStageComplete("enrich", result.currentStage)
+              ? 100
+              : 0,
+      },
+      {
+        name: "tag",
+        status: getStageStatus(result.currentStage, "tag", result.status),
+        progress:
+          result.currentStage === "tag"
+            ? result.stageProgress
+            : isStageComplete("tag", result.currentStage)
+              ? 100
+              : 0,
+      },
+      {
+        name: "summary",
+        status: getStageStatus(result.currentStage, "summary", result.status),
+        progress:
+          result.currentStage === "summary"
+            ? result.stageProgress
+            : isStageComplete("summary", result.currentStage)
+              ? 100
+              : 0,
+      },
+      {
+        name: "match",
+        status: getStageStatus(result.currentStage, "match", result.status),
+        progress:
+          result.currentStage === "match"
+            ? result.stageProgress
+            : isStageComplete("match", result.currentStage)
+              ? 100
+              : 0,
+      },
     ];
 
     const batch = {
@@ -213,17 +277,31 @@ export async function getBatchStatus(
 }
 
 // Helper function to determine stage status
-function getStageStatus(currentStage: string | null, stageName: string, batchStatus: string): 'pending' | 'processing' | 'completed' | 'failed' {
-  if (batchStatus === 'FAILED') return 'failed';
-  if (batchStatus === 'COMPLETED') return 'completed';
-  if (currentStage === stageName) return 'processing';
-  if (isStageComplete(stageName, currentStage)) return 'completed';
-  return 'pending';
+function getStageStatus(
+  currentStage: string | null,
+  stageName: string,
+  batchStatus: string,
+): "pending" | "processing" | "completed" | "failed" {
+  if (batchStatus === "FAILED") return "failed";
+  if (batchStatus === "COMPLETED") return "completed";
+  if (currentStage === stageName) return "processing";
+  if (isStageComplete(stageName, currentStage)) return "completed";
+  return "pending";
 }
 
 // Helper function to check if a stage is complete
-function isStageComplete(stageName: string, currentStage: string | null): boolean {
-  const stageOrder = ['normalize', 'dedupe', 'enrich', 'tag', 'summary', 'match'];
+function isStageComplete(
+  stageName: string,
+  currentStage: string | null,
+): boolean {
+  const stageOrder = [
+    "normalize",
+    "dedupe",
+    "enrich",
+    "tag",
+    "summary",
+    "match",
+  ];
   if (!currentStage) return false;
   const stageIndex = stageOrder.indexOf(stageName);
   const currentIndex = stageOrder.indexOf(currentStage);
@@ -237,11 +315,11 @@ function isStageComplete(stageName: string, currentStage: string | null): boolea
 export async function rollbackBatch(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const batchId = req.params.id;
+    const batchId = String(req.params.id);
 
     const result = await rollbackBatchUseCase.execute(userId, batchId);
 
@@ -258,7 +336,7 @@ export async function rollbackBatch(
 export async function listBatches(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.userId;

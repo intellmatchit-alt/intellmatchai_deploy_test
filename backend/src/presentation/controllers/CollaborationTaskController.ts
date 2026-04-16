@@ -8,10 +8,14 @@
  * @module presentation/controllers/CollaborationTaskController
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../../infrastructure/database/prisma/client';
-import { AuthenticationError, NotFoundError, ValidationError } from '../../shared/errors';
-import { logger } from '../../shared/logger';
+import { Request, Response, NextFunction } from "express";
+import { prisma } from "../../infrastructure/database/prisma/client";
+import {
+  AuthenticationError,
+  NotFoundError,
+  ValidationError,
+} from "../../shared/errors";
+import { logger } from "../../shared/logger";
 
 /**
  * Priority sort order mapping for sorting tasks by priority
@@ -26,12 +30,12 @@ const PRIORITY_ORDER: Record<string, number> = {
 /**
  * Valid task statuses
  */
-const VALID_STATUSES = ['TODO', 'IN_PROGRESS', 'DONE', 'CANCELLED'];
+const VALID_STATUSES = ["TODO", "IN_PROGRESS", "DONE", "CANCELLED"];
 
 /**
  * Valid task priorities
  */
-const VALID_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
+const VALID_PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"];
 
 /**
  * Collaboration Task Controller
@@ -53,7 +57,7 @@ export class CollaborationTaskController {
     });
 
     if (!project) {
-      throw new NotFoundError('Project not found');
+      throw new NotFoundError("Project not found");
     }
 
     return project;
@@ -75,35 +79,41 @@ export class CollaborationTaskController {
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const { projectId } = req.params;
+      const { projectId } = req.params as { projectId: string };
       await this.verifyProjectOwnership(projectId, req.user.userId);
 
       const {
         title,
         description,
         dueDate,
-        status = 'TODO',
-        priority = 'MEDIUM',
+        status = "TODO",
+        priority = "MEDIUM",
         assignedToId,
       } = req.body;
 
       // Validate status and priority values
       if (status && !VALID_STATUSES.includes(status)) {
-        throw new ValidationError(`Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}`);
+        throw new ValidationError(
+          `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}`,
+        );
       }
 
       if (priority && !VALID_PRIORITIES.includes(priority)) {
-        throw new ValidationError(`Invalid priority. Must be one of: ${VALID_PRIORITIES.join(', ')}`);
+        throw new ValidationError(
+          `Invalid priority. Must be one of: ${VALID_PRIORITIES.join(", ")}`,
+        );
       }
 
       // If assignedToId is provided, verify the user exists
       if (assignedToId) {
-        const assignee = await prisma.user.findUnique({ where: { id: assignedToId } });
+        const assignee = await prisma.user.findUnique({
+          where: { id: assignedToId },
+        });
         if (!assignee) {
-          throw new ValidationError('Assigned user not found');
+          throw new ValidationError("Assigned user not found");
         }
       }
 
@@ -120,7 +130,7 @@ export class CollaborationTaskController {
         },
       });
 
-      logger.info('Collaboration task created', {
+      logger.info("Collaboration task created", {
         userId: req.user.userId,
         projectId,
         taskId: task.id,
@@ -153,19 +163,19 @@ export class CollaborationTaskController {
   async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const { projectId } = req.params;
-      await this.verifyProjectOwnership(projectId, req.user.userId);
+      await this.verifyProjectOwnership(String(projectId), req.user.userId);
 
       const page = (req.query.page as unknown as number) || 1;
       const limit = (req.query.limit as unknown as number) || 20;
       const status = req.query.status as string | undefined;
       const priority = req.query.priority as string | undefined;
       const assignedToId = req.query.assignedToId as string | undefined;
-      const sortBy = (req.query.sortBy as string) || 'createdAt';
-      const sortOrder = (req.query.sortOrder as string) || 'desc';
+      const sortBy = (req.query.sortBy as string) || "createdAt";
+      const sortOrder = (req.query.sortOrder as string) || "desc";
 
       // Build where clause
       const where: any = { projectId };
@@ -184,7 +194,7 @@ export class CollaborationTaskController {
 
       // Build orderBy
       let orderBy: any;
-      if (sortBy === 'priority') {
+      if (sortBy === "priority") {
         // Priority needs custom handling since it's stored as string
         // We'll sort by the field directly and let the client handle priority ordering
         orderBy = { priority: sortOrder };
@@ -235,48 +245,51 @@ export class CollaborationTaskController {
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const { projectId, taskId } = req.params;
+      const { projectId, taskId } = req.params as {
+        projectId: string;
+        taskId: string;
+      };
       await this.verifyProjectOwnership(projectId, req.user.userId);
 
       // Verify task exists and belongs to this project
       const existingTask = await prisma.collaborationTask.findFirst({
         where: {
-          id: taskId,
+          id: String(taskId),
           projectId,
         },
       });
 
       if (!existingTask) {
-        throw new NotFoundError('Task not found');
+        throw new NotFoundError("Task not found");
       }
 
-      const {
-        title,
-        description,
-        dueDate,
-        status,
-        priority,
-        assignedToId,
-      } = req.body;
+      const { title, description, dueDate, status, priority, assignedToId } =
+        req.body;
 
       // Validate status if provided
       if (status && !VALID_STATUSES.includes(status)) {
-        throw new ValidationError(`Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}`);
+        throw new ValidationError(
+          `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}`,
+        );
       }
 
       // Validate priority if provided
       if (priority && !VALID_PRIORITIES.includes(priority)) {
-        throw new ValidationError(`Invalid priority. Must be one of: ${VALID_PRIORITIES.join(', ')}`);
+        throw new ValidationError(
+          `Invalid priority. Must be one of: ${VALID_PRIORITIES.join(", ")}`,
+        );
       }
 
       // If assignedToId is provided (not undefined), verify the user exists
       if (assignedToId !== undefined && assignedToId !== null) {
-        const assignee = await prisma.user.findUnique({ where: { id: assignedToId } });
+        const assignee = await prisma.user.findUnique({
+          where: { id: assignedToId },
+        });
         if (!assignee) {
-          throw new ValidationError('Assigned user not found');
+          throw new ValidationError("Assigned user not found");
         }
       }
 
@@ -284,17 +297,18 @@ export class CollaborationTaskController {
       const updateData: any = {};
       if (title !== undefined) updateData.title = title;
       if (description !== undefined) updateData.description = description;
-      if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
+      if (dueDate !== undefined)
+        updateData.dueDate = dueDate ? new Date(dueDate) : null;
       if (status !== undefined) updateData.status = status;
       if (priority !== undefined) updateData.priority = priority;
       if (assignedToId !== undefined) updateData.assignedToId = assignedToId;
 
       const task = await prisma.collaborationTask.update({
-        where: { id: taskId },
+        where: { id: String(taskId) },
         data: updateData,
       });
 
-      logger.info('Collaboration task updated', {
+      logger.info("Collaboration task updated", {
         userId: req.user.userId,
         projectId,
         taskId,
@@ -318,10 +332,13 @@ export class CollaborationTaskController {
   async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const { projectId, taskId } = req.params;
+      const { projectId, taskId } = req.params as {
+        projectId: string;
+        taskId: string;
+      };
       await this.verifyProjectOwnership(projectId, req.user.userId);
 
       // Verify task exists and belongs to this project
@@ -333,12 +350,12 @@ export class CollaborationTaskController {
       });
 
       if (!existingTask) {
-        throw new NotFoundError('Task not found');
+        throw new NotFoundError("Task not found");
       }
 
       await prisma.collaborationTask.delete({ where: { id: taskId } });
 
-      logger.info('Collaboration task deleted', {
+      logger.info("Collaboration task deleted", {
         userId: req.user.userId,
         projectId,
         taskId,
@@ -346,7 +363,7 @@ export class CollaborationTaskController {
 
       res.status(200).json({
         success: true,
-        message: 'Task deleted successfully',
+        message: "Task deleted successfully",
       });
     } catch (error) {
       next(error);

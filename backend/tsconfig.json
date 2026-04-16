@@ -2,6 +2,7 @@
   "compilerOptions": {
     /* Language and Environment */
     "target": "ES2022",
+    "ignoreDeprecations": "6.0",
     "lib": [
       "ES2022"
     ],

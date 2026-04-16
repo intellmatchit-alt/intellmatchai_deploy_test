@@ -4,18 +4,18 @@
  * Handles HTTP requests for organization/team management.
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../../infrastructure/database/prisma/client.js';
-import { logger } from '../../shared/logger/index.js';
+import { Request, Response, NextFunction } from "express";
+import { prisma } from "../../infrastructure/database/prisma/client.js";
+import { logger } from "../../shared/logger/index.js";
 import {
   AuthenticationError,
   NotFoundError,
   ForbiddenError,
   ValidationError,
   ConflictError,
-} from '../../shared/errors/index.js';
-import crypto from 'crypto';
-import { EmailService } from '../../infrastructure/services/EmailService.js';
+} from "../../shared/errors/index.js";
+import crypto from "crypto";
+import { EmailService } from "../../infrastructure/services/EmailService.js";
 
 export class OrganizationController {
   /**
@@ -24,7 +24,7 @@ export class OrganizationController {
    */
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const { name, website, industry, size } = req.body;
 
@@ -33,8 +33,14 @@ export class OrganizationController {
         where: { userId: req.user.userId },
       });
 
-      if (!subscription || subscription.plan !== 'TEAM' || subscription.status !== 'ACTIVE') {
-        throw new ForbiddenError('A TEAM plan subscription is required to create an organization');
+      if (
+        !subscription ||
+        subscription.plan !== "TEAM" ||
+        subscription.status !== "ACTIVE"
+      ) {
+        throw new ForbiddenError(
+          "A TEAM plan subscription is required to create an organization",
+        );
       }
 
       // Check no existing org for this subscription
@@ -43,14 +49,16 @@ export class OrganizationController {
       });
 
       if (existingOrg) {
-        throw new ConflictError('An organization already exists for this subscription');
+        throw new ConflictError(
+          "An organization already exists for this subscription",
+        );
       }
 
       // Generate slug from name
       const baseSlug = name
         .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
       let slug = baseSlug;
       let counter = 1;
       while (await prisma.organization.findUnique({ where: { slug } })) {
@@ -69,7 +77,7 @@ export class OrganizationController {
           members: {
             create: {
               userId: req.user.userId,
-              role: 'OWNER',
+              role: "OWNER",
             },
           },
         },
@@ -77,7 +85,13 @@ export class OrganizationController {
           members: {
             include: {
               user: {
-                select: { id: true, fullName: true, email: true, avatarUrl: true, jobTitle: true },
+                select: {
+                  id: true,
+                  fullName: true,
+                  email: true,
+                  avatarUrl: true,
+                  jobTitle: true,
+                },
               },
             },
           },
@@ -89,13 +103,16 @@ export class OrganizationController {
         data: {
           organizationId: org.id,
           userId: req.user.userId,
-          action: 'ORG_CREATED',
-          resourceType: 'organization',
+          action: "ORG_CREATED",
+          resourceType: "organization",
           resourceId: org.id,
         },
       });
 
-      logger.info('Organization created', { orgId: org.id, userId: req.user.userId });
+      logger.info("Organization created", {
+        orgId: org.id,
+        userId: req.user.userId,
+      });
 
       res.status(201).json({ success: true, data: org });
     } catch (error) {
@@ -107,9 +124,13 @@ export class OrganizationController {
    * Get current user's organization
    * GET /api/v1/organizations/mine
    */
-  async getMine(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getMine(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const membership = await prisma.organizationMember.findFirst({
         where: { userId: req.user.userId },
@@ -117,15 +138,27 @@ export class OrganizationController {
           organization: {
             include: {
               subscription: {
-                select: { plan: true, status: true, seats: true, billingInterval: true, currentPeriodEnd: true },
+                select: {
+                  plan: true,
+                  status: true,
+                  seats: true,
+                  billingInterval: true,
+                  currentPeriodEnd: true,
+                },
               },
               members: {
                 include: {
                   user: {
-                    select: { id: true, fullName: true, email: true, avatarUrl: true, jobTitle: true },
+                    select: {
+                      id: true,
+                      fullName: true,
+                      email: true,
+                      avatarUrl: true,
+                      jobTitle: true,
+                    },
                   },
                 },
-                orderBy: { joinedAt: 'asc' },
+                orderBy: { joinedAt: "asc" },
               },
               _count: {
                 select: { sharedContacts: true, invitations: true },
@@ -158,9 +191,9 @@ export class OrganizationController {
    */
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
       const { name, logoUrl, website, industry, size } = req.body;
 
       const org = await prisma.organization.update({
@@ -178,8 +211,8 @@ export class OrganizationController {
         data: {
           organizationId: id,
           userId: req.user.userId,
-          action: 'ORG_UPDATED',
-          resourceType: 'organization',
+          action: "ORG_UPDATED",
+          resourceType: "organization",
           resourceId: id,
           metadata: { fields: Object.keys(req.body) },
         },
@@ -197,20 +230,23 @@ export class OrganizationController {
    */
   async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
 
       // Verify OWNER role
-      if (req.organization?.role !== 'OWNER') {
-        throw new ForbiddenError('Only the organization owner can delete it');
+      if (req.organization?.role !== "OWNER") {
+        throw new ForbiddenError("Only the organization owner can delete it");
       }
 
       await prisma.organization.delete({ where: { id } });
 
-      logger.info('Organization deleted', { orgId: id, userId: req.user.userId });
+      logger.info("Organization deleted", {
+        orgId: id,
+        userId: req.user.userId,
+      });
 
-      res.status(200).json({ success: true, message: 'Organization deleted' });
+      res.status(200).json({ success: true, message: "Organization deleted" });
     } catch (error) {
       next(error);
     }
@@ -220,11 +256,15 @@ export class OrganizationController {
    * List organization members
    * GET /api/v1/organizations/:id/members
    */
-  async listMembers(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async listMembers(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
 
       const members = await prisma.organizationMember.findMany({
         where: { organizationId: id },
@@ -240,7 +280,7 @@ export class OrganizationController {
             },
           },
         },
-        orderBy: { joinedAt: 'asc' },
+        orderBy: { joinedAt: "asc" },
       });
 
       res.status(200).json({ success: true, data: members });
@@ -253,11 +293,15 @@ export class OrganizationController {
    * Invite a member by email
    * POST /api/v1/organizations/:id/members/invite
    */
-  async inviteMember(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async inviteMember(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
       const { email, role, message: personalMessage } = req.body;
 
       // Check seat limit
@@ -269,11 +313,11 @@ export class OrganizationController {
         },
       });
 
-      if (!org) throw new NotFoundError('Organization not found');
+      if (!org) throw new NotFoundError("Organization not found");
 
       if (org._count.members >= org.subscription.seats) {
         throw new ValidationError(
-          `Seat limit reached (${org.subscription.seats}). Please add more seats in billing settings.`
+          `Seat limit reached (${org.subscription.seats}). Please add more seats in billing settings.`,
         );
       }
 
@@ -281,26 +325,35 @@ export class OrganizationController {
       const existingUser = await prisma.user.findUnique({ where: { email } });
       if (existingUser) {
         const existingMember = await prisma.organizationMember.findUnique({
-          where: { organizationId_userId: { organizationId: id, userId: existingUser.id } },
+          where: {
+            organizationId_userId: {
+              organizationId: id,
+              userId: existingUser.id,
+            },
+          },
         });
         if (existingMember) {
-          throw new ConflictError('This user is already a member of the organization');
+          throw new ConflictError(
+            "This user is already a member of the organization",
+          );
         }
       }
 
       // Check for pending invite
       const existingInvite = await prisma.orgInvitation.findFirst({
-        where: { organizationId: id, email, status: 'PENDING' },
+        where: { organizationId: id, email, status: "PENDING" },
       });
       if (existingInvite) {
-        throw new ConflictError('A pending invitation already exists for this email');
+        throw new ConflictError(
+          "A pending invitation already exists for this email",
+        );
       }
 
       // Prevent inviting with OWNER role
-      const assignRole = role === 'OWNER' ? 'ADMIN' : (role || 'MEMBER');
+      const assignRole = role === "OWNER" ? "ADMIN" : role || "MEMBER";
 
       // Create invitation
-      const token = crypto.randomBytes(32).toString('hex');
+      const token = crypto.randomBytes(32).toString("hex");
       const invitation = await prisma.orgInvitation.create({
         data: {
           organizationId: id,
@@ -320,8 +373,8 @@ export class OrganizationController {
         data: {
           organizationId: id,
           userId: req.user.userId,
-          action: 'MEMBER_INVITED',
-          resourceType: 'invitation',
+          action: "MEMBER_INVITED",
+          resourceType: "invitation",
           resourceId: invitation.id,
           metadata: { email, role: assignRole },
         },
@@ -329,18 +382,28 @@ export class OrganizationController {
 
       // Send invitation email
       const emailService = new EmailService();
-      const inviteUrl = `${process.env.FRONTEND_URL || 'https://intellmatch.com'}/invite/org/${token}`;
-      emailService.sendOrganizationInvitationEmail(email, {
-        recipientEmail: email,
-        inviterName: invitation.invitedBy?.fullName || 'A team member',
-        organizationName: invitation.organization?.name || 'your team',
-        role: assignRole,
-        inviteUrl,
-      }).catch((err) => {
-        logger.error('Failed to send organization invitation email', { error: err, email, orgId: id });
-      });
+      const inviteUrl = `${process.env.FRONTEND_URL || "https://intellmatch.com"}/invite/org/${token}`;
+      emailService
+        .sendOrganizationInvitationEmail(email, {
+          recipientEmail: email,
+          inviterName: invitation.invitedBy?.fullName || "A team member",
+          organizationName: invitation.organization?.name || "your team",
+          role: assignRole,
+          inviteUrl,
+        })
+        .catch((err) => {
+          logger.error("Failed to send organization invitation email", {
+            error: err,
+            email,
+            orgId: id,
+          });
+        });
 
-      logger.info('Organization invitation sent', { orgId: id, email, role: assignRole });
+      logger.info("Organization invitation sent", {
+        orgId: id,
+        email,
+        role: assignRole,
+      });
 
       res.status(201).json({ success: true, data: invitation });
     } catch (error) {
@@ -352,11 +415,15 @@ export class OrganizationController {
    * Update member role
    * PATCH /api/v1/organizations/:id/members/:userId
    */
-  async updateMemberRole(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async updateMemberRole(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id, userId } = req.params;
+      const { id, userId } = req.params as { id: string; userId: string };
       const { role } = req.body;
 
       // Can't change OWNER's role unless you're the OWNER transferring
@@ -364,21 +431,28 @@ export class OrganizationController {
         where: { organizationId_userId: { organizationId: id, userId } },
       });
 
-      if (!targetMember) throw new NotFoundError('Member not found');
+      if (!targetMember) throw new NotFoundError("Member not found");
 
-      if (targetMember.role === 'OWNER' && req.organization?.role !== 'OWNER') {
-        throw new ForbiddenError('Only the owner can change the owner role');
+      if (targetMember.role === "OWNER" && req.organization?.role !== "OWNER") {
+        throw new ForbiddenError("Only the owner can change the owner role");
       }
 
       // If transferring ownership
-      if (role === 'OWNER') {
-        if (req.organization?.role !== 'OWNER') {
-          throw new ForbiddenError('Only the current owner can transfer ownership');
+      if (role === "OWNER") {
+        if (req.organization?.role !== "OWNER") {
+          throw new ForbiddenError(
+            "Only the current owner can transfer ownership",
+          );
         }
         // Demote current owner to ADMIN
         await prisma.organizationMember.update({
-          where: { organizationId_userId: { organizationId: id, userId: req.user.userId } },
-          data: { role: 'ADMIN' },
+          where: {
+            organizationId_userId: {
+              organizationId: id,
+              userId: req.user.userId,
+            },
+          },
+          data: { role: "ADMIN" },
         });
       }
 
@@ -396,8 +470,8 @@ export class OrganizationController {
         data: {
           organizationId: id,
           userId: req.user.userId,
-          action: 'ROLE_CHANGED',
-          resourceType: 'member',
+          action: "ROLE_CHANGED",
+          resourceType: "member",
           resourceId: userId,
           metadata: { newRole: role, previousRole: targetMember.role },
         },
@@ -413,20 +487,24 @@ export class OrganizationController {
    * Remove a member
    * DELETE /api/v1/organizations/:id/members/:userId
    */
-  async removeMember(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async removeMember(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id, userId } = req.params;
+      const { id, userId } = req.params as { id: string; userId: string };
 
       const targetMember = await prisma.organizationMember.findUnique({
         where: { organizationId_userId: { organizationId: id, userId } },
       });
 
-      if (!targetMember) throw new NotFoundError('Member not found');
+      if (!targetMember) throw new NotFoundError("Member not found");
 
-      if (targetMember.role === 'OWNER') {
-        throw new ForbiddenError('Cannot remove the organization owner');
+      if (targetMember.role === "OWNER") {
+        throw new ForbiddenError("Cannot remove the organization owner");
       }
 
       await prisma.organizationMember.delete({
@@ -442,15 +520,18 @@ export class OrganizationController {
         data: {
           organizationId: id,
           userId: req.user.userId,
-          action: 'MEMBER_REMOVED',
-          resourceType: 'member',
+          action: "MEMBER_REMOVED",
+          resourceType: "member",
           resourceId: userId,
         },
       });
 
-      logger.info('Organization member removed', { orgId: id, removedUserId: userId });
+      logger.info("Organization member removed", {
+        orgId: id,
+        removedUserId: userId,
+      });
 
-      res.status(200).json({ success: true, message: 'Member removed' });
+      res.status(200).json({ success: true, message: "Member removed" });
     } catch (error) {
       next(error);
     }
@@ -460,9 +541,13 @@ export class OrganizationController {
    * Get invitation info (PUBLIC - no auth required)
    * GET /api/v1/organizations/invitations/:token/info
    */
-  async getInvitationInfo(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getInvitationInfo(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      const { token } = req.params;
+      const { token } = req.params as { token: string };
 
       const invitation = await prisma.orgInvitation.findUnique({
         where: { token },
@@ -472,17 +557,17 @@ export class OrganizationController {
         },
       });
 
-      if (!invitation) throw new NotFoundError('Invitation not found');
+      if (!invitation) throw new NotFoundError("Invitation not found");
 
       const isExpired = invitation.expiresAt < new Date();
-      const isValid = invitation.status === 'PENDING' && !isExpired;
+      const isValid = invitation.status === "PENDING" && !isExpired;
 
       res.json({
         success: true,
         data: {
           email: invitation.email,
           role: invitation.role,
-          status: isExpired ? 'EXPIRED' : invitation.status,
+          status: isExpired ? "EXPIRED" : invitation.status,
           isValid,
           organization: invitation.organization,
           invitedBy: invitation.invitedBy,
@@ -498,35 +583,48 @@ export class OrganizationController {
    * Accept an invitation
    * POST /api/v1/organizations/invitations/:token/accept
    */
-  async acceptInvitation(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async acceptInvitation(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { token } = req.params;
+      const { token } = req.params as { token: string };
 
       const invitation = await prisma.orgInvitation.findUnique({
         where: { token },
         include: { organization: { select: { id: true, name: true } } },
       });
 
-      if (!invitation) throw new NotFoundError('Invitation not found');
+      if (!invitation) throw new NotFoundError("Invitation not found");
 
-      if (invitation.status !== 'PENDING') {
-        throw new ValidationError(`Invitation is ${invitation.status.toLowerCase()}`);
+      if (invitation.status !== "PENDING") {
+        throw new ValidationError(
+          `Invitation is ${invitation.status.toLowerCase()}`,
+        );
       }
 
       if (invitation.expiresAt < new Date()) {
         await prisma.orgInvitation.update({
           where: { id: invitation.id },
-          data: { status: 'EXPIRED' },
+          data: { status: "EXPIRED" },
         });
-        throw new ValidationError('Invitation has expired');
+        throw new ValidationError("Invitation has expired");
       }
 
       // Verify email matches (case-insensitive)
-      const user = await prisma.user.findUnique({ where: { id: req.user.userId } });
-      if (!user || user.email.toLowerCase() !== invitation.email.toLowerCase()) {
-        throw new ForbiddenError('This invitation was sent to a different email address');
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.userId },
+      });
+      if (
+        !user ||
+        user.email.toLowerCase() !== invitation.email.toLowerCase()
+      ) {
+        throw new ForbiddenError(
+          "This invitation was sent to a different email address",
+        );
       }
 
       // Check not already a member
@@ -543,9 +641,11 @@ export class OrganizationController {
         // Update invitation status and return
         await prisma.orgInvitation.update({
           where: { id: invitation.id },
-          data: { status: 'ACCEPTED' },
+          data: { status: "ACCEPTED" },
         });
-        throw new ConflictError('You are already a member of this organization');
+        throw new ConflictError(
+          "You are already a member of this organization",
+        );
       }
 
       // Create membership and update invitation
@@ -559,21 +659,21 @@ export class OrganizationController {
         }),
         prisma.orgInvitation.update({
           where: { id: invitation.id },
-          data: { status: 'ACCEPTED' },
+          data: { status: "ACCEPTED" },
         }),
         prisma.orgActivityLog.create({
           data: {
             organizationId: invitation.organizationId,
             userId: req.user.userId,
-            action: 'MEMBER_JOINED',
-            resourceType: 'member',
+            action: "MEMBER_JOINED",
+            resourceType: "member",
             resourceId: req.user.userId,
             metadata: { role: invitation.role, invitationId: invitation.id },
           },
         }),
       ]);
 
-      logger.info('Invitation accepted', {
+      logger.info("Invitation accepted", {
         orgId: invitation.organizationId,
         userId: req.user.userId,
       });
@@ -595,26 +695,34 @@ export class OrganizationController {
    * Decline an invitation
    * POST /api/v1/organizations/invitations/:token/decline
    */
-  async declineInvitation(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async declineInvitation(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { token } = req.params;
+      const { token } = req.params as { token: string };
 
-      const invitation = await prisma.orgInvitation.findUnique({ where: { token } });
+      const invitation = await prisma.orgInvitation.findUnique({
+        where: { token },
+      });
 
-      if (!invitation) throw new NotFoundError('Invitation not found');
+      if (!invitation) throw new NotFoundError("Invitation not found");
 
-      if (invitation.status !== 'PENDING') {
-        throw new ValidationError(`Invitation is ${invitation.status.toLowerCase()}`);
+      if (invitation.status !== "PENDING") {
+        throw new ValidationError(
+          `Invitation is ${invitation.status.toLowerCase()}`,
+        );
       }
 
       await prisma.orgInvitation.update({
         where: { id: invitation.id },
-        data: { status: 'CANCELLED' },
+        data: { status: "CANCELLED" },
       });
 
-      res.status(200).json({ success: true, message: 'Invitation declined' });
+      res.status(200).json({ success: true, message: "Invitation declined" });
     } catch (error) {
       next(error);
     }
@@ -624,28 +732,32 @@ export class OrganizationController {
    * Get pending invitations for current user
    * GET /api/v1/organizations/invitations/pending
    */
-  async getPendingInvitations(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getPendingInvitations(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const user = await prisma.user.findUnique({
         where: { id: req.user.userId },
         select: { email: true },
       });
 
-      if (!user) throw new NotFoundError('User not found');
+      if (!user) throw new NotFoundError("User not found");
 
       const invitations = await prisma.orgInvitation.findMany({
         where: {
           email: user.email,
-          status: 'PENDING',
+          status: "PENDING",
           expiresAt: { gt: new Date() },
         },
         include: {
           organization: { select: { id: true, name: true, logoUrl: true } },
           invitedBy: { select: { fullName: true, avatarUrl: true } },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       });
 
       res.status(200).json({ success: true, data: invitations });
@@ -658,12 +770,21 @@ export class OrganizationController {
    * Get activity log
    * GET /api/v1/organizations/:id/activity
    */
-  async getActivityLog(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getActivityLog(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const { id } = req.params;
-      const { page = '1', limit = '20', action, userId: filterUserId } = req.query;
+      const {
+        page = "1",
+        limit = "20",
+        action,
+        userId: filterUserId,
+      } = req.query;
 
       const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
       const take = Math.min(parseInt(limit as string), 50);
@@ -680,7 +801,7 @@ export class OrganizationController {
               select: { id: true, fullName: true, avatarUrl: true },
             },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           skip,
           take,
         }),
@@ -708,15 +829,23 @@ export class OrganizationController {
    * Share contacts with organization
    * POST /api/v1/organizations/:id/contacts/share
    */
-  async shareContacts(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async shareContacts(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id } = req.params;
-      const { contactIds, visibility = 'FULL' } = req.body;
+      const { id } = req.params as { id: string };
+      const { contactIds, visibility = "FULL" } = req.body;
 
-      if (!contactIds || !Array.isArray(contactIds) || contactIds.length === 0) {
-        throw new ValidationError('contactIds must be a non-empty array');
+      if (
+        !contactIds ||
+        !Array.isArray(contactIds) ||
+        contactIds.length === 0
+      ) {
+        throw new ValidationError("contactIds must be a non-empty array");
       }
 
       // Verify contacts belong to user
@@ -733,12 +862,12 @@ export class OrganizationController {
         include: { _count: { select: { sharedContacts: true } } },
       });
 
-      if (!org) throw new NotFoundError('Organization not found');
+      if (!org) throw new NotFoundError("Organization not found");
 
       const newTotal = org._count.sharedContacts + validIds.length;
       if (newTotal > org.contactLimit) {
         throw new ValidationError(
-          `Sharing these contacts would exceed the org limit of ${org.contactLimit}`
+          `Sharing these contacts would exceed the org limit of ${org.contactLimit}`,
         );
       }
 
@@ -747,24 +876,27 @@ export class OrganizationController {
         validIds.map((contactId) =>
           prisma.sharedContact.upsert({
             where: {
-              contactId_organizationId: { contactId, organizationId: id },
+              contactId_organizationId: {
+                contactId,
+                organizationId: String(id),
+              },
             },
             create: {
               contactId,
-              organizationId: id,
+              organizationId: String(id),
               sharedById: req.user!.userId,
               visibility,
             },
             update: { visibility },
-          })
-        )
+          }),
+        ),
       );
 
       await prisma.orgActivityLog.create({
         data: {
           organizationId: id,
           userId: req.user.userId,
-          action: 'CONTACT_SHARED',
+          action: "CONTACT_SHARED",
           metadata: { count: results.length, visibility },
         },
       });
@@ -779,19 +911,25 @@ export class OrganizationController {
    * Unshare contacts from organization
    * DELETE /api/v1/organizations/:id/contacts/unshare
    */
-  async unshareContacts(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async unshareContacts(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const { id } = req.params;
       const { contactIds } = req.body;
 
       if (!contactIds || !Array.isArray(contactIds)) {
-        throw new ValidationError('contactIds must be an array');
+        throw new ValidationError("contactIds must be an array");
       }
 
       // Only unshare contacts the user shared (or admin can unshare any)
-      const isAdmin = req.organization?.role === 'ADMIN' || req.organization?.role === 'OWNER';
+      const isAdmin =
+        req.organization?.role === "ADMIN" ||
+        req.organization?.role === "OWNER";
 
       const where: any = {
         organizationId: id,
@@ -814,17 +952,16 @@ export class OrganizationController {
    * Get organization contacts pool
    * GET /api/v1/organizations/:id/contacts
    */
-  async getOrgContacts(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getOrgContacts(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const { id } = req.params;
-      const {
-        page = '1',
-        limit = '20',
-        search,
-        sharedById,
-      } = req.query;
+      const { page = "1", limit = "20", search, sharedById } = req.query;
 
       const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
       const take = Math.min(parseInt(limit as string), 50);
@@ -867,7 +1004,7 @@ export class OrganizationController {
               select: { id: true, fullName: true, avatarUrl: true },
             },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           skip,
           take,
         }),
@@ -895,11 +1032,15 @@ export class OrganizationController {
    * Get org contact stats
    * GET /api/v1/organizations/:id/contacts/stats
    */
-  async getOrgContactStats(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getOrgContactStats(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
 
       const org = await prisma.organization.findUnique({
         where: { id },
@@ -909,7 +1050,7 @@ export class OrganizationController {
         },
       });
 
-      if (!org) throw new NotFoundError('Organization not found');
+      if (!org) throw new NotFoundError("Organization not found");
 
       res.status(200).json({
         success: true,
@@ -928,15 +1069,22 @@ export class OrganizationController {
    * Get or update sharing preferences
    * GET /api/v1/organizations/:id/privacy
    */
-  async getPrivacySettings(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getPrivacySettings(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
 
       let pref = await prisma.contactSharingPreference.findUnique({
         where: {
-          userId_organizationId: { userId: req.user.userId, organizationId: id },
+          userId_organizationId: {
+            userId: req.user.userId,
+            organizationId: id,
+          },
         },
       });
 
@@ -945,7 +1093,7 @@ export class OrganizationController {
           data: {
             userId: req.user.userId,
             organizationId: id,
-            shareMode: 'MANUAL',
+            shareMode: "MANUAL",
           },
         });
       }
@@ -960,16 +1108,23 @@ export class OrganizationController {
    * Update sharing preferences
    * PATCH /api/v1/organizations/:id/privacy
    */
-  async updatePrivacySettings(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async updatePrivacySettings(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
       const { shareMode } = req.body;
 
       const pref = await prisma.contactSharingPreference.upsert({
         where: {
-          userId_organizationId: { userId: req.user.userId, organizationId: id },
+          userId_organizationId: {
+            userId: req.user.userId,
+            organizationId: id,
+          },
         },
         create: {
           userId: req.user.userId,
@@ -989,11 +1144,15 @@ export class OrganizationController {
    * Update per-contact visibility
    * PATCH /api/v1/organizations/:id/contacts/:contactId/visibility
    */
-  async updateContactVisibility(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async updateContactVisibility(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id, contactId } = req.params;
+      const { id, contactId } = req.params as { id: string; contactId: string };
       const { visibility } = req.body;
 
       const shared = await prisma.sharedContact.findUnique({
@@ -1002,12 +1161,16 @@ export class OrganizationController {
         },
       });
 
-      if (!shared) throw new NotFoundError('Shared contact not found');
+      if (!shared) throw new NotFoundError("Shared contact not found");
 
       // Only the sharer or admin can change visibility
-      const isAdmin = req.organization?.role === 'ADMIN' || req.organization?.role === 'OWNER';
+      const isAdmin =
+        req.organization?.role === "ADMIN" ||
+        req.organization?.role === "OWNER";
       if (shared.sharedById !== req.user.userId && !isAdmin) {
-        throw new ForbiddenError('Only the contact sharer or an admin can change visibility');
+        throw new ForbiddenError(
+          "Only the contact sharer or an admin can change visibility",
+        );
       }
 
       const updated = await prisma.sharedContact.update({
@@ -1025,11 +1188,15 @@ export class OrganizationController {
    * Request a warm intro
    * POST /api/v1/organizations/:id/intros
    */
-  async requestIntro(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async requestIntro(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
       const { connectorId, targetContactId, message, context } = req.body;
 
       // Verify connector is a member
@@ -1040,7 +1207,9 @@ export class OrganizationController {
       });
 
       if (!connectorMember) {
-        throw new ValidationError('Connector is not a member of this organization');
+        throw new ValidationError(
+          "Connector is not a member of this organization",
+        );
       }
 
       // Verify the target contact is shared by the connector
@@ -1053,7 +1222,9 @@ export class OrganizationController {
       });
 
       if (!sharedContact) {
-        throw new ValidationError('Target contact is not shared by this connector');
+        throw new ValidationError(
+          "Target contact is not shared by this connector",
+        );
       }
 
       const intro = await prisma.warmIntroRequest.create({
@@ -1082,8 +1253,8 @@ export class OrganizationController {
         data: {
           organizationId: id,
           userId: req.user.userId,
-          action: 'INTRO_REQUESTED',
-          resourceType: 'warmIntro',
+          action: "INTRO_REQUESTED",
+          resourceType: "warmIntro",
           resourceId: intro.id,
           metadata: { connectorId, targetContactId },
         },
@@ -1099,11 +1270,15 @@ export class OrganizationController {
    * Get sent intro requests
    * GET /api/v1/organizations/:id/intros/sent
    */
-  async getSentIntros(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getSentIntros(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
 
       const intros = await prisma.warmIntroRequest.findMany({
         where: { organizationId: id, requesterId: req.user.userId },
@@ -1112,10 +1287,16 @@ export class OrganizationController {
             select: { id: true, fullName: true, avatarUrl: true },
           },
           targetContact: {
-            select: { id: true, fullName: true, company: true, jobTitle: true, avatarUrl: true },
+            select: {
+              id: true,
+              fullName: true,
+              company: true,
+              jobTitle: true,
+              avatarUrl: true,
+            },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       });
 
       res.status(200).json({ success: true, data: intros });
@@ -1128,23 +1309,38 @@ export class OrganizationController {
    * Get received intro requests (to facilitate)
    * GET /api/v1/organizations/:id/intros/received
    */
-  async getReceivedIntros(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getReceivedIntros(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
 
       const intros = await prisma.warmIntroRequest.findMany({
         where: { organizationId: id, connectorId: req.user.userId },
         include: {
           requester: {
-            select: { id: true, fullName: true, avatarUrl: true, jobTitle: true },
+            select: {
+              id: true,
+              fullName: true,
+              avatarUrl: true,
+              jobTitle: true,
+            },
           },
           targetContact: {
-            select: { id: true, fullName: true, company: true, jobTitle: true, avatarUrl: true },
+            select: {
+              id: true,
+              fullName: true,
+              company: true,
+              jobTitle: true,
+              avatarUrl: true,
+            },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       });
 
       res.status(200).json({ success: true, data: intros });
@@ -1157,32 +1353,41 @@ export class OrganizationController {
    * Respond to intro request (approve/decline/complete)
    * PATCH /api/v1/organizations/:id/intros/:introId
    */
-  async respondToIntro(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async respondToIntro(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id, introId } = req.params;
+      const { id, introId } = req.params as { id: string; introId: string };
       const { status, connectorNote, declinedReason } = req.body;
 
       const intro = await prisma.warmIntroRequest.findFirst({
         where: { id: introId, organizationId: id },
       });
 
-      if (!intro) throw new NotFoundError('Intro request not found');
+      if (!intro) throw new NotFoundError("Intro request not found");
 
       // Only connector or admin can respond
-      const isAdmin = req.organization?.role === 'ADMIN' || req.organization?.role === 'OWNER';
+      const isAdmin =
+        req.organization?.role === "ADMIN" ||
+        req.organization?.role === "OWNER";
       if (intro.connectorId !== req.user.userId && !isAdmin) {
-        throw new ForbiddenError('Only the connector can respond to this intro request');
+        throw new ForbiddenError(
+          "Only the connector can respond to this intro request",
+        );
       }
 
       const updateData: any = { status };
-      if (status === 'APPROVED' && connectorNote) updateData.connectorNote = connectorNote;
-      if (status === 'DECLINED') {
+      if (status === "APPROVED" && connectorNote)
+        updateData.connectorNote = connectorNote;
+      if (status === "DECLINED") {
         updateData.declinedAt = new Date();
         if (declinedReason) updateData.declinedReason = declinedReason;
       }
-      if (status === 'COMPLETED') updateData.completedAt = new Date();
+      if (status === "COMPLETED") updateData.completedAt = new Date();
 
       const updated = await prisma.warmIntroRequest.update({
         where: { id: introId },
@@ -1210,19 +1415,33 @@ export class OrganizationController {
    * Get intro stats
    * GET /api/v1/organizations/:id/intros/stats
    */
-  async getIntroStats(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getIntroStats(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
 
-      const [total, pending, approved, completed, declined] = await Promise.all([
-        prisma.warmIntroRequest.count({ where: { organizationId: id } }),
-        prisma.warmIntroRequest.count({ where: { organizationId: id, status: 'PENDING' } }),
-        prisma.warmIntroRequest.count({ where: { organizationId: id, status: 'APPROVED' } }),
-        prisma.warmIntroRequest.count({ where: { organizationId: id, status: 'COMPLETED' } }),
-        prisma.warmIntroRequest.count({ where: { organizationId: id, status: 'DECLINED' } }),
-      ]);
+      const [total, pending, approved, completed, declined] = await Promise.all(
+        [
+          prisma.warmIntroRequest.count({ where: { organizationId: id } }),
+          prisma.warmIntroRequest.count({
+            where: { organizationId: id, status: "PENDING" },
+          }),
+          prisma.warmIntroRequest.count({
+            where: { organizationId: id, status: "APPROVED" },
+          }),
+          prisma.warmIntroRequest.count({
+            where: { organizationId: id, status: "COMPLETED" },
+          }),
+          prisma.warmIntroRequest.count({
+            where: { organizationId: id, status: "DECLINED" },
+          }),
+        ],
+      );
 
       res.status(200).json({
         success: true,
@@ -1241,24 +1460,33 @@ export class OrganizationController {
    * Share a project with team
    * POST /api/v1/organizations/:id/projects/:projectId/share
    */
-  async shareProject(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async shareProject(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id: orgId, projectId } = req.params;
+      const { id: orgId, projectId } = req.params as {
+        id: string;
+        projectId: string;
+      };
 
       const project = await prisma.project.findFirst({
         where: { id: projectId, userId: req.user.userId },
       });
 
-      if (!project) throw new NotFoundError('Project not found');
+      if (!project) throw new NotFoundError("Project not found");
 
       await prisma.project.update({
         where: { id: projectId },
         data: { organizationId: orgId, isTeamShared: true },
       });
 
-      res.status(200).json({ success: true, message: 'Project shared with team' });
+      res
+        .status(200)
+        .json({ success: true, message: "Project shared with team" });
     } catch (error) {
       next(error);
     }
@@ -1268,24 +1496,30 @@ export class OrganizationController {
    * Unshare a project from team
    * DELETE /api/v1/organizations/:id/projects/:projectId/share
    */
-  async unshareProject(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async unshareProject(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { projectId } = req.params;
+      const { projectId } = req.params as { projectId: string };
 
       const project = await prisma.project.findFirst({
         where: { id: projectId, userId: req.user.userId },
       });
 
-      if (!project) throw new NotFoundError('Project not found');
+      if (!project) throw new NotFoundError("Project not found");
 
       await prisma.project.update({
         where: { id: projectId },
         data: { organizationId: null, isTeamShared: false },
       });
 
-      res.status(200).json({ success: true, message: 'Project unshared from team' });
+      res
+        .status(200)
+        .json({ success: true, message: "Project unshared from team" });
     } catch (error) {
       next(error);
     }
@@ -1295,13 +1529,20 @@ export class OrganizationController {
    * Get team projects
    * GET /api/v1/organizations/:id/projects
    */
-  async getTeamProjects(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getTeamProjects(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id: orgId } = req.params;
+      const { id: orgId } = req.params as { id: string };
       const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
-      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 20));
+      const limit = Math.min(
+        100,
+        Math.max(1, parseInt(req.query.limit as string, 10) || 20),
+      );
 
       const where = { organizationId: orgId, isTeamShared: true };
 
@@ -1313,7 +1554,7 @@ export class OrganizationController {
             sectors: { include: { sector: true } },
             _count: { select: { matches: true } },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           skip: (page - 1) * limit,
           take: limit,
         }),
@@ -1336,7 +1577,12 @@ export class OrganizationController {
             user: p.user,
             createdAt: p.createdAt,
           })),
-          pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+          },
         },
       });
     } catch (error) {
@@ -1348,24 +1594,31 @@ export class OrganizationController {
    * Share a deal with team
    * POST /api/v1/organizations/:id/deals/:dealId/share
    */
-  async shareDeal(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async shareDeal(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id: orgId, dealId } = req.params;
+      const { id: orgId, dealId } = req.params as {
+        id: string;
+        dealId: string;
+      };
 
       const deal = await prisma.dealRequest.findFirst({
         where: { id: dealId, userId: req.user.userId },
       });
 
-      if (!deal) throw new NotFoundError('Deal not found');
+      if (!deal) throw new NotFoundError("Deal not found");
 
       await prisma.dealRequest.update({
         where: { id: dealId },
         data: { organizationId: orgId, isTeamShared: true },
       });
 
-      res.status(200).json({ success: true, message: 'Deal shared with team' });
+      res.status(200).json({ success: true, message: "Deal shared with team" });
     } catch (error) {
       next(error);
     }
@@ -1375,24 +1628,30 @@ export class OrganizationController {
    * Unshare a deal from team
    * DELETE /api/v1/organizations/:id/deals/:dealId/share
    */
-  async unshareDeal(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async unshareDeal(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { dealId } = req.params;
+      const { dealId } = req.params as { dealId: string };
 
       const deal = await prisma.dealRequest.findFirst({
         where: { id: dealId, userId: req.user.userId },
       });
 
-      if (!deal) throw new NotFoundError('Deal not found');
+      if (!deal) throw new NotFoundError("Deal not found");
 
       await prisma.dealRequest.update({
         where: { id: dealId },
         data: { organizationId: null, isTeamShared: false },
       });
 
-      res.status(200).json({ success: true, message: 'Deal unshared from team' });
+      res
+        .status(200)
+        .json({ success: true, message: "Deal unshared from team" });
     } catch (error) {
       next(error);
     }
@@ -1402,13 +1661,20 @@ export class OrganizationController {
    * Get team deals
    * GET /api/v1/organizations/:id/deals
    */
-  async getTeamDeals(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getTeamDeals(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id: orgId } = req.params;
+      const { id: orgId } = req.params as { id: string };
       const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
-      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 20));
+      const limit = Math.min(
+        100,
+        Math.max(1, parseInt(req.query.limit as string, 10) || 20),
+      );
 
       const where = { organizationId: orgId, isTeamShared: true };
 
@@ -1418,7 +1684,7 @@ export class OrganizationController {
           include: {
             user: { select: { id: true, fullName: true, avatarUrl: true } },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           skip: (page - 1) * limit,
           take: limit,
         }),
@@ -1443,7 +1709,12 @@ export class OrganizationController {
             user: d.user,
             createdAt: d.createdAt,
           })),
-          pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+          },
         },
       });
     } catch (error) {
@@ -1455,15 +1726,19 @@ export class OrganizationController {
    *
    * POST /api/v1/organizations/:id/contacts/copy
    */
-  async copyContactsToOrg(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async copyContactsToOrg(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const orgId = req.params.id;
+      const orgId = String(req.params.id);
       const { contactIds } = req.body;
 
       if (!Array.isArray(contactIds) || contactIds.length === 0) {
-        throw new ValidationError('contactIds must be a non-empty array');
+        throw new ValidationError("contactIds must be a non-empty array");
       }
 
       // Fetch the personal contacts owned by this user
@@ -1573,9 +1848,9 @@ export class OrganizationController {
         data: {
           organizationId: orgId,
           userId: req.user.userId,
-          action: 'COPY_CONTACTS',
-          resourceType: 'contact',
-          metadata: { count: copied, contactIds: contacts.map(c => c.id) },
+          action: "COPY_CONTACTS",
+          resourceType: "contact",
+          metadata: { count: copied, contactIds: contacts.map((c) => c.id) },
         },
       });
 
@@ -1588,22 +1863,26 @@ export class OrganizationController {
    * Get pending invitations for an organization
    * GET /api/v1/organizations/:id/invitations
    */
-  async getOrgInvitations(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getOrgInvitations(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
 
       const invitations = await prisma.orgInvitation.findMany({
         where: {
           organizationId: id,
-          status: 'PENDING',
+          status: "PENDING",
           expiresAt: { gt: new Date() },
         },
         include: {
           invitedBy: { select: { fullName: true, avatarUrl: true } },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       });
 
       res.json({ success: true, data: invitations });
@@ -1616,39 +1895,54 @@ export class OrganizationController {
    * Cancel a pending invitation
    * DELETE /api/v1/organizations/:id/invitations/:invitationId
    */
-  async cancelInvitation(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async cancelInvitation(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const { id, invitationId } = req.params;
+      const { id, invitationId } = req.params as {
+        id: string;
+        invitationId: string;
+      };
 
       const invitation = await prisma.orgInvitation.findUnique({
         where: { id: invitationId },
       });
 
-      if (!invitation) throw new NotFoundError('Invitation not found');
-      if (invitation.organizationId !== id) throw new ForbiddenError('Invitation does not belong to this organization');
-      if (invitation.status !== 'PENDING') throw new ValidationError('Only pending invitations can be cancelled');
+      if (!invitation) throw new NotFoundError("Invitation not found");
+      if (invitation.organizationId !== id)
+        throw new ForbiddenError(
+          "Invitation does not belong to this organization",
+        );
+      if (invitation.status !== "PENDING")
+        throw new ValidationError("Only pending invitations can be cancelled");
 
       await prisma.orgInvitation.update({
         where: { id: invitationId },
-        data: { status: 'CANCELLED' },
+        data: { status: "CANCELLED" },
       });
 
       await prisma.orgActivityLog.create({
         data: {
           organizationId: id,
           userId: req.user.userId,
-          action: 'INVITATION_CANCELLED',
-          resourceType: 'invitation',
+          action: "INVITATION_CANCELLED",
+          resourceType: "invitation",
           resourceId: invitationId,
           metadata: { email: invitation.email },
         },
       });
 
-      logger.info('Organization invitation cancelled', { orgId: id, invitationId, email: invitation.email });
+      logger.info("Organization invitation cancelled", {
+        orgId: id,
+        invitationId,
+        email: invitation.email,
+      });
 
-      res.json({ success: true, message: 'Invitation cancelled' });
+      res.json({ success: true, message: "Invitation cancelled" });
     } catch (error) {
       next(error);
     }

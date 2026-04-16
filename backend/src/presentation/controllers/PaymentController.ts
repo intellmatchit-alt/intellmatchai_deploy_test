@@ -4,15 +4,19 @@
  * Handles HTTP requests for payment and subscription management.
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../../infrastructure/database/prisma/client.js';
+import { Request, Response, NextFunction } from "express";
+import { prisma } from "../../infrastructure/database/prisma/client.js";
 import {
   CreateCheckoutUseCase,
   ProcessPaymentCallbackUseCase,
   GetSubscriptionUseCase,
-} from '../../application/use-cases/payment/index.js';
-import { logger } from '../../shared/logger/index.js';
-import { AuthenticationError, NotFoundError, ForbiddenError } from '../../shared/errors/index.js';
+} from "../../application/use-cases/payment/index.js";
+import { logger } from "../../shared/logger/index.js";
+import {
+  AuthenticationError,
+  NotFoundError,
+  ForbiddenError,
+} from "../../shared/errors/index.js";
 
 export class PaymentController {
   private createCheckoutUseCase: CreateCheckoutUseCase;
@@ -32,11 +36,11 @@ export class PaymentController {
   async createCheckout(
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const { plan, billingInterval, seats } = req.body;
@@ -67,39 +71,39 @@ export class PaymentController {
   async handleCallback(
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
-      logger.info('Received PayTabs callback', {
+      logger.info("Received PayTabs callback", {
         cartId: req.body.cart_id,
         ip: req.ip,
-        userAgent: req.headers['user-agent'],
+        userAgent: req.headers["user-agent"],
       });
 
-      const signature = req.headers['signature'] as string | undefined;
-      const result = await this.processCallbackUseCase.execute(req.body, signature);
+      const signature = req.headers["signature"] as string | undefined;
+      const result = await this.processCallbackUseCase.execute(
+        req.body,
+        signature,
+      );
 
       // PayTabs expects a 200 response to confirm receipt
       res.status(200).json({
         success: true,
-        message: 'Callback processed',
+        message: "Callback processed",
         ...result,
       });
     } catch (error) {
-      logger.error('Payment callback processing failed', {
+      logger.error("Payment callback processing failed", {
         cartId: req.body?.cart_id,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       });
 
       // Still return 200 to prevent PayTabs retries for validation errors
       // Only internal errors should cause retries
-      if (
-        error instanceof NotFoundError ||
-        error instanceof Error
-      ) {
+      if (error instanceof NotFoundError || error instanceof Error) {
         res.status(200).json({
           success: false,
-          error: error instanceof Error ? error.message : 'Processing failed',
+          error: error instanceof Error ? error.message : "Processing failed",
         });
         return;
       }
@@ -115,15 +119,15 @@ export class PaymentController {
   async getSubscription(
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const subscription = await this.getSubscriptionUseCase.execute(
-        req.user.userId
+        req.user.userId,
       );
 
       res.status(200).json({
@@ -142,14 +146,14 @@ export class PaymentController {
   async getPayment(
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const { cartId } = req.params;
+      const { cartId } = req.params as { cartId: string };
 
       const payment = await prisma.payment.findUnique({
         where: { cartId },
@@ -165,12 +169,12 @@ export class PaymentController {
       });
 
       if (!payment) {
-        throw new NotFoundError('Payment not found');
+        throw new NotFoundError("Payment not found");
       }
 
       // Ensure user owns this payment
       if (payment.subscription.userId !== req.user.userId) {
-        throw new ForbiddenError('Access denied');
+        throw new ForbiddenError("Access denied");
       }
 
       res.status(200).json({
@@ -206,11 +210,11 @@ export class PaymentController {
   async getPaymentHistory(
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const payments = await prisma.payment.findMany({
@@ -219,7 +223,7 @@ export class PaymentController {
             userId: req.user.userId,
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         take: 20,
         select: {
           id: true,

@@ -6,25 +6,37 @@
  * @module presentation/controllers/EventController
  */
 
-import { Request, Response, NextFunction } from 'express';
-import crypto, { randomBytes } from 'crypto';
-import { prisma } from '../../infrastructure/database/prisma/client';
-import { AuthenticationError, NotFoundError, ValidationError, ConflictError } from '../../shared/errors';
-import { logger } from '../../shared/logger';
-import { qrCodeService } from '../../infrastructure/services/QRCodeService';
-import { getStorageService } from '../../infrastructure/external/storage';
-import { hashPassword, validatePassword } from '../../infrastructure/auth/password';
-import { generateTokenPair } from '../../infrastructure/auth/jwt';
-import { EmailService } from '../../infrastructure/services/EmailService';
-import { eventMatchingService } from '../../infrastructure/services/event';
-import { queueService, QueueName, EventMatchingJobData } from '../../infrastructure/queue/QueueService';
+import { Request, Response, NextFunction } from "express";
+import crypto, { randomBytes } from "crypto";
+import { prisma } from "../../infrastructure/database/prisma/client";
+import {
+  AuthenticationError,
+  NotFoundError,
+  ValidationError,
+  ConflictError,
+} from "../../shared/errors";
+import { logger } from "../../shared/logger";
+import { qrCodeService } from "../../infrastructure/services/QRCodeService";
+import { getStorageService } from "../../infrastructure/external/storage";
+import {
+  hashPassword,
+  validatePassword,
+} from "../../infrastructure/auth/password";
+import { generateTokenPair } from "../../infrastructure/auth/jwt";
+import { EmailService } from "../../infrastructure/services/EmailService";
+import { eventMatchingService } from "../../infrastructure/services/event";
+import {
+  queueService,
+  QueueName,
+  EventMatchingJobData,
+} from "../../infrastructure/queue/QueueService";
 
 /**
  * Generate a unique event code (8 characters, alphanumeric)
  */
 function generateUniqueCode(): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let code = '';
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let code = "";
   const bytes = randomBytes(8);
   for (let i = 0; i < 8; i++) {
     code += chars[bytes[i] % chars.length];
@@ -36,7 +48,7 @@ function generateUniqueCode(): string {
  * Generate a guest access token
  */
 function generateAccessToken(): string {
-  return randomBytes(32).toString('hex');
+  return randomBytes(32).toString("hex");
 }
 
 /**
@@ -50,23 +62,34 @@ export class EventController {
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const { name, description, dateTime, location, locationLat, locationLng, thumbnailUrl, welcomeMessage } = req.body;
+      const {
+        name,
+        description,
+        dateTime,
+        location,
+        locationLat,
+        locationLng,
+        thumbnailUrl,
+        welcomeMessage,
+      } = req.body;
 
       // Generate unique code, retry if collision
       let uniqueCode: string;
       let attempts = 0;
       do {
         uniqueCode = generateUniqueCode();
-        const existing = await prisma.event.findUnique({ where: { uniqueCode } });
+        const existing = await prisma.event.findUnique({
+          where: { uniqueCode },
+        });
         if (!existing) break;
         attempts++;
       } while (attempts < 5);
 
       if (attempts >= 5) {
-        throw new ValidationError('Failed to generate unique event code');
+        throw new ValidationError("Failed to generate unique event code");
       }
 
       const event = await prisma.event.create({
@@ -90,7 +113,7 @@ export class EventController {
         success: true,
         data: {
           event,
-          eventUrl: `${process.env.FRONTEND_URL || 'https://intellmatch.com'}/e/${uniqueCode}`,
+          eventUrl: `${process.env.FRONTEND_URL || "https://intellmatch.com"}/e/${uniqueCode}`,
         },
       });
     } catch (error) {
@@ -105,18 +128,21 @@ export class EventController {
   async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
-      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 20));
+      const limit = Math.min(
+        100,
+        Math.max(1, parseInt(req.query.limit as string, 10) || 20),
+      );
       const status = req.query.status as string;
 
       const where: any = { hostId: req.user.userId };
 
-      if (status === 'active') {
+      if (status === "active") {
         where.isActive = true;
-      } else if (status === 'inactive') {
+      } else if (status === "inactive") {
         where.isActive = false;
       }
 
@@ -126,7 +152,7 @@ export class EventController {
           include: {
             _count: { select: { attendees: true } },
           },
-          orderBy: { dateTime: 'desc' },
+          orderBy: { dateTime: "desc" },
           skip: (page - 1) * limit,
           take: limit,
         }),
@@ -136,10 +162,10 @@ export class EventController {
       res.status(200).json({
         success: true,
         data: {
-          events: events.map(e => ({
+          events: events.map((e) => ({
             ...e,
             attendeeCount: e._count.attendees,
-            eventUrl: `${process.env.FRONTEND_URL || 'https://intellmatch.com'}/e/${e.uniqueCode}`,
+            eventUrl: `${process.env.FRONTEND_URL || "https://intellmatch.com"}/e/${e.uniqueCode}`,
           })),
           pagination: {
             page,
@@ -161,10 +187,10 @@ export class EventController {
   async get(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
 
       const event = await prisma.event.findFirst({
         where: { id, hostId: req.user.userId },
@@ -174,7 +200,7 @@ export class EventController {
       });
 
       if (!event) {
-        throw new NotFoundError('Event not found');
+        throw new NotFoundError("Event not found");
       }
 
       res.status(200).json({
@@ -183,7 +209,7 @@ export class EventController {
           event: {
             ...event,
             attendeeCount: event._count.attendees,
-            eventUrl: `${process.env.FRONTEND_URL || 'https://intellmatch.com'}/e/${event.uniqueCode}`,
+            eventUrl: `${process.env.FRONTEND_URL || "https://intellmatch.com"}/e/${event.uniqueCode}`,
           },
         },
       });
@@ -199,11 +225,21 @@ export class EventController {
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const { id } = req.params;
-      const { name, description, dateTime, location, locationLat, locationLng, thumbnailUrl, welcomeMessage, isActive } = req.body;
+      const { id } = req.params as { id: string };
+      const {
+        name,
+        description,
+        dateTime,
+        location,
+        locationLat,
+        locationLng,
+        thumbnailUrl,
+        welcomeMessage,
+        isActive,
+      } = req.body;
 
       // Verify ownership
       const existing = await prisma.event.findFirst({
@@ -211,7 +247,7 @@ export class EventController {
       });
 
       if (!existing) {
-        throw new NotFoundError('Event not found');
+        throw new NotFoundError("Event not found");
       }
 
       const event = await prisma.event.update({
@@ -221,8 +257,12 @@ export class EventController {
           ...(description !== undefined && { description }),
           ...(dateTime !== undefined && { dateTime: new Date(dateTime) }),
           ...(location !== undefined && { location }),
-          ...(locationLat !== undefined && { locationLat: locationLat ? parseFloat(locationLat) : null }),
-          ...(locationLng !== undefined && { locationLng: locationLng ? parseFloat(locationLng) : null }),
+          ...(locationLat !== undefined && {
+            locationLat: locationLat ? parseFloat(locationLat) : null,
+          }),
+          ...(locationLng !== undefined && {
+            locationLng: locationLng ? parseFloat(locationLng) : null,
+          }),
           ...(thumbnailUrl !== undefined && { thumbnailUrl }),
           ...(welcomeMessage !== undefined && { welcomeMessage }),
           ...(isActive !== undefined && { isActive }),
@@ -245,10 +285,10 @@ export class EventController {
   async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
 
       // Verify ownership
       const existing = await prisma.event.findFirst({
@@ -256,7 +296,7 @@ export class EventController {
       });
 
       if (!existing) {
-        throw new NotFoundError('Event not found');
+        throw new NotFoundError("Event not found");
       }
 
       await prisma.event.delete({ where: { id } });
@@ -265,7 +305,7 @@ export class EventController {
 
       res.status(200).json({
         success: true,
-        message: 'Event deleted successfully',
+        message: "Event deleted successfully",
       });
     } catch (error) {
       next(error);
@@ -276,15 +316,22 @@ export class EventController {
    * Get event attendees (for host)
    * GET /api/v1/events/:id/attendees
    */
-  async getAttendees(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getAttendees(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
       const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
-      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 50));
+      const limit = Math.min(
+        100,
+        Math.max(1, parseInt(req.query.limit as string, 10) || 50),
+      );
       const search = req.query.search as string;
 
       // Verify ownership
@@ -293,7 +340,7 @@ export class EventController {
       });
 
       if (!event) {
-        throw new NotFoundError('Event not found');
+        throw new NotFoundError("Event not found");
       }
 
       const where: any = { eventId: id };
@@ -309,7 +356,7 @@ export class EventController {
       const [attendees, total] = await Promise.all([
         prisma.eventAttendee.findMany({
           where,
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           skip: (page - 1) * limit,
           take: limit,
         }),
@@ -337,14 +384,18 @@ export class EventController {
    * Export attendees
    * POST /api/v1/events/:id/attendees/export
    */
-  async exportAttendees(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async exportAttendees(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const { id } = req.params;
-      const format = (req.query.format as string) || 'csv';
+      const { id } = req.params as { id: string };
+      const format = (req.query.format as string) || "csv";
 
       // Verify ownership
       const event = await prisma.event.findFirst({
@@ -352,40 +403,52 @@ export class EventController {
       });
 
       if (!event) {
-        throw new NotFoundError('Event not found');
+        throw new NotFoundError("Event not found");
       }
 
       const attendees = await prisma.eventAttendee.findMany({
         where: { eventId: id },
-        orderBy: { createdAt: 'asc' },
+        orderBy: { createdAt: "asc" },
       });
 
-      if (format === 'json') {
+      if (format === "json") {
         res.status(200).json({
           success: true,
           data: { attendees },
         });
       } else {
         // CSV format
-        const headers = ['Name', 'Email', 'Mobile', 'Company', 'Role', 'Bio', 'Looking For', 'Registered At'];
-        const rows = attendees.map(a => [
+        const headers = [
+          "Name",
+          "Email",
+          "Mobile",
+          "Company",
+          "Role",
+          "Bio",
+          "Looking For",
+          "Registered At",
+        ];
+        const rows = attendees.map((a) => [
           a.name,
           a.email,
-          a.mobile || '',
-          a.company || '',
-          a.role || '',
-          (a.bio || '').replace(/"/g, '""'),
-          (a.lookingFor || '').replace(/"/g, '""'),
+          a.mobile || "",
+          a.company || "",
+          a.role || "",
+          (a.bio || "").replace(/"/g, '""'),
+          (a.lookingFor || "").replace(/"/g, '""'),
           a.createdAt.toISOString(),
         ]);
 
         const csv = [
-          headers.join(','),
-          ...rows.map(r => r.map(c => `"${c}"`).join(',')),
-        ].join('\n');
+          headers.join(","),
+          ...rows.map((r) => r.map((c) => `"${c}"`).join(",")),
+        ].join("\n");
 
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', `attachment; filename="${event.name}-attendees.csv"`);
+        res.setHeader("Content-Type", "text/csv");
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="${event.name}-attendees.csv"`,
+        );
         res.status(200).send(csv);
       }
     } catch (error) {
@@ -397,13 +460,17 @@ export class EventController {
    * Add attendees to host's contacts
    * POST /api/v1/events/:id/attendees/add-to-contacts
    */
-  async addToContacts(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async addToContacts(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
       const { attendeeIds } = req.body;
 
       // Verify ownership
@@ -412,7 +479,7 @@ export class EventController {
       });
 
       if (!event) {
-        throw new NotFoundError('Event not found');
+        throw new NotFoundError("Event not found");
       }
 
       // Get attendees
@@ -429,17 +496,17 @@ export class EventController {
       const existingContacts = await prisma.contact.findMany({
         where: {
           ownerId: req.user.userId,
-          email: { in: attendees.map(a => a.email) },
+          email: { in: attendees.map((a) => a.email) },
         },
         select: { email: true },
       });
 
-      const existingEmails = new Set(existingContacts.map(c => c.email));
+      const existingEmails = new Set(existingContacts.map((c) => c.email));
 
       // Create contacts for attendees not already in contacts
       const newContacts = attendees
-        .filter(a => !existingEmails.has(a.email))
-        .map(a => ({
+        .filter((a) => !existingEmails.has(a.email))
+        .map((a) => ({
           ownerId: req.user!.userId,
           fullName: a.name,
           email: a.email,
@@ -447,9 +514,11 @@ export class EventController {
           company: a.company,
           jobTitle: a.role,
           bio: a.bio,
-          source: 'EVENT' as const,
-          notes: `Met at event: ${event.name}\nLooking for: ${a.lookingFor || 'N/A'}`,
-          rawSources: JSON.stringify([{ type: 'event', eventId: event.id, attendeeId: a.id }]),
+          source: "EVENT" as const,
+          notes: `Met at event: ${event.name}\nLooking for: ${a.lookingFor || "N/A"}`,
+          rawSources: JSON.stringify([
+            { type: "event", eventId: event.id, attendeeId: a.id },
+          ]),
         }));
 
       if (newContacts.length > 0) {
@@ -475,13 +544,17 @@ export class EventController {
    * Invite attendees to IntellMatch
    * POST /api/v1/events/:id/invite-all
    */
-  async inviteAttendees(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async inviteAttendees(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
       const { attendeeIds, message } = req.body;
 
       // Verify ownership and get host info
@@ -493,7 +566,7 @@ export class EventController {
       });
 
       if (!event) {
-        throw new NotFoundError('Event not found');
+        throw new NotFoundError("Event not found");
       }
 
       // Get attendees
@@ -509,16 +582,16 @@ export class EventController {
 
       // Check which are already users
       const existingUsers = await prisma.user.findMany({
-        where: { email: { in: attendees.map(a => a.email) } },
+        where: { email: { in: attendees.map((a) => a.email) } },
         select: { email: true },
       });
 
-      const existingEmails = new Set(existingUsers.map(u => u.email));
-      const toInvite = attendees.filter(a => !existingEmails.has(a.email));
+      const existingEmails = new Set(existingUsers.map((u) => u.email));
+      const toInvite = attendees.filter((a) => !existingEmails.has(a.email));
 
       // Send invitation emails
       const emailService = new EmailService();
-      const frontendUrl = process.env.FRONTEND_URL || 'https://intellmatch.com';
+      const frontendUrl = process.env.FRONTEND_URL || "https://intellmatch.com";
       const eventDate = new Date(event.dateTime);
 
       const { sent, failed } = await emailService.sendBulkEventInvitations(
@@ -526,22 +599,24 @@ export class EventController {
         {
           hostName: event.host.fullName,
           eventName: event.name,
-          eventDate: eventDate.toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
+          eventDate: eventDate.toLocaleDateString("en-US", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
           }),
           eventLocation: event.location || undefined,
           eventDescription: event.description || undefined,
           registerUrl: `${frontendUrl}/register`,
           customMessage: message || undefined,
-        }
+        },
       );
 
-      logger.info(`Event invitations sent: ${sent} successful, ${failed} failed for event ${id}`);
+      logger.info(
+        `Event invitations sent: ${sent} successful, ${failed} failed for event ${id}`,
+      );
 
       res.status(200).json({
         success: true,
@@ -561,9 +636,13 @@ export class EventController {
    * Get public event info (no auth required)
    * GET /api/v1/events/public/:code
    */
-  async getPublicEvent(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getPublicEvent(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      const { code } = req.params;
+      const { code } = req.params as { code: string };
 
       const event = await prisma.event.findUnique({
         where: { uniqueCode: code },
@@ -583,11 +662,11 @@ export class EventController {
       });
 
       if (!event) {
-        throw new NotFoundError('Event not found');
+        throw new NotFoundError("Event not found");
       }
 
       if (!event.isActive) {
-        throw new ValidationError('This event is no longer active');
+        throw new ValidationError("This event is no longer active");
       }
 
       res.status(200).json({
@@ -616,21 +695,26 @@ export class EventController {
    * Register as guest for an event (no auth required)
    * POST /api/v1/events/public/:code/register
    */
-  async registerGuest(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async registerGuest(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      const { code } = req.params;
-      const { name, email, mobile, company, role, bio, lookingFor, password } = req.body;
+      const { code } = req.params as { code: string };
+      const { name, email, mobile, company, role, bio, lookingFor, password } =
+        req.body;
 
       const event = await prisma.event.findUnique({
         where: { uniqueCode: code },
       });
 
       if (!event) {
-        throw new NotFoundError('Event not found');
+        throw new NotFoundError("Event not found");
       }
 
       if (!event.isActive) {
-        throw new ValidationError('This event is no longer active');
+        throw new ValidationError("This event is no longer active");
       }
 
       // Check if already registered as attendee
@@ -650,7 +734,7 @@ export class EventController {
 
         res.status(200).json({
           success: true,
-          message: 'Already registered',
+          message: "Already registered",
           data: {
             attendee: { ...existing, accessToken },
             accessToken,
@@ -666,22 +750,23 @@ export class EventController {
       });
 
       let newUserCreated = false;
-      let authTokens: { accessToken: string; refreshToken: string } | null = null;
+      let authTokens: { accessToken: string; refreshToken: string } | null =
+        null;
 
       // If password provided and no existing user, create account
       if (password && !existingUser) {
         // Validate password
         const validation = validatePassword(password);
         if (!validation.isValid) {
-          throw new ValidationError(validation.errors.join('. '));
+          throw new ValidationError(validation.errors.join(". "));
         }
 
         const hashedPassword = await hashPassword(password);
 
         // Extract first/last name from full name
         const nameParts = name.trim().split(/\s+/);
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
+        const firstName = nameParts[0] || "";
+        const lastName = nameParts.slice(1).join(" ") || "";
 
         // Create user account
         const newUser = await prisma.user.create({
@@ -706,7 +791,9 @@ export class EventController {
         // Generate auth tokens for the new user
         authTokens = generateTokenPair(newUser.id, newUser.email);
 
-        logger.info(`New user account created during event registration: ${email}`);
+        logger.info(
+          `New user account created during event registration: ${email}`,
+        );
       }
 
       // Generate access token for event
@@ -740,11 +827,12 @@ export class EventController {
           attendee: { ...attendee, accessToken },
           accessToken,
           // Include auth tokens if new account was created
-          ...(newUserCreated && authTokens && {
-            userCreated: true,
-            authToken: authTokens.accessToken,
-            refreshToken: authTokens.refreshToken,
-          }),
+          ...(newUserCreated &&
+            authTokens && {
+              userCreated: true,
+              authToken: authTokens.accessToken,
+              refreshToken: authTokens.refreshToken,
+            }),
         },
       });
     } catch (error) {
@@ -756,24 +844,28 @@ export class EventController {
    * Join event as authenticated user
    * POST /api/v1/events/public/:code/join
    */
-  async joinEvent(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async joinEvent(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const { code } = req.params;
+      const { code } = req.params as { code: string };
 
       const event = await prisma.event.findUnique({
         where: { uniqueCode: code },
       });
 
       if (!event) {
-        throw new NotFoundError('Event not found');
+        throw new NotFoundError("Event not found");
       }
 
       if (!event.isActive) {
-        throw new ValidationError('This event is no longer active');
+        throw new ValidationError("This event is no longer active");
       }
 
       // Check if already registered by userId
@@ -784,7 +876,7 @@ export class EventController {
       if (existing) {
         res.status(200).json({
           success: true,
-          message: 'Already registered',
+          message: "Already registered",
           data: { attendee: existing },
         });
         return;
@@ -800,7 +892,7 @@ export class EventController {
       });
 
       if (!user) {
-        throw new AuthenticationError('User not found');
+        throw new AuthenticationError("User not found");
       }
 
       const existingByEmail = await prisma.eventAttendee.findFirst({
@@ -817,23 +909,29 @@ export class EventController {
         }
         res.status(200).json({
           success: true,
-          message: 'Already registered',
+          message: "Already registered",
           data: { attendee: { ...existingByEmail, userId: req.user.userId } },
         });
         return;
       }
 
       // Build lookingFor from user goals, interests, skills, sectors
-      const goalNames = user.userGoals.map(ug => ug.goalType.replace(/_/g, ' '));
-      const interestNames = user.userInterests.map(ui => ui.interest.name);
+      const goalNames = user.userGoals.map((ug) =>
+        ug.goalType.replace(/_/g, " "),
+      );
+      const interestNames = user.userInterests.map((ui) => ui.interest.name);
 
       // Get sectors and skills from onboarding data if available
       let sectorNames: string[] = [];
       let skillNames: string[] = [];
-      if (user.onboardingData && typeof user.onboardingData === 'object') {
+      if (user.onboardingData && typeof user.onboardingData === "object") {
         const data = user.onboardingData as any;
-        if (data.sectors) sectorNames = data.sectors.map((s: any) => s.name || s).filter(Boolean);
-        if (data.skills) skillNames = data.skills.map((s: any) => s.name || s).filter(Boolean);
+        if (data.sectors)
+          sectorNames = data.sectors
+            .map((s: any) => s.name || s)
+            .filter(Boolean);
+        if (data.skills)
+          skillNames = data.skills.map((s: any) => s.name || s).filter(Boolean);
       }
 
       const lookingForParts = [
@@ -843,9 +941,10 @@ export class EventController {
         ...skillNames,
       ].filter(Boolean);
 
-      const lookingFor = lookingForParts.length > 0
-        ? lookingForParts.join(', ')
-        : user.bio || '';
+      const lookingFor =
+        lookingForParts.length > 0
+          ? lookingForParts.join(", ")
+          : user.bio || "";
 
       const attendee = await prisma.eventAttendee.create({
         data: {
@@ -880,11 +979,21 @@ export class EventController {
    * Enqueue matching for a new attendee against all existing attendees.
    * Matching runs asynchronously via BullMQ worker so the join response is not blocked.
    */
-  private async runMatchingForAttendee(attendeeId: string, eventId: string): Promise<void> {
+  private async runMatchingForAttendee(
+    attendeeId: string,
+    eventId: string,
+  ): Promise<void> {
     try {
       const attendee = await prisma.eventAttendee.findUnique({
         where: { id: attendeeId },
-        select: { userId: true, name: true, bio: true, lookingFor: true, company: true, role: true },
+        select: {
+          userId: true,
+          name: true,
+          bio: true,
+          lookingFor: true,
+          company: true,
+          role: true,
+        },
       });
 
       if (!attendee) return;
@@ -897,19 +1006,31 @@ export class EventController {
 
       const job = await queueService.addJob(
         QueueName.EVENT_MATCHING,
-        'match-attendee',
+        "match-attendee",
         jobData,
       );
 
       if (job) {
-        logger.info('Enqueued event matching job', { jobId: job.id, eventId, attendeeId, isGuest: !attendee.userId });
+        logger.info("Enqueued event matching job", {
+          jobId: job.id,
+          eventId,
+          attendeeId,
+          isGuest: !attendee.userId,
+        });
       } else {
         // Queue unavailable - fall back to synchronous matching
-        logger.warn('Queue unavailable, falling back to synchronous event matching', { eventId, attendeeId });
-        await this.runMatchingSynchronous(attendeeId, eventId, attendee.userId ?? undefined);
+        logger.warn(
+          "Queue unavailable, falling back to synchronous event matching",
+          { eventId, attendeeId },
+        );
+        await this.runMatchingSynchronous(
+          attendeeId,
+          eventId,
+          attendee.userId ?? undefined,
+        );
       }
     } catch (error) {
-      logger.error('Error enqueuing attendee matching:', error);
+      logger.error("Error enqueuing attendee matching:", error);
       // Don't fail the join request if matching enqueue fails
     }
   }
@@ -917,45 +1038,70 @@ export class EventController {
   /**
    * Synchronous fallback for event matching when queue is unavailable
    */
-  private async runMatchingSynchronous(attendeeId: string, eventId: string, userId?: string): Promise<void> {
+  private async runMatchingSynchronous(
+    attendeeId: string,
+    eventId: string,
+    userId?: string,
+  ): Promise<void> {
     // Fetch all other attendees (both users and guests)
     const otherAttendees = await prisma.eventAttendee.findMany({
       where: { eventId, id: { not: attendeeId } },
-      select: { id: true, userId: true, name: true, bio: true, lookingFor: true, company: true, role: true },
+      select: {
+        id: true,
+        userId: true,
+        name: true,
+        bio: true,
+        lookingFor: true,
+        company: true,
+        role: true,
+      },
     });
 
     if (otherAttendees.length === 0) return;
 
     // Separate user-based and guest attendees
-    const userAttendees = otherAttendees.filter(a => a.userId);
-    const guestAttendees = otherAttendees.filter(a => !a.userId);
+    const userAttendees = otherAttendees.filter((a) => a.userId);
+    const guestAttendees = otherAttendees.filter((a) => !a.userId);
 
     // Fetch user profiles for user-based attendees (and the new attendee if they have a userId)
-    const allUserIds = [...(userId ? [userId] : []), ...userAttendees.map(a => a.userId!).filter(Boolean)];
-    const userProfiles = allUserIds.length > 0
-      ? await prisma.user.findMany({
-          where: { id: { in: allUserIds } },
-          include: {
-            userGoals: true,
-            userSectors: { include: { sector: true } },
-            userSkills: { include: { skill: true } },
-            userInterests: { include: { interest: true } },
-            userHobbies: { include: { hobby: true } },
-          },
-        })
-      : [];
+    const allUserIds = [
+      ...(userId ? [userId] : []),
+      ...userAttendees.map((a) => a.userId!).filter(Boolean),
+    ];
+    const userProfiles =
+      allUserIds.length > 0
+        ? await prisma.user.findMany({
+            where: { id: { in: allUserIds } },
+            include: {
+              userGoals: true,
+              userSectors: { include: { sector: true } },
+              userSkills: { include: { skill: true } },
+              userInterests: { include: { interest: true } },
+              userHobbies: { include: { hobby: true } },
+            },
+          })
+        : [];
 
-    const profileMap = new Map(userProfiles.map(u => [u.id, u]));
+    const profileMap = new Map(userProfiles.map((u) => [u.id, u]));
 
     // Build the new attendee's profile (user-based or guest-based)
-    let newAttendeeProfile: Parameters<typeof eventMatchingService.calculateMatchScore>[0] | null = null;
+    let newAttendeeProfile:
+      | Parameters<typeof eventMatchingService.calculateMatchScore>[0]
+      | null = null;
     if (userId) {
       newAttendeeProfile = profileMap.get(userId) || null;
     } else {
       // Guest attendee - fetch their form data
       const guestData = await prisma.eventAttendee.findUnique({
         where: { id: attendeeId },
-        select: { id: true, name: true, bio: true, lookingFor: true, company: true, role: true },
+        select: {
+          id: true,
+          name: true,
+          bio: true,
+          lookingFor: true,
+          company: true,
+          role: true,
+        },
       });
       if (guestData) {
         newAttendeeProfile = this.buildGuestProfileSync(guestData);
@@ -972,7 +1118,11 @@ export class EventController {
       const otherProfile = profileMap.get(other.userId);
       if (!otherProfile) continue;
 
-      const { score, level, reasons } = eventMatchingService.calculateMatchScore(newAttendeeProfile, otherProfile);
+      const { score, level, reasons } =
+        eventMatchingService.calculateMatchScore(
+          newAttendeeProfile,
+          otherProfile,
+        );
 
       if (score < 10) continue;
 
@@ -997,7 +1147,11 @@ export class EventController {
     for (const guest of guestAttendees) {
       const guestProfile = this.buildGuestProfileSync(guest);
 
-      const { score, level, reasons } = eventMatchingService.calculateMatchScore(newAttendeeProfile, guestProfile);
+      const { score, level, reasons } =
+        eventMatchingService.calculateMatchScore(
+          newAttendeeProfile,
+          guestProfile,
+        );
 
       if (score < 10) continue;
 
@@ -1025,7 +1179,9 @@ export class EventController {
       });
     }
 
-    logger.info(`Created ${matchesToCreate.length} matches for attendee ${attendeeId} (sync fallback)`);
+    logger.info(
+      `Created ${matchesToCreate.length} matches for attendee ${attendeeId} (sync fallback)`,
+    );
   }
 
   /**
@@ -1042,14 +1198,34 @@ export class EventController {
     const goals: Array<{ goalType: string }> = [];
     if (guest.lookingFor) {
       const lf = guest.lookingFor.toLowerCase();
-      if (lf.includes('hire') || lf.includes('recruit') || lf.includes('talent')) goals.push({ goalType: 'HIRING' });
-      if (lf.includes('job') || lf.includes('career') || lf.includes('position') || lf.includes('opportunity')) goals.push({ goalType: 'JOB_SEEKING' });
-      if (lf.includes('invest') || lf.includes('fund')) goals.push({ goalType: 'INVESTMENT' });
-      if (lf.includes('partner') || lf.includes('collaborat')) goals.push({ goalType: 'PARTNERSHIP' });
-      if (lf.includes('mentor') || lf.includes('advis')) goals.push({ goalType: 'MENTORSHIP' });
-      if (lf.includes('learn') || lf.includes('training')) goals.push({ goalType: 'LEARNING' });
-      if (lf.includes('sell') || lf.includes('client') || lf.includes('customer')) goals.push({ goalType: 'SALES' });
-      if (goals.length === 0) goals.push({ goalType: 'COLLABORATION' });
+      if (
+        lf.includes("hire") ||
+        lf.includes("recruit") ||
+        lf.includes("talent")
+      )
+        goals.push({ goalType: "HIRING" });
+      if (
+        lf.includes("job") ||
+        lf.includes("career") ||
+        lf.includes("position") ||
+        lf.includes("opportunity")
+      )
+        goals.push({ goalType: "JOB_SEEKING" });
+      if (lf.includes("invest") || lf.includes("fund"))
+        goals.push({ goalType: "INVESTMENT" });
+      if (lf.includes("partner") || lf.includes("collaborat"))
+        goals.push({ goalType: "PARTNERSHIP" });
+      if (lf.includes("mentor") || lf.includes("advis"))
+        goals.push({ goalType: "MENTORSHIP" });
+      if (lf.includes("learn") || lf.includes("training"))
+        goals.push({ goalType: "LEARNING" });
+      if (
+        lf.includes("sell") ||
+        lf.includes("client") ||
+        lf.includes("customer")
+      )
+        goals.push({ goalType: "SALES" });
+      if (goals.length === 0) goals.push({ goalType: "COLLABORATION" });
     }
 
     return {
@@ -1058,7 +1234,10 @@ export class EventController {
       userGoals: goals,
       userSectors: [] as Array<{ sectorId: string; sector?: { name: string } }>,
       userSkills: [] as Array<{ skillId: string; skill?: { name: string } }>,
-      userInterests: [] as Array<{ interestId: string; interest?: { name: string } }>,
+      userInterests: [] as Array<{
+        interestId: string;
+        interest?: { name: string };
+      }>,
       userHobbies: [] as Array<{ hobbyId: string; hobby?: { name: string } }>,
     };
   }
@@ -1067,9 +1246,13 @@ export class EventController {
    * Get public attendees list (with matches for the requesting attendee)
    * GET /api/v1/events/public/:code/attendees
    */
-  async getPublicAttendees(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getPublicAttendees(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      const { code } = req.params;
+      const { code } = req.params as { code: string };
       const token = req.query.token as string;
 
       const event = await prisma.event.findUnique({
@@ -1077,7 +1260,7 @@ export class EventController {
       });
 
       if (!event) {
-        throw new NotFoundError('Event not found');
+        throw new NotFoundError("Event not found");
       }
 
       // Find the requesting attendee by token or by logged-in user
@@ -1101,7 +1284,9 @@ export class EventController {
       }
 
       if (!requestingAttendee) {
-        throw new AuthenticationError('Please register for the event first or provide a valid access token');
+        throw new AuthenticationError(
+          "Please register for the event first or provide a valid access token",
+        );
       }
 
       // Get all attendees
@@ -1117,7 +1302,7 @@ export class EventController {
           photoUrl: true,
           createdAt: true,
         },
-        orderBy: { createdAt: 'asc' },
+        orderBy: { createdAt: "asc" },
       });
 
       // Get matches for the requesting attendee
@@ -1125,16 +1310,16 @@ export class EventController {
         where: { attendeeId: requestingAttendee.id },
       });
 
-      const matchMap = new Map(matches.map(m => [m.matchedAttendeeId, m]));
+      const matchMap = new Map(matches.map((m) => [m.matchedAttendeeId, m]));
 
       // Combine attendees with match info
       const attendeesWithMatches = attendees
-        .filter(a => a.id !== requestingAttendee.id) // Exclude self
-        .map(a => {
+        .filter((a) => a.id !== requestingAttendee.id) // Exclude self
+        .map((a) => {
           const match = matchMap.get(a.id);
           return {
             ...a,
-            matchLevel: match?.matchLevel || 'LOW',
+            matchLevel: match?.matchLevel || "LOW",
             matchScore: match?.score || 0,
             matchReasons: match?.reasons ? JSON.parse(match.reasons) : [],
           };
@@ -1142,7 +1327,9 @@ export class EventController {
         .sort((a, b) => {
           // Sort by match level (HIGH first), then by score
           const levelOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 };
-          const levelDiff = levelOrder[a.matchLevel as keyof typeof levelOrder] - levelOrder[b.matchLevel as keyof typeof levelOrder];
+          const levelDiff =
+            levelOrder[a.matchLevel as keyof typeof levelOrder] -
+            levelOrder[b.matchLevel as keyof typeof levelOrder];
           if (levelDiff !== 0) return levelDiff;
           return b.matchScore - a.matchScore;
         });
@@ -1168,14 +1355,21 @@ export class EventController {
    * Get user's attended events
    * GET /api/v1/events/attended
    */
-  async getAttendedEvents(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getAttendedEvents(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
-      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 20));
+      const limit = Math.min(
+        100,
+        Math.max(1, parseInt(req.query.limit as string, 10) || 20),
+      );
 
       // Find events where user is an attendee
       const attendances = await prisma.eventAttendee.findMany({
@@ -1187,10 +1381,10 @@ export class EventController {
             },
           },
           matchesAsSource: {
-            where: { matchLevel: 'HIGH' },
+            where: { matchLevel: "HIGH" },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         skip: (page - 1) * limit,
         take: limit,
       });
@@ -1202,7 +1396,7 @@ export class EventController {
       res.status(200).json({
         success: true,
         data: {
-          events: attendances.map(a => ({
+          events: attendances.map((a) => ({
             event: {
               ...a.event,
               attendeeCount: a.event._count.attendees,
@@ -1230,13 +1424,17 @@ export class EventController {
    * Get my matches for a specific event
    * GET /api/v1/events/:id/my-matches
    */
-  async getMyMatches(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getMyMatches(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
 
       // Find user's attendance record
       const attendance = await prisma.eventAttendee.findFirst({
@@ -1244,7 +1442,7 @@ export class EventController {
       });
 
       if (!attendance) {
-        throw new NotFoundError('You are not registered for this event');
+        throw new NotFoundError("You are not registered for this event");
       }
 
       // Get matches
@@ -1264,15 +1462,15 @@ export class EventController {
           },
         },
         orderBy: [
-          { matchLevel: 'asc' }, // HIGH comes first alphabetically
-          { score: 'desc' },
+          { matchLevel: "asc" }, // HIGH comes first alphabetically
+          { score: "desc" },
         ],
       });
 
       res.status(200).json({
         success: true,
         data: {
-          matches: matches.map(m => ({
+          matches: matches.map((m) => ({
             ...m.matchedAttendee,
             matchLevel: m.matchLevel,
             matchScore: m.score,
@@ -1289,15 +1487,22 @@ export class EventController {
    * Generate QR code for event
    * GET /api/v1/events/:id/qr
    */
-  async getQRCode(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getQRCode(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const { id } = req.params;
-      const format = (req.query.format as 'png' | 'svg' | 'base64') || 'png';
-      const size = Math.min(1000, Math.max(100, parseInt(req.query.size as string, 10) || 300));
+      const { id } = req.params as { id: string };
+      const format = (req.query.format as "png" | "svg" | "base64") || "png";
+      const size = Math.min(
+        1000,
+        Math.max(100, parseInt(req.query.size as string, 10) || 300),
+      );
 
       // Verify ownership
       const event = await prisma.event.findFirst({
@@ -1306,27 +1511,36 @@ export class EventController {
       });
 
       if (!event) {
-        throw new NotFoundError('Event not found');
+        throw new NotFoundError("Event not found");
       }
 
-      const qrCode = await qrCodeService.generateEventQR(event.uniqueCode, { format, size });
+      const qrCode = await qrCodeService.generateEventQR(event.uniqueCode, {
+        format,
+        size,
+      });
 
-      if (format === 'svg') {
-        res.setHeader('Content-Type', 'image/svg+xml');
-        res.setHeader('Content-Disposition', `inline; filename="${event.name}-qr.svg"`);
+      if (format === "svg") {
+        res.setHeader("Content-Type", "image/svg+xml");
+        res.setHeader(
+          "Content-Disposition",
+          `inline; filename="${event.name}-qr.svg"`,
+        );
         res.status(200).send(qrCode);
-      } else if (format === 'base64') {
+      } else if (format === "base64") {
         res.status(200).json({
           success: true,
           data: {
             qrCode: qrCode as string,
-            eventUrl: `${process.env.FRONTEND_URL || 'https://intellmatch.com'}/e/${event.uniqueCode}`,
+            eventUrl: `${process.env.FRONTEND_URL || "https://intellmatch.com"}/e/${event.uniqueCode}`,
           },
         });
       } else {
         // PNG
-        res.setHeader('Content-Type', 'image/png');
-        res.setHeader('Content-Disposition', `inline; filename="${event.name}-qr.png"`);
+        res.setHeader("Content-Type", "image/png");
+        res.setHeader(
+          "Content-Disposition",
+          `inline; filename="${event.name}-qr.png"`,
+        );
         res.status(200).send(qrCode);
       }
     } catch (error) {
@@ -1338,13 +1552,17 @@ export class EventController {
    * Upload event thumbnail
    * POST /api/v1/events/:id/thumbnail
    */
-  async uploadThumbnail(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async uploadThumbnail(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
 
       // Verify ownership
       const event = await prisma.event.findFirst({
@@ -1352,13 +1570,13 @@ export class EventController {
       });
 
       if (!event) {
-        throw new NotFoundError('Event not found');
+        throw new NotFoundError("Event not found");
       }
 
       if (!req.file) {
         res.status(400).json({
           success: false,
-          error: { code: 'NO_FILE', message: 'No thumbnail file uploaded' },
+          error: { code: "NO_FILE", message: "No thumbnail file uploaded" },
         });
         return;
       }
@@ -1371,19 +1589,26 @@ export class EventController {
 
       if (isStorageAvailable) {
         // Use MinIO storage - generates proper HTTP URL for OG images
-        const fileExtension = req.file.mimetype.split('/')[1] || 'jpg';
+        const fileExtension = req.file.mimetype.split("/")[1] || "jpg";
         const key = `events/${id}/thumbnail-${Date.now()}.${fileExtension}`;
 
-        const result = await storage.upload('thumbnails', key, req.file.buffer, {
-          contentType: req.file.mimetype,
-          cacheControl: 'public, max-age=31536000', // Cache for 1 year
-        });
+        const result = await storage.upload(
+          "thumbnails",
+          key,
+          req.file.buffer,
+          {
+            contentType: req.file.mimetype,
+            cacheControl: "public, max-age=31536000", // Cache for 1 year
+          },
+        );
 
         thumbnailUrl = result.url;
       } else {
         // Fallback to base64 if storage unavailable (won't work for OG images)
-        logger.warn('Storage unavailable, falling back to base64 for event thumbnail');
-        thumbnailUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+        logger.warn(
+          "Storage unavailable, falling back to base64 for event thumbnail",
+        );
+        thumbnailUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
       }
 
       const updatedEvent = await prisma.event.update({
@@ -1392,7 +1617,12 @@ export class EventController {
         select: { thumbnailUrl: true },
       });
 
-      logger.info('Event thumbnail uploaded', { eventId: id, userId: req.user.userId, size: req.file.size, useStorage: isStorageAvailable });
+      logger.info("Event thumbnail uploaded", {
+        eventId: id,
+        userId: req.user.userId,
+        size: req.file.size,
+        useStorage: isStorageAvailable,
+      });
 
       res.status(200).json({
         success: true,
@@ -1407,7 +1637,11 @@ export class EventController {
    * Convert guest to full user account
    * POST /api/v1/events/guests/convert
    */
-  async convertGuestToUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async convertGuestToUser(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const { accessToken, password } = req.body;
 
@@ -1425,7 +1659,7 @@ export class EventController {
       });
 
       if (!attendee) {
-        throw new ValidationError('Invalid or expired access token');
+        throw new ValidationError("Invalid or expired access token");
       }
 
       // Check if user already exists with this email
@@ -1434,13 +1668,17 @@ export class EventController {
       });
 
       if (existingUser) {
-        throw new ConflictError('An account already exists with this email. Please log in instead.');
+        throw new ConflictError(
+          "An account already exists with this email. Please log in instead.",
+        );
       }
 
       // Validate password
       const passwordValidation = validatePassword(password);
       if (!passwordValidation.isValid) {
-        throw new ValidationError('Invalid password', { errors: passwordValidation.errors });
+        throw new ValidationError("Invalid password", {
+          errors: passwordValidation.errors,
+        });
       }
 
       // Hash password
@@ -1496,7 +1734,7 @@ export class EventController {
         },
       });
 
-      logger.info('Guest converted to user', {
+      logger.info("Guest converted to user", {
         userId: user.id,
         email: user.email,
         eventName: attendee.event.name,
@@ -1527,10 +1765,14 @@ export class EventController {
    * Link guest token to authenticated user
    * POST /api/v1/events/guests/link
    */
-  async linkGuestToUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async linkGuestToUser(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const { accessToken } = req.body;
@@ -1549,12 +1791,14 @@ export class EventController {
       });
 
       if (!attendee) {
-        throw new ValidationError('Invalid or expired access token');
+        throw new ValidationError("Invalid or expired access token");
       }
 
       // Check if already linked to a different user
       if (attendee.userId && attendee.userId !== req.user.userId) {
-        throw new ConflictError('This registration is already linked to another account');
+        throw new ConflictError(
+          "This registration is already linked to another account",
+        );
       }
 
       // Link to current user
@@ -1567,7 +1811,7 @@ export class EventController {
         },
       });
 
-      logger.info('Guest linked to user', {
+      logger.info("Guest linked to user", {
         userId: req.user.userId,
         attendeeId: attendee.id,
         eventId: attendee.event.id,

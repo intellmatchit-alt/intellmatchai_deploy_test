@@ -359,7 +359,7 @@ export async function getPitchStatus(
     const orgId = req.orgContext?.organizationId || null;
     if (orgId) {
       const rawPitch = await prisma.pitch.findUnique({
-        where: { id: pitchId },
+        where: { id: String(pitchId) },
         select: { organizationId: true },
       });
       if (rawPitch?.organizationId !== orgId) {
@@ -368,11 +368,11 @@ export async function getPitchStatus(
       }
     }
 
-    const result = await getPitchStatusUseCase.execute(userId, pitchId);
+    const result = await getPitchStatusUseCase.execute(userId, String(pitchId));
 
     // Fetch additional relations (new fields)
     const pitchExtra = await prisma.pitch.findUnique({
-      where: { id: pitchId },
+      where: { id: String(pitchId) },
       select: {
         summary: true,
         detailedDesc: true,
@@ -431,7 +431,7 @@ export async function getPitchResults(
     const orgId = req.orgContext?.organizationId || null;
     if (orgId) {
       const rawPitch = await prisma.pitch.findUnique({
-        where: { id: pitchId },
+        where: { id: String(pitchId) },
         select: { organizationId: true },
       });
       if (rawPitch?.organizationId !== orgId) {
@@ -450,7 +450,11 @@ export async function getPitchResults(
         : undefined,
     };
 
-    const result = await getPitchResultsUseCase.execute(userId, pitchId, query);
+    const result = await getPitchResultsUseCase.execute(
+      userId,
+      String(pitchId),
+      query,
+    );
 
     res.json({ success: true, data: result });
   } catch (error) {
@@ -469,13 +473,13 @@ export async function updateMatchStatus(
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const matchId = req.params.matchId;
+    const matchId = String(req.params.matchId);
 
     // Scope by organization context
     const orgId = req.orgContext?.organizationId || null;
     if (orgId) {
       const match = await prisma.pitchMatch.findUnique({
-        where: { id: matchId },
+        where: { id: String(matchId) },
         include: {
           pitchSection: {
             include: { pitch: { select: { organizationId: true } } },
@@ -516,7 +520,11 @@ export async function regenerateOutreach(
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const { pitchId, sectionId, contactId } = req.params;
+    const { pitchId, sectionId, contactId } = req.params as {
+      pitchId: string;
+      sectionId: string;
+      contactId: string;
+    };
 
     // Scope by organization context
     const orgId = req.orgContext?.organizationId || null;
@@ -561,7 +569,7 @@ export async function rematchPitch(
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const pitchId = req.params.id;
+    const pitchId = String(req.params.id);
 
     // Scope by organization context
     const orgId = req.orgContext?.organizationId || null;
@@ -599,7 +607,7 @@ export async function updatePitch(
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const pitchId = req.params.id;
+    const pitchId = String(req.params.id);
 
     const pitch = await pitchRepository.findById(pitchId);
     if (!pitch) {
@@ -757,7 +765,10 @@ export async function updatePitchSection(
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const { id: pitchId, sectionId } = req.params;
+    const { id: pitchId, sectionId } = req.params as {
+      id: string;
+      sectionId: string;
+    };
     const { title, content } = req.body;
 
     const pitch = await pitchRepository.findById(pitchId);
@@ -813,7 +824,7 @@ export async function archivePitch(
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const pitchId = req.params.id;
+    const pitchId = String(req.params.id);
     const { isActive } = req.body;
 
     const pitch = await pitchRepository.findById(pitchId);
@@ -857,7 +868,7 @@ export async function deletePitch(
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const pitchId = req.params.id;
+    const pitchId = String(req.params.id);
 
     logger.info("Delete pitch requested", { userId, pitchId });
 
@@ -1103,7 +1114,7 @@ export async function exportPitchResults(
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const pitchId = req.params.id;
+    const pitchId = String(req.params.id);
 
     // Scope by organization context
     const orgId = req.orgContext?.organizationId || null;
@@ -1205,7 +1216,7 @@ export async function findMatches(
     }
 
     const userId = req.user.userId;
-    const pitchId = req.params.id;
+    const pitchId = String(req.params.id);
 
     // Scope by organization context
     const orgId = req.orgContext?.organizationId || null;
@@ -1245,12 +1256,10 @@ export async function findMatches(
     ]);
 
     if (sections.length === 0) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          error: { message: "No sections found for this pitch" },
-        });
+      res.status(400).json({
+        success: false,
+        error: { message: "No sections found for this pitch" },
+      });
       return;
     }
 
@@ -1280,14 +1289,12 @@ export async function findMatches(
     });
 
     if (contacts.length === 0) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          error: {
-            message: "No contacts in your network. Add contacts first.",
-          },
-        });
+      res.status(400).json({
+        success: false,
+        error: {
+          message: "No contacts in your network. Add contacts first.",
+        },
+      });
       return;
     }
 
@@ -1399,7 +1406,7 @@ export async function findMatches(
 
     // Update pitch status to COMPLETED
     await prisma.pitch.update({
-      where: { id: pitchId },
+      where: { id: String(pitchId) },
       data: { status: "COMPLETED", processedAt: new Date() },
     });
 
@@ -1411,7 +1418,11 @@ export async function findMatches(
     });
 
     // Fetch results in the same format as getPitchResults
-    const results = await getPitchResultsUseCase.execute(userId, pitchId, {});
+    const results = await getPitchResultsUseCase.execute(
+      userId,
+      String(pitchId),
+      {},
+    );
 
     res.json({
       success: true,

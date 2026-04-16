@@ -4,37 +4,73 @@
  * CRUD operations for v3 Job Matching candidate profiles.
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../../infrastructure/database/prisma/client';
-import { AuthenticationError, NotFoundError, ValidationError } from '../../shared/errors';
-import { logger } from '../../shared/logger';
+import { Request, Response, NextFunction } from "express";
+import { prisma } from "../../infrastructure/database/prisma/client";
+import {
+  AuthenticationError,
+  NotFoundError,
+  ValidationError,
+} from "../../shared/errors";
+import { logger } from "../../shared/logger";
 
 export class CandidateProfileController {
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const {
-        title, roleArea, seniority, location, desiredWorkMode, desiredEmploymentType,
-        skills, profileSummaryPreferences, yearsOfExperience, availability,
-        languages, certifications, industries, education, expectedSalary,
-        noticePeriod, relevantExperience, fullName,
+        title,
+        roleArea,
+        seniority,
+        location,
+        desiredWorkMode,
+        desiredEmploymentType,
+        skills,
+        profileSummaryPreferences,
+        yearsOfExperience,
+        availability,
+        languages,
+        certifications,
+        industries,
+        education,
+        expectedSalary,
+        noticePeriod,
+        relevantExperience,
+        fullName,
       } = req.body;
 
-      if (!title || !roleArea || !seniority || !location || !profileSummaryPreferences) {
-        throw new ValidationError('Missing required fields: title, roleArea, seniority, location, profileSummaryPreferences');
+      if (
+        !title ||
+        !roleArea ||
+        !seniority ||
+        !location ||
+        !profileSummaryPreferences
+      ) {
+        throw new ValidationError(
+          "Missing required fields: title, roleArea, seniority, location, profileSummaryPreferences",
+        );
       }
 
       if (!skills || !Array.isArray(skills) || skills.length === 0) {
-        throw new ValidationError('At least one skill is required');
+        throw new ValidationError("At least one skill is required");
       }
 
-      if (!desiredWorkMode || !Array.isArray(desiredWorkMode) || desiredWorkMode.length === 0) {
-        throw new ValidationError('At least one desired work mode is required');
+      if (
+        !desiredWorkMode ||
+        !Array.isArray(desiredWorkMode) ||
+        desiredWorkMode.length === 0
+      ) {
+        throw new ValidationError("At least one desired work mode is required");
       }
 
-      if (!desiredEmploymentType || !Array.isArray(desiredEmploymentType) || desiredEmploymentType.length === 0) {
-        throw new ValidationError('At least one desired employment type is required');
+      if (
+        !desiredEmploymentType ||
+        !Array.isArray(desiredEmploymentType) ||
+        desiredEmploymentType.length === 0
+      ) {
+        throw new ValidationError(
+          "At least one desired employment type is required",
+        );
       }
 
       const orgId = req.orgContext?.organizationId || null;
@@ -67,7 +103,10 @@ export class CandidateProfileController {
         },
       });
 
-      logger.info('Candidate profile created', { profileId: profile.id, userId: req.user.userId });
+      logger.info("Candidate profile created", {
+        profileId: profile.id,
+        userId: req.user.userId,
+      });
       res.status(201).json({ success: true, data: profile });
     } catch (error) {
       next(error);
@@ -76,7 +115,7 @@ export class CandidateProfileController {
 
   async getAll(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const orgId = req.orgContext?.organizationId || null;
       const where: any = orgId
@@ -85,7 +124,7 @@ export class CandidateProfileController {
 
       const profiles = await prisma.candidateProfile.findMany({
         where,
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { updatedAt: "desc" },
         include: {
           _count: { select: { jobMatches: { where: { archived: false } } } },
         },
@@ -97,25 +136,32 @@ export class CandidateProfileController {
     }
   }
 
-  async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getById(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
       const profile = await prisma.candidateProfile.findUnique({
-        where: { id: req.params.id },
+        where: { id: String(req.params.id) },
         include: {
           jobMatches: {
             where: { archived: false },
-            orderBy: { rank: 'asc' },
+            orderBy: { rank: "asc" },
             take: 50,
           },
           _count: { select: { jobMatches: { where: { archived: false } } } },
         },
       });
 
-      if (!profile) throw new NotFoundError('Candidate profile not found');
-      if (profile.userId !== req.user.userId && profile.organizationId !== req.orgContext?.organizationId) {
-        throw new AuthenticationError('Access denied');
+      if (!profile) throw new NotFoundError("Candidate profile not found");
+      if (
+        profile.userId !== req.user.userId &&
+        profile.organizationId !== req.orgContext?.organizationId
+      ) {
+        throw new AuthenticationError("Access denied");
       }
 
       res.json({ success: true, data: profile });
@@ -126,19 +172,39 @@ export class CandidateProfileController {
 
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const existing = await prisma.candidateProfile.findUnique({ where: { id: req.params.id } });
-      if (!existing) throw new NotFoundError('Candidate profile not found');
-      if (existing.userId !== req.user.userId && existing.organizationId !== req.orgContext?.organizationId) {
-        throw new AuthenticationError('Access denied');
+      const existing = await prisma.candidateProfile.findUnique({
+        where: { id: String(req.params.id) },
+      });
+      if (!existing) throw new NotFoundError("Candidate profile not found");
+      if (
+        existing.userId !== req.user.userId &&
+        existing.organizationId !== req.orgContext?.organizationId
+      ) {
+        throw new AuthenticationError("Access denied");
       }
 
       const {
-        title, roleArea, seniority, location, desiredWorkMode, desiredEmploymentType,
-        skills, profileSummaryPreferences, yearsOfExperience, availability,
-        languages, certifications, industries, education, expectedSalary,
-        noticePeriod, relevantExperience, fullName, isActive,
+        title,
+        roleArea,
+        seniority,
+        location,
+        desiredWorkMode,
+        desiredEmploymentType,
+        skills,
+        profileSummaryPreferences,
+        yearsOfExperience,
+        availability,
+        languages,
+        certifications,
+        industries,
+        education,
+        expectedSalary,
+        noticePeriod,
+        relevantExperience,
+        fullName,
+        isActive,
       } = req.body;
 
       const updateData: any = {};
@@ -146,19 +212,26 @@ export class CandidateProfileController {
       if (roleArea !== undefined) updateData.roleArea = roleArea;
       if (seniority !== undefined) updateData.seniority = seniority;
       if (location !== undefined) updateData.location = location;
-      if (desiredWorkMode !== undefined) updateData.desiredWorkMode = desiredWorkMode;
-      if (desiredEmploymentType !== undefined) updateData.desiredEmploymentType = desiredEmploymentType;
+      if (desiredWorkMode !== undefined)
+        updateData.desiredWorkMode = desiredWorkMode;
+      if (desiredEmploymentType !== undefined)
+        updateData.desiredEmploymentType = desiredEmploymentType;
       if (skills !== undefined) updateData.skills = skills;
-      if (profileSummaryPreferences !== undefined) updateData.profileSummaryPreferences = profileSummaryPreferences;
-      if (yearsOfExperience !== undefined) updateData.yearsOfExperience = yearsOfExperience;
+      if (profileSummaryPreferences !== undefined)
+        updateData.profileSummaryPreferences = profileSummaryPreferences;
+      if (yearsOfExperience !== undefined)
+        updateData.yearsOfExperience = yearsOfExperience;
       if (availability !== undefined) updateData.availability = availability;
       if (languages !== undefined) updateData.languages = languages;
-      if (certifications !== undefined) updateData.certifications = certifications;
+      if (certifications !== undefined)
+        updateData.certifications = certifications;
       if (industries !== undefined) updateData.industries = industries;
       if (education !== undefined) updateData.education = education;
-      if (expectedSalary !== undefined) updateData.expectedSalary = expectedSalary;
+      if (expectedSalary !== undefined)
+        updateData.expectedSalary = expectedSalary;
       if (noticePeriod !== undefined) updateData.noticePeriod = noticePeriod;
-      if (relevantExperience !== undefined) updateData.relevantExperience = relevantExperience;
+      if (relevantExperience !== undefined)
+        updateData.relevantExperience = relevantExperience;
       if (fullName !== undefined) updateData.fullName = fullName;
       if (isActive !== undefined) updateData.isActive = isActive;
 
@@ -166,7 +239,7 @@ export class CandidateProfileController {
       updateData.dataQualityScore = computeCandidateDataQuality(merged);
 
       const profile = await prisma.candidateProfile.update({
-        where: { id: req.params.id },
+        where: { id: String(req.params.id) },
         data: updateData,
       });
 
@@ -178,20 +251,25 @@ export class CandidateProfileController {
 
   async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) throw new AuthenticationError('Authentication required');
+      if (!req.user) throw new AuthenticationError("Authentication required");
 
-      const existing = await prisma.candidateProfile.findUnique({ where: { id: req.params.id } });
-      if (!existing) throw new NotFoundError('Candidate profile not found');
-      if (existing.userId !== req.user.userId && existing.organizationId !== req.orgContext?.organizationId) {
-        throw new AuthenticationError('Access denied');
+      const existing = await prisma.candidateProfile.findUnique({
+        where: { id: String(req.params.id) },
+      });
+      if (!existing) throw new NotFoundError("Candidate profile not found");
+      if (
+        existing.userId !== req.user.userId &&
+        existing.organizationId !== req.orgContext?.organizationId
+      ) {
+        throw new AuthenticationError("Access denied");
       }
 
       await prisma.candidateProfile.update({
-        where: { id: req.params.id },
+        where: { id: String(req.params.id) },
         data: { isActive: false },
       });
 
-      res.json({ success: true, message: 'Candidate profile deleted' });
+      res.json({ success: true, message: "Candidate profile deleted" });
     } catch (error) {
       next(error);
     }

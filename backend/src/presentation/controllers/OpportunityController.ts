@@ -7,18 +7,22 @@
  * @module presentation/controllers/OpportunityController
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../../infrastructure/database/prisma/client';
-import { createOpportunityMatchingService } from '../../infrastructure/external/opportunities/services/opportunity-matching.service';
-import { runV3MatchingForOpportunity } from '../../infrastructure/external/opportunities/services/opportunity-v3-bridge';
-import { AuthenticationError, NotFoundError, ValidationError } from '../../shared/errors';
-import { logger } from '../../shared/logger';
+import { Request, Response, NextFunction } from "express";
+import { prisma } from "../../infrastructure/database/prisma/client";
+import { createOpportunityMatchingService } from "../../infrastructure/external/opportunities/services/opportunity-matching.service";
+import { runV3MatchingForOpportunity } from "../../infrastructure/external/opportunities/services/opportunity-v3-bridge";
+import {
+  AuthenticationError,
+  NotFoundError,
+  ValidationError,
+} from "../../shared/errors";
+import { logger } from "../../shared/logger";
 import {
   OpportunityIntentType,
   OpportunityVisibility,
   OpportunityMatchStatus,
   SeniorityLevel,
-} from '@prisma/client';
+} from "@prisma/client";
 
 /**
  * Opportunity Controller
@@ -39,11 +43,14 @@ export class OpportunityController {
   async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
-      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 20));
+      const limit = Math.min(
+        100,
+        Math.max(1, parseInt(req.query.limit as string, 10) || 20),
+      );
       const status = req.query.status as string;
 
       // Scope by organization context
@@ -52,9 +59,9 @@ export class OpportunityController {
         ? { organizationId: orgId }
         : { userId: req.user.userId, organizationId: null };
 
-      if (status === 'active') {
+      if (status === "active") {
         where.isActive = true;
-      } else if (status === 'inactive') {
+      } else if (status === "inactive") {
         where.isActive = false;
       }
 
@@ -66,7 +73,7 @@ export class OpportunityController {
             skillPrefs: { include: { skill: true } },
             _count: { select: { matches: true } },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           skip: (page - 1) * limit,
           take: limit,
         }),
@@ -87,7 +94,10 @@ export class OpportunityController {
         lastMatchedAt: opp.lastMatchedAt,
         createdAt: opp.createdAt,
         sectors: opp.sectorPrefs.map((sp) => sp.sector),
-        skills: opp.skillPrefs.map((sp) => ({ ...sp.skill, isRequired: sp.isRequired })),
+        skills: opp.skillPrefs.map((sp) => ({
+          ...sp.skill,
+          isRequired: sp.isRequired,
+        })),
       }));
 
       res.status(200).json({
@@ -127,7 +137,7 @@ export class OpportunityController {
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const {
@@ -138,7 +148,7 @@ export class OpportunityController {
         locationPref,
         remoteOk = true,
         notes,
-        visibility = 'PRIVATE',
+        visibility = "PRIVATE",
         sectorIds = [],
         skillIds = [],
         mustHaveSkillIds = [],
@@ -159,43 +169,62 @@ export class OpportunityController {
       } = req.body;
 
       if (!title) {
-        throw new ValidationError('Title is required');
+        throw new ValidationError("Title is required");
       }
 
       if (!intentType) {
-        throw new ValidationError('Intent type is required');
+        throw new ValidationError("Intent type is required");
       }
 
       // Validate intent type
       const validIntentTypes: OpportunityIntentType[] = [
-        'HIRING',
-        'OPEN_TO_OPPORTUNITIES',
-        'ADVISORY_BOARD',
-        'REFERRALS_ONLY',
+        "HIRING",
+        "OPEN_TO_OPPORTUNITIES",
+        "ADVISORY_BOARD",
+        "REFERRALS_ONLY",
       ];
       if (!validIntentTypes.includes(intentType)) {
-        throw new ValidationError(`Invalid intent type. Must be one of: ${validIntentTypes.join(', ')}`);
+        throw new ValidationError(
+          `Invalid intent type. Must be one of: ${validIntentTypes.join(", ")}`,
+        );
       }
 
       // Validate visibility
-      const validVisibilities: OpportunityVisibility[] = ['PRIVATE', 'LIMITED', 'TEAM'];
+      const validVisibilities: OpportunityVisibility[] = [
+        "PRIVATE",
+        "LIMITED",
+        "TEAM",
+      ];
       if (visibility && !validVisibilities.includes(visibility)) {
-        throw new ValidationError(`Invalid visibility. Must be one of: ${validVisibilities.join(', ')}`);
+        throw new ValidationError(
+          `Invalid visibility. Must be one of: ${validVisibilities.join(", ")}`,
+        );
       }
 
       // Validate seniority if provided
       if (seniority) {
         const validSeniorities: SeniorityLevel[] = [
-          'ENTRY', 'MID', 'SENIOR', 'LEAD', 'DIRECTOR', 'VP', 'C_LEVEL', 'BOARD',
+          "ENTRY",
+          "MID",
+          "SENIOR",
+          "LEAD",
+          "DIRECTOR",
+          "VP",
+          "C_LEVEL",
+          "BOARD",
         ];
         if (!validSeniorities.includes(seniority)) {
-          throw new ValidationError(`Invalid seniority. Must be one of: ${validSeniorities.join(', ')}`);
+          throw new ValidationError(
+            `Invalid seniority. Must be one of: ${validSeniorities.join(", ")}`,
+          );
         }
       }
 
       // Resolve skills: support split (mustHave + preferred) or legacy flat skillIds
-      const resolvedMustHave: string[] = mustHaveSkillIds.length > 0 ? mustHaveSkillIds : skillIds;
-      const resolvedPreferred: string[] = mustHaveSkillIds.length > 0 ? preferredSkillIds : [];
+      const resolvedMustHave: string[] =
+        mustHaveSkillIds.length > 0 ? mustHaveSkillIds : skillIds;
+      const resolvedPreferred: string[] =
+        mustHaveSkillIds.length > 0 ? preferredSkillIds : [];
 
       // Create opportunity
       const opportunity = await prisma.opportunityIntent.create({
@@ -212,13 +241,22 @@ export class OpportunityController {
           workMode,
           employmentType,
           urgencyOrAvailability,
-          minExperienceYears: minExperienceYears !== undefined ? parseInt(minExperienceYears, 10) || null : undefined,
+          minExperienceYears:
+            minExperienceYears !== undefined
+              ? parseInt(minExperienceYears, 10) || null
+              : undefined,
           languages: languages || undefined,
           certifications: certifications || undefined,
           educationLevels: educationLevels || undefined,
           industries: industries || undefined,
-          salaryMin: salaryMin != null ? parseInt(String(salaryMin), 10) || null : undefined,
-          salaryMax: salaryMax != null ? parseInt(String(salaryMax), 10) || null : undefined,
+          salaryMin:
+            salaryMin != null
+              ? parseInt(String(salaryMin), 10) || null
+              : undefined,
+          salaryMax:
+            salaryMax != null
+              ? parseInt(String(salaryMax), 10) || null
+              : undefined,
           salaryCurrency: salaryCurrency || undefined,
           noticePeriod: noticePeriod || undefined,
           relevantExperience: relevantExperience || undefined,
@@ -227,8 +265,14 @@ export class OpportunityController {
           },
           skillPrefs: {
             create: [
-              ...resolvedMustHave.map((skillId: string) => ({ skillId, isRequired: true })),
-              ...resolvedPreferred.map((skillId: string) => ({ skillId, isRequired: false })),
+              ...resolvedMustHave.map((skillId: string) => ({
+                skillId,
+                isRequired: true,
+              })),
+              ...resolvedPreferred.map((skillId: string) => ({
+                skillId,
+                isRequired: false,
+              })),
             ],
           },
         },
@@ -246,7 +290,7 @@ export class OpportunityController {
         });
       }
 
-      logger.info('Opportunity created', {
+      logger.info("Opportunity created", {
         userId: req.user.userId,
         opportunityId: opportunity.id,
         intentType: opportunity.intentType,
@@ -257,7 +301,10 @@ export class OpportunityController {
         data: {
           ...opportunity,
           sectors: opportunity.sectorPrefs.map((sp) => sp.sector),
-          skills: opportunity.skillPrefs.map((sp) => ({ ...sp.skill, isRequired: sp.isRequired })),
+          skills: opportunity.skillPrefs.map((sp) => ({
+            ...sp.skill,
+            isRequired: sp.isRequired,
+          })),
         },
       });
     } catch (error) {
@@ -273,7 +320,7 @@ export class OpportunityController {
   async get(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       // Scope by organization context
@@ -284,7 +331,7 @@ export class OpportunityController {
 
       const opportunity = await prisma.opportunityIntent.findFirst({
         where: {
-          id: req.params.id,
+          id: String(req.params.id),
           ...ownerFilter,
         },
         include: {
@@ -295,7 +342,7 @@ export class OpportunityController {
       });
 
       if (!opportunity) {
-        throw new NotFoundError('Opportunity not found');
+        throw new NotFoundError("Opportunity not found");
       }
 
       res.status(200).json({
@@ -303,7 +350,10 @@ export class OpportunityController {
         data: {
           ...opportunity,
           sectors: opportunity.sectorPrefs.map((sp) => sp.sector),
-          skills: opportunity.skillPrefs.map((sp) => ({ ...sp.skill, isRequired: sp.isRequired })),
+          skills: opportunity.skillPrefs.map((sp) => ({
+            ...sp.skill,
+            isRequired: sp.isRequired,
+          })),
           matchCount: opportunity._count.matches,
         },
       });
@@ -320,7 +370,7 @@ export class OpportunityController {
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       // Scope by organization context
@@ -331,13 +381,13 @@ export class OpportunityController {
 
       const existing = await prisma.opportunityIntent.findFirst({
         where: {
-          id: req.params.id,
+          id: String(req.params.id),
           ...ownerFilter,
         },
       });
 
       if (!existing) {
-        throw new NotFoundError('Opportunity not found');
+        throw new NotFoundError("Opportunity not found");
       }
 
       const {
@@ -370,58 +420,95 @@ export class OpportunityController {
       } = req.body;
 
       // Determine if skills are being updated (new split or legacy flat)
-      const hasNewSkills = mustHaveSkillIds !== undefined || skillIds !== undefined;
+      const hasNewSkills =
+        mustHaveSkillIds !== undefined || skillIds !== undefined;
 
       // Delete old preferences if new ones provided
       if (sectorIds !== undefined) {
         await prisma.opportunityIntentSector.deleteMany({
-          where: { intentId: req.params.id },
+          where: { intentId: String(req.params.id) },
         });
       }
       if (hasNewSkills) {
         await prisma.opportunityIntentSkill.deleteMany({
-          where: { intentId: req.params.id },
+          where: { intentId: String(req.params.id) },
         });
       }
 
       // Resolve skills: support split (mustHave + preferred) or legacy flat skillIds
-      let skillCreateData: Array<{ skillId: string; isRequired: boolean }> | undefined;
+      let skillCreateData:
+        | Array<{ skillId: string; isRequired: boolean }>
+        | undefined;
       if (hasNewSkills) {
-        const resolvedMustHave: string[] = mustHaveSkillIds?.length > 0 ? mustHaveSkillIds : (skillIds || []);
-        const resolvedPreferred: string[] = mustHaveSkillIds?.length > 0 ? (preferredSkillIds || []) : [];
+        const resolvedMustHave: string[] =
+          mustHaveSkillIds?.length > 0 ? mustHaveSkillIds : skillIds || [];
+        const resolvedPreferred: string[] =
+          mustHaveSkillIds?.length > 0 ? preferredSkillIds || [] : [];
         skillCreateData = [
-          ...resolvedMustHave.map((skillId: string) => ({ skillId, isRequired: true })),
-          ...resolvedPreferred.map((skillId: string) => ({ skillId, isRequired: false })),
+          ...resolvedMustHave.map((skillId: string) => ({
+            skillId,
+            isRequired: true,
+          })),
+          ...resolvedPreferred.map((skillId: string) => ({
+            skillId,
+            isRequired: false,
+          })),
         ];
       }
 
       const opportunity = await prisma.opportunityIntent.update({
-        where: { id: req.params.id },
+        where: { id: String(req.params.id) },
         data: {
           ...(title !== undefined && { title }),
-          ...(intentType !== undefined && { intentType: intentType as OpportunityIntentType }),
+          ...(intentType !== undefined && {
+            intentType: intentType as OpportunityIntentType,
+          }),
           ...(roleArea !== undefined && { roleArea }),
-          ...(seniority !== undefined && { seniority: seniority as SeniorityLevel }),
+          ...(seniority !== undefined && {
+            seniority: seniority as SeniorityLevel,
+          }),
           ...(locationPref !== undefined && { locationPref }),
           ...(remoteOk !== undefined && { remoteOk }),
           ...(notes !== undefined && { notes }),
-          ...(visibility !== undefined && { visibility: visibility as OpportunityVisibility }),
+          ...(visibility !== undefined && {
+            visibility: visibility as OpportunityVisibility,
+          }),
           ...(isActive !== undefined && { isActive }),
           ...(workMode !== undefined && { workMode }),
           ...(employmentType !== undefined && { employmentType }),
           ...(urgencyOrAvailability !== undefined && { urgencyOrAvailability }),
-          ...(minExperienceYears !== undefined && { minExperienceYears: parseInt(minExperienceYears, 10) || null }),
+          ...(minExperienceYears !== undefined && {
+            minExperienceYears: parseInt(minExperienceYears, 10) || null,
+          }),
           ...(languages !== undefined && { languages }),
           ...(certifications !== undefined && { certifications }),
           ...(educationLevels !== undefined && { educationLevels }),
           ...(industries !== undefined && { industries }),
-          ...(salaryMin !== undefined && { salaryMin: salaryMin != null ? parseInt(String(salaryMin), 10) || null : null }),
-          ...(salaryMax !== undefined && { salaryMax: salaryMax != null ? parseInt(String(salaryMax), 10) || null : null }),
-          ...(salaryCurrency !== undefined && { salaryCurrency: salaryCurrency || null }),
-          ...(noticePeriod !== undefined && { noticePeriod: noticePeriod || null }),
-          ...(relevantExperience !== undefined && { relevantExperience: relevantExperience || null }),
+          ...(salaryMin !== undefined && {
+            salaryMin:
+              salaryMin != null
+                ? parseInt(String(salaryMin), 10) || null
+                : null,
+          }),
+          ...(salaryMax !== undefined && {
+            salaryMax:
+              salaryMax != null
+                ? parseInt(String(salaryMax), 10) || null
+                : null,
+          }),
+          ...(salaryCurrency !== undefined && {
+            salaryCurrency: salaryCurrency || null,
+          }),
+          ...(noticePeriod !== undefined && {
+            noticePeriod: noticePeriod || null,
+          }),
+          ...(relevantExperience !== undefined && {
+            relevantExperience: relevantExperience || null,
+          }),
           ...(sectorIds !== undefined && {
-            sectorPrefs: { create: sectorIds.map((sectorId: string) => ({ sectorId })) },
+            sectorPrefs: {
+              create: sectorIds.map((sectorId: string) => ({ sectorId })),
+            },
           }),
           ...(skillCreateData && {
             skillPrefs: { create: skillCreateData },
@@ -433,7 +520,7 @@ export class OpportunityController {
         },
       });
 
-      logger.info('Opportunity updated', {
+      logger.info("Opportunity updated", {
         userId: req.user.userId,
         opportunityId: opportunity.id,
       });
@@ -443,7 +530,10 @@ export class OpportunityController {
         data: {
           ...opportunity,
           sectors: opportunity.sectorPrefs.map((sp) => sp.sector),
-          skills: opportunity.skillPrefs.map((sp) => ({ ...sp.skill, isRequired: sp.isRequired })),
+          skills: opportunity.skillPrefs.map((sp) => ({
+            ...sp.skill,
+            isRequired: sp.isRequired,
+          })),
         },
       });
     } catch (error) {
@@ -459,7 +549,7 @@ export class OpportunityController {
   async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       // Scope by organization context
@@ -470,27 +560,27 @@ export class OpportunityController {
 
       const existing = await prisma.opportunityIntent.findFirst({
         where: {
-          id: req.params.id,
+          id: String(req.params.id),
           ...ownerFilter,
         },
       });
 
       if (!existing) {
-        throw new NotFoundError('Opportunity not found');
+        throw new NotFoundError("Opportunity not found");
       }
 
       await prisma.opportunityIntent.delete({
-        where: { id: req.params.id },
+        where: { id: String(req.params.id) },
       });
 
-      logger.info('Opportunity deleted', {
+      logger.info("Opportunity deleted", {
         userId: req.user.userId,
         opportunityId: req.params.id,
       });
 
       res.status(200).json({
         success: true,
-        message: 'Opportunity deleted successfully',
+        message: "Opportunity deleted successfully",
       });
     } catch (error) {
       next(error);
@@ -502,10 +592,14 @@ export class OpportunityController {
    *
    * POST /api/v1/opportunities/:id/find-matches
    */
-  async findMatches(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async findMatches(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       // Scope by organization context
@@ -516,19 +610,24 @@ export class OpportunityController {
 
       const opportunity = await prisma.opportunityIntent.findFirst({
         where: {
-          id: req.params.id,
+          id: String(req.params.id),
           ...ownerFilter,
           isActive: true,
         },
       });
 
       if (!opportunity) {
-        throw new NotFoundError('Active opportunity not found');
+        throw new NotFoundError("Active opportunity not found");
       }
 
       // Run v3 matching pipeline via bridge (converts old data model → v3 engine)
       const matchOrgId = req.orgContext?.organizationId || undefined;
-      await runV3MatchingForOpportunity(prisma, req.user.userId, req.params.id, matchOrgId);
+      await runV3MatchingForOpportunity(
+        prisma,
+        req.user.userId,
+        String(req.params.id),
+        matchOrgId,
+      );
 
       // Fetch the saved matches with full candidate info
       const savedMatches = await prisma.opportunityMatch.findMany({
@@ -558,7 +657,7 @@ export class OpportunityController {
             },
           },
         },
-        orderBy: { matchScore: 'desc' },
+        orderBy: { matchScore: "desc" },
         take: 30,
       });
 
@@ -587,12 +686,12 @@ export class OpportunityController {
         contactedAt: match.contactedAt,
         createdAt: match.createdAt,
         candidate:
-          match.matchType === 'user'
-            ? { type: 'user', ...match.matchedUser }
-            : { type: 'contact', ...match.matchedContact },
+          match.matchType === "user"
+            ? { type: "user", ...match.matchedUser }
+            : { type: "contact", ...match.matchedContact },
       }));
 
-      logger.info('Opportunity matches found', {
+      logger.info("Opportunity matches found", {
         userId: req.user.userId,
         opportunityId: opportunity.id,
         matchCount: formattedMatches.length,
@@ -620,15 +719,22 @@ export class OpportunityController {
    * - minScore: minimum match score
    * - limit: number of results
    */
-  async getMatches(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getMatches(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const status = req.query.status as string;
       const minScore = parseFloat(req.query.minScore as string) || 0;
-      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 30));
+      const limit = Math.min(
+        100,
+        Math.max(1, parseInt(req.query.limit as string, 10) || 30),
+      );
 
       // Scope by organization context
       const orgId = req.orgContext?.organizationId || null;
@@ -638,13 +744,13 @@ export class OpportunityController {
 
       const opportunity = await prisma.opportunityIntent.findFirst({
         where: {
-          id: req.params.id,
+          id: String(req.params.id),
           ...ownerFilter,
         },
       });
 
       if (!opportunity) {
-        throw new NotFoundError('Opportunity not found');
+        throw new NotFoundError("Opportunity not found");
       }
 
       const where: any = {
@@ -655,7 +761,9 @@ export class OpportunityController {
       if (status) {
         where.status = status as OpportunityMatchStatus;
       } else {
-        where.status = { notIn: ['DISMISSED', 'ARCHIVED'] as OpportunityMatchStatus[] };
+        where.status = {
+          notIn: ["DISMISSED", "ARCHIVED"] as OpportunityMatchStatus[],
+        };
       }
 
       const matches = await prisma.opportunityMatch.findMany({
@@ -688,7 +796,7 @@ export class OpportunityController {
             },
           },
         },
-        orderBy: { matchScore: 'desc' },
+        orderBy: { matchScore: "desc" },
         take: limit,
       });
 
@@ -716,9 +824,9 @@ export class OpportunityController {
         contactedAt: match.contactedAt,
         createdAt: match.createdAt,
         candidate:
-          match.matchType === 'user'
-            ? { type: 'user', ...match.matchedUser }
-            : { type: 'contact', ...match.matchedContact },
+          match.matchType === "user"
+            ? { type: "user", ...match.matchedUser }
+            : { type: "contact", ...match.matchedContact },
       }));
 
       res.status(200).json({
@@ -743,17 +851,23 @@ export class OpportunityController {
    *
    * PUT /api/v1/opportunities/:id/matches/:matchId/status
    */
-  async updateMatchStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async updateMatchStatus(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const { matchId } = req.params;
+      const { matchId } = req.params as { matchId: string };
       const { status, suggestedMessageEdited } = req.body;
 
       if (!status && suggestedMessageEdited === undefined) {
-        throw new ValidationError('Status or suggestedMessageEdited is required');
+        throw new ValidationError(
+          "Status or suggestedMessageEdited is required",
+        );
       }
 
       const existingMatch = await prisma.opportunityMatch.findUnique({
@@ -762,18 +876,18 @@ export class OpportunityController {
       });
 
       if (!existingMatch) {
-        throw new NotFoundError('Match not found');
+        throw new NotFoundError("Match not found");
       }
 
       // Verify ownership - scope by organization context
       const orgId = req.orgContext?.organizationId || null;
       if (orgId) {
         if (existingMatch.intent.organizationId !== orgId) {
-          throw new AuthenticationError('Not authorized to update this match');
+          throw new AuthenticationError("Not authorized to update this match");
         }
       } else {
         if (existingMatch.intent.userId !== req.user.userId) {
-          throw new AuthenticationError('Not authorized to update this match');
+          throw new AuthenticationError("Not authorized to update this match");
         }
       }
 
@@ -781,16 +895,24 @@ export class OpportunityController {
 
       if (status) {
         const validStatuses: OpportunityMatchStatus[] = [
-          'PENDING', 'CONTACTED', 'INTRODUCED', 'SAVED', 'DISMISSED', 'CONNECTED', 'ARCHIVED',
+          "PENDING",
+          "CONTACTED",
+          "INTRODUCED",
+          "SAVED",
+          "DISMISSED",
+          "CONNECTED",
+          "ARCHIVED",
         ];
         if (!validStatuses.includes(status)) {
-          throw new ValidationError(`Invalid status. Must be one of: ${validStatuses.join(', ')}`);
+          throw new ValidationError(
+            `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
+          );
         }
         updateData.status = status as OpportunityMatchStatus;
-        if (status === 'CONTACTED') {
+        if (status === "CONTACTED") {
           updateData.contactedAt = new Date();
         }
-        if (status === 'ARCHIVED') {
+        if (status === "ARCHIVED") {
           updateData.archivedAt = new Date();
         }
       }
@@ -804,7 +926,7 @@ export class OpportunityController {
         data: updateData,
       });
 
-      logger.info('Opportunity match status updated', {
+      logger.info("Opportunity match status updated", {
         userId: req.user.userId,
         matchId,
         newStatus: status,
@@ -824,17 +946,24 @@ export class OpportunityController {
    *
    * GET /api/v1/opportunities/matches/all
    */
-  async getAllMatches(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getAllMatches(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const status = req.query.status as string;
       const minScore = parseFloat(req.query.minScore as string) || 0;
-      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 100));
-      const sortBy = (req.query.sortBy as string) || 'score';
-      const sortOrder = (req.query.sortOrder as string) || 'desc';
+      const limit = Math.min(
+        100,
+        Math.max(1, parseInt(req.query.limit as string, 10) || 100),
+      );
+      const sortBy = (req.query.sortBy as string) || "score";
+      const sortOrder = (req.query.sortOrder as string) || "desc";
 
       // Scope by organization context
       const orgId = req.orgContext?.organizationId || null;
@@ -870,7 +999,9 @@ export class OpportunityController {
       if (status) {
         matchWhere.status = status as OpportunityMatchStatus;
       } else {
-        matchWhere.status = { notIn: ['DISMISSED', 'ARCHIVED'] as OpportunityMatchStatus[] };
+        matchWhere.status = {
+          notIn: ["DISMISSED", "ARCHIVED"] as OpportunityMatchStatus[],
+        };
       }
 
       const [matches, total] = await Promise.all([
@@ -880,19 +1011,35 @@ export class OpportunityController {
             intent: { select: { id: true, title: true, intentType: true } },
             matchedUser: {
               select: {
-                id: true, fullName: true, jobTitle: true, company: true,
-                avatarUrl: true, location: true, bio: true, email: true,
-                phone: true, linkedinUrl: true,
+                id: true,
+                fullName: true,
+                jobTitle: true,
+                company: true,
+                avatarUrl: true,
+                location: true,
+                bio: true,
+                email: true,
+                phone: true,
+                linkedinUrl: true,
               },
             },
             matchedContact: {
               select: {
-                id: true, fullName: true, jobTitle: true, company: true,
-                location: true, email: true, phone: true, linkedinUrl: true,
+                id: true,
+                fullName: true,
+                jobTitle: true,
+                company: true,
+                location: true,
+                email: true,
+                phone: true,
+                linkedinUrl: true,
               },
             },
           },
-          orderBy: sortBy === 'date' ? { createdAt: sortOrder as 'asc' | 'desc' } : { matchScore: sortOrder as 'asc' | 'desc' },
+          orderBy:
+            sortBy === "date"
+              ? { createdAt: sortOrder as "asc" | "desc" }
+              : { matchScore: sortOrder as "asc" | "desc" },
           take: limit,
         }),
         prisma.opportunityMatch.count({ where: matchWhere }),
@@ -905,7 +1052,7 @@ export class OpportunityController {
         return {
           id: match.id,
           opportunityId: match.intentId,
-          opportunityTitle: opp?.title || '',
+          opportunityTitle: opp?.title || "",
           matchScore: match.matchScore,
           matchType: match.matchType,
           status: match.status,
@@ -919,33 +1066,44 @@ export class OpportunityController {
           contactedAt: match.contactedAt,
           createdAt: match.createdAt,
           candidate:
-            match.matchType === 'user'
-              ? { type: 'user', ...match.matchedUser }
-              : { type: 'contact', ...match.matchedContact },
+            match.matchType === "user"
+              ? { type: "user", ...match.matchedUser }
+              : { type: "contact", ...match.matchedContact },
         };
       });
 
       // Build stats
       const statusCounts = await prisma.opportunityMatch.groupBy({
-        by: ['status'],
+        by: ["status"],
         where: { intentId: { in: intentIds } },
         _count: true,
       });
-      const byStatus = statusCounts.reduce((acc, item) => {
-        acc[item.status] = item._count;
-        return acc;
-      }, {} as Record<string, number>);
+      const byStatus = statusCounts.reduce(
+        (acc, item) => {
+          acc[item.status] = item._count;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
 
-      const intentTypeCounts = opportunities.reduce((acc, o) => {
-        acc[o.intentType] = (acc[o.intentType] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
+      const intentTypeCounts = opportunities.reduce(
+        (acc, o) => {
+          acc[o.intentType] = (acc[o.intentType] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
 
       res.status(200).json({
         success: true,
         data: {
           matches: formattedMatches,
-          pagination: { page: 1, limit, total, totalPages: Math.ceil(total / limit) },
+          pagination: {
+            page: 1,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+          },
           stats: { total, byStatus, byIntentType: intentTypeCounts },
         },
       });
@@ -959,10 +1117,14 @@ export class OpportunityController {
    *
    * GET /api/v1/opportunities/stats
    */
-  async getStats(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getStats(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       // Scope by organization context
@@ -995,7 +1157,7 @@ export class OpportunityController {
           where: { intentId: { in: intentIds } },
         }),
         prisma.opportunityMatch.groupBy({
-          by: ['status'],
+          by: ["status"],
           where: { intentId: { in: intentIds } },
           _count: true,
         }),
@@ -1010,7 +1172,7 @@ export class OpportunityController {
           acc[item.status] = item._count;
           return acc;
         },
-        {} as Record<string, number>
+        {} as Record<string, number>,
       );
 
       res.status(200).json({
@@ -1020,12 +1182,12 @@ export class OpportunityController {
           totalMatches,
           averageScore: Math.round((avgScore._avg.matchScore || 0) * 10) / 10,
           byStatus: {
-            pending: statusMap['PENDING'] || 0,
-            contacted: statusMap['CONTACTED'] || 0,
-            introduced: statusMap['INTRODUCED'] || 0,
-            saved: statusMap['SAVED'] || 0,
-            dismissed: statusMap['DISMISSED'] || 0,
-            connected: statusMap['CONNECTED'] || 0,
+            pending: statusMap["PENDING"] || 0,
+            contacted: statusMap["CONTACTED"] || 0,
+            introduced: statusMap["INTRODUCED"] || 0,
+            saved: statusMap["SAVED"] || 0,
+            dismissed: statusMap["DISMISSED"] || 0,
+            connected: statusMap["CONNECTED"] || 0,
           },
         },
       });
@@ -1042,18 +1204,22 @@ export class OpportunityController {
    * Body: multipart/form-data with 'document' file
    * Supported formats: PDF, DOCX, DOC, TXT
    */
-  async extractFromDocument(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async extractFromDocument(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const file = req.file;
       if (!file) {
-        throw new ValidationError('Document file is required');
+        throw new ValidationError("Document file is required");
       }
 
-      logger.info('Extracting opportunity data from document', {
+      logger.info("Extracting opportunity data from document", {
         userId: req.user.userId,
         fileName: file.originalname,
         mimeType: file.mimetype,
@@ -1061,49 +1227,67 @@ export class OpportunityController {
       });
 
       // Extract text from document
-      let textContent = '';
+      let textContent = "";
 
-      if (file.mimetype === 'application/pdf') {
-        const pdfParse = require('pdf-parse');
+      if (file.mimetype === "application/pdf") {
+        const pdfParse = require("pdf-parse");
         const pdfData = await pdfParse(file.buffer);
         textContent = pdfData.text;
       } else if (
-        file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-        file.mimetype === 'application/msword'
+        file.mimetype ===
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+        file.mimetype === "application/msword"
       ) {
-        const mammoth = require('mammoth');
+        const mammoth = require("mammoth");
         const result = await mammoth.extractRawText({ buffer: file.buffer });
         textContent = result.value;
-      } else if (file.mimetype === 'text/plain') {
-        textContent = file.buffer.toString('utf-8');
+      } else if (file.mimetype === "text/plain") {
+        textContent = file.buffer.toString("utf-8");
       } else {
-        throw new ValidationError('Unsupported file format. Please upload PDF, DOCX, DOC, or TXT files.');
+        throw new ValidationError(
+          "Unsupported file format. Please upload PDF, DOCX, DOC, or TXT files.",
+        );
       }
 
       // Clean text
-      textContent = textContent.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+      textContent = textContent
+        .replace(/[ \t]+/g, " ")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
 
       if (!textContent || textContent.trim().length < 30) {
-        throw new ValidationError('Could not extract sufficient text from document.');
+        throw new ValidationError(
+          "Could not extract sufficient text from document.",
+        );
       }
 
-      logger.info('Text extracted from opportunity document', { textLength: textContent.length });
+      logger.info("Text extracted from opportunity document", {
+        textLength: textContent.length,
+      });
 
       const openaiApiKey = process.env.OPENAI_API_KEY;
       const groqApiKey = process.env.GROQ_API_KEY;
       const useOpenAI = !!openaiApiKey;
       const aiApiKey = useOpenAI ? openaiApiKey : groqApiKey;
-      const aiEndpoint = useOpenAI ? 'https://api.openai.com/v1/chat/completions' : 'https://api.groq.com/openai/v1/chat/completions';
-      const aiModel = useOpenAI ? 'gpt-4o' : 'llama-3.3-70b-versatile';
+      const aiEndpoint = useOpenAI
+        ? "https://api.openai.com/v1/chat/completions"
+        : "https://api.groq.com/openai/v1/chat/completions";
+      const aiModel = useOpenAI ? "gpt-4o" : "llama-3.3-70b-versatile";
 
       if (!aiApiKey) {
-        throw new ValidationError('AI extraction service not configured');
+        throw new ValidationError("AI extraction service not configured");
       }
 
       // Get available sectors and skills for smart matching (load all, no limit)
       const [sectors, skills] = await Promise.all([
-        prisma.sector.findMany({ where: { isActive: true }, select: { id: true, name: true } }),
-        prisma.skill.findMany({ where: { isActive: true }, select: { id: true, name: true } }),
+        prisma.sector.findMany({
+          where: { isActive: true },
+          select: { id: true, name: true },
+        }),
+        prisma.skill.findMany({
+          where: { isActive: true },
+          select: { id: true, name: true },
+        }),
       ]);
 
       const maxDocLength = 12000;
@@ -1186,25 +1370,32 @@ CRITICAL RULES:
 - For minExperienceYears: extract the minimum years of experience (e.g. "5+ years" → 5, "3-5 years experience" → 3). Must be a number or null.
 - Return ONLY valid JSON, no markdown`;
 
-
       // AI API call with retry (OpenAI primary, Groq fallback)
-      const callAIWithRetry = async (maxRetries = 3): Promise<globalThis.Response> => {
+      const callAIWithRetry = async (
+        maxRetries = 3,
+      ): Promise<globalThis.Response> => {
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
           const response = await fetch(aiEndpoint, {
-            method: 'POST',
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${aiApiKey}`,
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${aiApiKey}`,
             },
             body: JSON.stringify({
               model: aiModel,
               messages: [
-                { role: 'system', content: 'You are an expert HR analyst. Extract structured data from documents. List EVERY specific technology, framework, programming language, tool, and skill mentioned in the document - be thorough and exhaustive. Output ONLY valid JSON in English.' },
-                { role: 'user', content: prompt },
+                {
+                  role: "system",
+                  content:
+                    "You are an expert HR analyst. Extract structured data from documents. List EVERY specific technology, framework, programming language, tool, and skill mentioned in the document - be thorough and exhaustive. Output ONLY valid JSON in English.",
+                },
+                { role: "user", content: prompt },
               ],
               temperature: 0.2,
               max_tokens: 3000,
-              ...(useOpenAI ? {} : { response_format: { type: 'json_object' } }),
+              ...(useOpenAI
+                ? {}
+                : { response_format: { type: "json_object" } }),
             }),
           });
 
@@ -1212,43 +1403,59 @@ CRITICAL RULES:
 
           if (response.status === 429 && attempt < maxRetries) {
             const errorText = await response.text();
-            logger.warn('Groq API rate limit hit for opportunity extraction, retrying...', { attempt });
+            logger.warn(
+              "Groq API rate limit hit for opportunity extraction, retrying...",
+              { attempt },
+            );
             let waitTime = Math.pow(2, attempt) * 5000;
             try {
               const errorData = JSON.parse(errorText);
-              const retryMatch = errorData.error?.message?.match(/try again in ([\d.]+)s/);
-              if (retryMatch) waitTime = Math.ceil(parseFloat(retryMatch[1]) * 1000) + 1000;
+              const retryMatch = errorData.error?.message?.match(
+                /try again in ([\d.]+)s/,
+              );
+              if (retryMatch)
+                waitTime = Math.ceil(parseFloat(retryMatch[1]) * 1000) + 1000;
             } catch (e) {}
-            await new Promise(resolve => setTimeout(resolve, waitTime));
+            await new Promise((resolve) => setTimeout(resolve, waitTime));
             continue;
           }
           return response;
         }
-        throw new Error('Max retries exceeded');
+        throw new Error("Max retries exceeded");
       };
 
       const aiResponse = await callAIWithRetry();
 
       if (!aiResponse.ok) {
         const errorText = await aiResponse.text();
-        logger.error('AI API error during opportunity extraction', { status: aiResponse.status, error: errorText, provider: useOpenAI ? 'OpenAI' : 'Groq' });
+        logger.error("AI API error during opportunity extraction", {
+          status: aiResponse.status,
+          error: errorText,
+          provider: useOpenAI ? "OpenAI" : "Groq",
+        });
         if (aiResponse.status === 429 || aiResponse.status === 413) {
-          throw new ValidationError('AI service is busy. Please wait a moment and try again.');
+          throw new ValidationError(
+            "AI service is busy. Please wait a moment and try again.",
+          );
         }
-        throw new ValidationError('AI extraction failed. Please try again.');
+        throw new ValidationError("AI extraction failed. Please try again.");
       }
 
-      const aiData = await aiResponse.json() as { choices?: Array<{ message?: { content?: string } }> };
+      const aiData = (await aiResponse.json()) as {
+        choices?: Array<{ message?: { content?: string } }>;
+      };
       const content = aiData.choices?.[0]?.message?.content;
 
       if (!content) {
-        throw new ValidationError('AI extraction returned no content');
+        throw new ValidationError("AI extraction returned no content");
       }
 
       let extractedData: any;
       try {
         let cleanContent = content.trim();
-        const jsonCodeBlockMatch = cleanContent.match(/```json\s*([\s\S]*?)```/);
+        const jsonCodeBlockMatch = cleanContent.match(
+          /```json\s*([\s\S]*?)```/,
+        );
         const genericCodeBlockMatch = cleanContent.match(/```\s*([\s\S]*?)```/);
         if (jsonCodeBlockMatch && jsonCodeBlockMatch[1]) {
           cleanContent = jsonCodeBlockMatch[1].trim();
@@ -1260,11 +1467,14 @@ CRITICAL RULES:
         }
         extractedData = JSON.parse(cleanContent.trim());
       } catch (e) {
-        logger.error('Failed to parse Groq opportunity extraction response', { content, error: e });
-        throw new ValidationError('Failed to parse extracted data');
+        logger.error("Failed to parse Groq opportunity extraction response", {
+          content,
+          error: e,
+        });
+        throw new ValidationError("Failed to parse extracted data");
       }
 
-      logger.info('LLM raw extraction result', {
+      logger.info("LLM raw extraction result", {
         userId: req.user.userId,
         llmSectors: extractedData.sectors,
         llmSkills: extractedData.skills,
@@ -1272,16 +1482,34 @@ CRITICAL RULES:
       });
 
       // Validate intentType
-      const validIntentTypes = ['HIRING', 'OPEN_TO_OPPORTUNITIES', 'ADVISORY_BOARD', 'REFERRALS_ONLY'];
-      const intentType = validIntentTypes.includes((extractedData.intentType || '').toUpperCase())
-        ? (extractedData.intentType || '').toUpperCase()
-        : '';
+      const validIntentTypes = [
+        "HIRING",
+        "OPEN_TO_OPPORTUNITIES",
+        "ADVISORY_BOARD",
+        "REFERRALS_ONLY",
+      ];
+      const intentType = validIntentTypes.includes(
+        (extractedData.intentType || "").toUpperCase(),
+      )
+        ? (extractedData.intentType || "").toUpperCase()
+        : "";
 
       // Validate seniority
-      const validSeniorities = ['ENTRY', 'MID', 'SENIOR', 'LEAD', 'DIRECTOR', 'VP', 'C_LEVEL', 'BOARD'];
-      const seniority = validSeniorities.includes((extractedData.seniority || '').toUpperCase())
-        ? (extractedData.seniority || '').toUpperCase()
-        : '';
+      const validSeniorities = [
+        "ENTRY",
+        "MID",
+        "SENIOR",
+        "LEAD",
+        "DIRECTOR",
+        "VP",
+        "C_LEVEL",
+        "BOARD",
+      ];
+      const seniority = validSeniorities.includes(
+        (extractedData.seniority || "").toUpperCase(),
+      )
+        ? (extractedData.seniority || "").toUpperCase()
+        : "";
 
       // Build lookup maps for fast matching
       const sectorsByLower = new Map<string, { id: string; name: string }>();
@@ -1290,7 +1518,11 @@ CRITICAL RULES:
       for (const s of skills) skillsByLower.set(s.name.toLowerCase(), s);
 
       // Fuzzy match helper - prefers exact, then closest length match
-      const fuzzyMatch = (name: string, items: Array<{ id: string; name: string }>, lookupMap: Map<string, { id: string; name: string }>) => {
+      const fuzzyMatch = (
+        name: string,
+        items: Array<{ id: string; name: string }>,
+        lookupMap: Map<string, { id: string; name: string }>,
+      ) => {
         const lower = name.toLowerCase().trim();
         if (!lower || lower.length < 1) return null;
 
@@ -1326,7 +1558,7 @@ CRITICAL RULES:
       const sectorIds: string[] = [];
       if (extractedData.sectors && Array.isArray(extractedData.sectors)) {
         for (const sectorName of extractedData.sectors.slice(0, 20)) {
-          if (typeof sectorName !== 'string' || !sectorName.trim()) continue;
+          if (typeof sectorName !== "string" || !sectorName.trim()) continue;
           const trimmed = sectorName.trim();
           let sector = fuzzyMatch(trimmed, sectors, sectorsByLower);
           if (!sector) {
@@ -1341,7 +1573,10 @@ CRITICAL RULES:
               sectorsByLower.set(trimmed.toLowerCase(), sector);
             } catch (e: any) {
               // Unique constraint — another request created it; look it up
-              const existing = await prisma.sector.findFirst({ where: { name: trimmed }, select: { id: true, name: true } });
+              const existing = await prisma.sector.findFirst({
+                where: { name: trimmed },
+                select: { id: true, name: true },
+              });
               if (existing) sector = existing;
             }
           }
@@ -1357,7 +1592,7 @@ CRITICAL RULES:
       if (extractedData.skills && Array.isArray(extractedData.skills)) {
         const addedSkillIds = new Set<string>();
         for (const skillName of extractedData.skills.slice(0, 30)) {
-          if (typeof skillName !== 'string' || !skillName.trim()) continue;
+          if (typeof skillName !== "string" || !skillName.trim()) continue;
           const trimmed = skillName.trim();
           let skill = fuzzyMatch(trimmed, skills, skillsByLower);
           if (!skill) {
@@ -1371,7 +1606,10 @@ CRITICAL RULES:
               skillsByLower.set(trimmed.toLowerCase(), skill);
             } catch (e: any) {
               // Unique constraint — another request created it; look it up
-              const existing = await prisma.skill.findFirst({ where: { name: trimmed }, select: { id: true, name: true } });
+              const existing = await prisma.skill.findFirst({
+                where: { name: trimmed },
+                select: { id: true, name: true },
+              });
               if (existing) skill = existing;
             }
           }
@@ -1383,7 +1621,7 @@ CRITICAL RULES:
         }
       }
 
-      logger.info('Opportunity data extracted from document', {
+      logger.info("Opportunity data extracted from document", {
         userId: req.user.userId,
         title: extractedData.title,
         intentType,
@@ -1396,7 +1634,7 @@ CRITICAL RULES:
         if (!Array.isArray(arr)) return [];
         const seen = new Set<string>();
         return arr
-          .filter((v: any) => typeof v === 'string' && v.trim())
+          .filter((v: any) => typeof v === "string" && v.trim())
           .map((v: string) => v.trim())
           .filter((v: string) => {
             const lower = v.toLowerCase();
@@ -1407,51 +1645,82 @@ CRITICAL RULES:
       };
 
       // Validate workMode — frontend expects lowercase values
-      const validWorkModes = ['onsite', 'hybrid', 'remote'];
+      const validWorkModes = ["onsite", "hybrid", "remote"];
       let workMode: string | null = null;
-      if (typeof extractedData.workMode === 'string' && extractedData.workMode.trim()) {
-        const parts = extractedData.workMode.split(',').map((s: string) => s.trim()).filter(Boolean);
-        const validParts = parts.filter((p: string) => validWorkModes.includes(p.toLowerCase()));
+      if (
+        typeof extractedData.workMode === "string" &&
+        extractedData.workMode.trim()
+      ) {
+        const parts = extractedData.workMode
+          .split(",")
+          .map((s: string) => s.trim())
+          .filter(Boolean);
+        const validParts = parts.filter((p: string) =>
+          validWorkModes.includes(p.toLowerCase()),
+        );
         if (validParts.length > 0) {
-          workMode = validParts.map((p: string) => p.toLowerCase()).join(',');
+          workMode = validParts.map((p: string) => p.toLowerCase()).join(",");
         }
       }
 
       // Validate employmentType — frontend expects lowercase values
-      const validEmploymentTypes = ['full-time', 'part-time', 'contract', 'freelance', 'internship'];
+      const validEmploymentTypes = [
+        "full-time",
+        "part-time",
+        "contract",
+        "freelance",
+        "internship",
+      ];
       let employmentType: string | null = null;
-      if (typeof extractedData.employmentType === 'string' && extractedData.employmentType.trim()) {
-        const parts = extractedData.employmentType.split(',').map((s: string) => s.trim()).filter(Boolean);
-        const validParts = parts.filter((p: string) => validEmploymentTypes.includes(p.toLowerCase()));
+      if (
+        typeof extractedData.employmentType === "string" &&
+        extractedData.employmentType.trim()
+      ) {
+        const parts = extractedData.employmentType
+          .split(",")
+          .map((s: string) => s.trim())
+          .filter(Boolean);
+        const validParts = parts.filter((p: string) =>
+          validEmploymentTypes.includes(p.toLowerCase()),
+        );
         if (validParts.length > 0) {
-          employmentType = validParts.map((p: string) => p.toLowerCase()).join(',');
+          employmentType = validParts
+            .map((p: string) => p.toLowerCase())
+            .join(",");
         }
       }
 
       // Validate urgencyOrAvailability — must match frontend exact strings
       const urgencyMap: Record<string, string> = {
-        'immediate': 'Immediate',
-        'within 1 month': 'Within 1 month',
-        'within 3 months': 'Within 3 months',
-        'no rush': 'No rush',
-        'immediately available': 'Immediately available',
-        'within 2 weeks': 'Within 2 weeks',
-        'open to future': 'Open to future opportunities',
-        'open to future opportunities': 'Open to future opportunities',
-        'not actively looking': 'Not actively looking',
+        immediate: "Immediate",
+        "within 1 month": "Within 1 month",
+        "within 3 months": "Within 3 months",
+        "no rush": "No rush",
+        "immediately available": "Immediately available",
+        "within 2 weeks": "Within 2 weeks",
+        "open to future": "Open to future opportunities",
+        "open to future opportunities": "Open to future opportunities",
+        "not actively looking": "Not actively looking",
       };
       let urgencyOrAvailability: string | null = null;
-      if (typeof extractedData.urgencyOrAvailability === 'string' && extractedData.urgencyOrAvailability.trim() && extractedData.urgencyOrAvailability !== 'null') {
-        const valLower = extractedData.urgencyOrAvailability.trim().toLowerCase();
+      if (
+        typeof extractedData.urgencyOrAvailability === "string" &&
+        extractedData.urgencyOrAvailability.trim() &&
+        extractedData.urgencyOrAvailability !== "null"
+      ) {
+        const valLower = extractedData.urgencyOrAvailability
+          .trim()
+          .toLowerCase();
         urgencyOrAvailability = urgencyMap[valLower] || null;
       }
 
       // Validate minExperienceYears
       let minExperienceYears: number | null = null;
       if (extractedData.minExperienceYears != null) {
-        const parsed = typeof extractedData.minExperienceYears === 'number'
-          ? extractedData.minExperienceYears
-          : parseInt(String(extractedData.minExperienceYears), 10);
+        const parsed =
+          typeof extractedData.minExperienceYears === "number"
+            ? extractedData.minExperienceYears
+            : parseInt(String(extractedData.minExperienceYears), 10);
         if (!isNaN(parsed) && parsed >= 0 && parsed <= 50) {
           minExperienceYears = parsed;
         }
@@ -1460,17 +1729,17 @@ CRITICAL RULES:
       res.status(200).json({
         success: true,
         data: {
-          title: extractedData.title || '',
+          title: extractedData.title || "",
           intentType,
-          roleArea: extractedData.roleArea || '',
+          roleArea: extractedData.roleArea || "",
           seniority,
-          locationPref: extractedData.locationPref || '',
+          locationPref: extractedData.locationPref || "",
           remoteOk: extractedData.remoteOk === true,
           workMode,
           employmentType,
           urgencyOrAvailability,
           minExperienceYears,
-          notes: extractedData.notes || '',
+          notes: extractedData.notes || "",
           sectorIds,
           skillIds,
           mustHaveSkillIds: skillIds,
@@ -1479,21 +1748,49 @@ CRITICAL RULES:
           certifications: normalizeArray(extractedData.certifications),
           educationLevels: normalizeArray(extractedData.educationLevels),
           industries: normalizeArray(extractedData.industries),
-          salaryMin: typeof extractedData.salaryMin === 'number' ? extractedData.salaryMin : (typeof extractedData.salaryMin === 'string' ? parseInt(extractedData.salaryMin, 10) || null : null),
-          salaryMax: typeof extractedData.salaryMax === 'number' ? extractedData.salaryMax : (typeof extractedData.salaryMax === 'string' ? parseInt(extractedData.salaryMax, 10) || null : null),
+          salaryMin:
+            typeof extractedData.salaryMin === "number"
+              ? extractedData.salaryMin
+              : typeof extractedData.salaryMin === "string"
+                ? parseInt(extractedData.salaryMin, 10) || null
+                : null,
+          salaryMax:
+            typeof extractedData.salaryMax === "number"
+              ? extractedData.salaryMax
+              : typeof extractedData.salaryMax === "string"
+                ? parseInt(extractedData.salaryMax, 10) || null
+                : null,
           salaryCurrency: extractedData.salaryCurrency || null,
-          salaryPeriod: extractedData.salaryPeriod === 'YEARLY' ? 'yearly' : 'monthly',
+          salaryPeriod:
+            extractedData.salaryPeriod === "YEARLY" ? "yearly" : "monthly",
           noticePeriod: (() => {
-            const validPeriods: Record<string, string> = { 'immediately': 'Immediately', '2 weeks': '2 weeks', '1 month': '1 month', '2 months': '2 months', '3 months': '3 months' };
-            if (typeof extractedData.noticePeriod === 'string' && extractedData.noticePeriod !== 'null') {
-              return validPeriods[extractedData.noticePeriod.toLowerCase().trim()] || null;
+            const validPeriods: Record<string, string> = {
+              immediately: "Immediately",
+              "2 weeks": "2 weeks",
+              "1 month": "1 month",
+              "2 months": "2 months",
+              "3 months": "3 months",
+            };
+            if (
+              typeof extractedData.noticePeriod === "string" &&
+              extractedData.noticePeriod !== "null"
+            ) {
+              return (
+                validPeriods[extractedData.noticePeriod.toLowerCase().trim()] ||
+                null
+              );
             }
             return null;
           })(),
-          relevantExperience: (typeof extractedData.relevantExperience === 'string' && extractedData.relevantExperience !== 'null') ? extractedData.relevantExperience : null,
+          relevantExperience:
+            typeof extractedData.relevantExperience === "string" &&
+            extractedData.relevantExperience !== "null"
+              ? extractedData.relevantExperience
+              : null,
           fieldSources: (() => {
             const fs = extractedData.fieldSources || {};
-            const normalize = (v: any) => v === 'DOCUMENT' ? 'DOCUMENT' : 'AI_ESTIMATE';
+            const normalize = (v: any) =>
+              v === "DOCUMENT" ? "DOCUMENT" : "AI_ESTIMATE";
             return {
               salary: normalize(fs.salary),
               workMode: normalize(fs.workMode),

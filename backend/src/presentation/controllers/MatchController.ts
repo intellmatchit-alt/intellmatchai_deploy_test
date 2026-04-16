@@ -6,21 +6,27 @@
  * @module presentation/controllers/MatchController
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { getMatchingService, matchFeedbackService, matchHistoryService } from '../../infrastructure/external/matching';
-import { GetFollowUpContactsUseCase } from '../../application/use-cases/contact';
-import { PrismaContactRepository } from '../../infrastructure/repositories/PrismaContactRepository';
-import { AuthenticationError, ValidationError } from '../../shared/errors';
-import { logger } from '../../shared/logger';
-import { MatchFeedbackAction } from '@prisma/client';
-import { prisma } from '../../infrastructure/database/prisma/client';
-import { cacheService } from '../../infrastructure/cache/CacheService';
-import { enhancedExplainabilityService } from '../../infrastructure/services/explainability';
+import { Request, Response, NextFunction } from "express";
+import {
+  getMatchingService,
+  matchFeedbackService,
+  matchHistoryService,
+} from "../../infrastructure/external/matching";
+import { GetFollowUpContactsUseCase } from "../../application/use-cases/contact";
+import { PrismaContactRepository } from "../../infrastructure/repositories/PrismaContactRepository";
+import { AuthenticationError, ValidationError } from "../../shared/errors";
+import { logger } from "../../shared/logger";
+import { MatchFeedbackAction } from "@prisma/client";
+import { prisma } from "../../infrastructure/database/prisma/client";
+import { cacheService } from "../../infrastructure/cache/CacheService";
+import { enhancedExplainabilityService } from "../../infrastructure/services/explainability";
 
 // Initialize services (using factory for matching)
 const matchingService = getMatchingService();
 const contactRepository = new PrismaContactRepository();
-const getFollowUpContactsUseCase = new GetFollowUpContactsUseCase(contactRepository);
+const getFollowUpContactsUseCase = new GetFollowUpContactsUseCase(
+  contactRepository,
+);
 
 /**
  * Match Controller
@@ -38,37 +44,52 @@ export class MatchController {
    * - minScore: minimum match score (default 0)
    * - sector: filter by sector ID
    */
-  async getMatches(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getMatches(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const options = {
         limit: req.query.limit ? parseInt(req.query.limit as string, 10) : 20,
-        minScore: req.query.minScore ? parseInt(req.query.minScore as string, 10) : 0,
+        minScore: req.query.minScore
+          ? parseInt(req.query.minScore as string, 10)
+          : 0,
         sectorId: req.query.sector as string | undefined,
         includeBreakdown: true,
       };
 
       const orgId = req.orgContext?.organizationId || undefined;
-      const matches = await matchingService.getMatches(req.user.userId, options, orgId);
+      const matches = await matchingService.getMatches(
+        req.user.userId,
+        options,
+        orgId,
+      );
 
       // Save fresh calculated scores to database for consistency
       // This ensures contacts list always shows the latest scores
       try {
-        const updatePromises = matches.map((match: any) =>
-          prisma.contact.update({
-            where: { id: match.contactId },
-            data: { matchScore: match.score },
-          }).catch(() => null) // Ignore individual update failures
+        const updatePromises = matches.map(
+          (match: any) =>
+            prisma.contact
+              .update({
+                where: { id: match.contactId },
+                data: { matchScore: match.score },
+              })
+              .catch(() => null), // Ignore individual update failures
         );
         await Promise.all(updatePromises);
 
         // Invalidate cache so contacts list shows fresh scores
         await cacheService.invalidateContactMatchCache(req.user.userId);
       } catch (updateError) {
-        logger.warn('Failed to batch update match scores', { error: updateError });
+        logger.warn("Failed to batch update match scores", {
+          error: updateError,
+        });
       }
 
       res.status(200).json({
@@ -88,25 +109,29 @@ export class MatchController {
    *
    * GET /api/v1/matches/:contactId
    */
-  async getMatchDetails(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getMatchDetails(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const orgId = req.orgContext?.organizationId || undefined;
       const match = await matchingService.getMatchDetails(
         req.user.userId,
-        req.params.contactId,
-        orgId
+        String(req.params.contactId),
+        orgId,
       );
 
       if (!match) {
         res.status(404).json({
           success: false,
           error: {
-            code: 'NOT_FOUND',
-            message: 'Contact not found',
+            code: "NOT_FOUND",
+            message: "Contact not found",
           },
         });
         return;
@@ -116,7 +141,7 @@ export class MatchController {
       // This ensures contacts list and detail page show the same score
       try {
         await prisma.contact.update({
-          where: { id: req.params.contactId },
+          where: { id: String(req.params.contactId) },
           data: { matchScore: match.score },
         });
 
@@ -124,9 +149,9 @@ export class MatchController {
         await cacheService.invalidateContactMatchCache(req.user.userId);
       } catch (updateError) {
         // Log but don't fail the request if update fails
-        logger.warn('Failed to update match score in database', {
+        logger.warn("Failed to update match score in database", {
           contactId: req.params.contactId,
-          error: updateError
+          error: updateError,
         });
       }
 
@@ -142,7 +167,7 @@ export class MatchController {
           },
         });
         const contact = await prisma.contact.findFirst({
-          where: { id: req.params.contactId },
+          where: { id: String(req.params.contactId) },
           include: {
             contactSkills: { include: { skill: true } },
             contactSectors: { include: { sector: true } },
@@ -162,17 +187,24 @@ export class MatchController {
             sectors: contact.contactSectors.map((cs: any) => cs.sector.name),
           };
 
-          const suggestions = enhancedExplainabilityService.generateImprovementSuggestions(
-            userProfile, [], []
-          );
-          const skillGap = enhancedExplainabilityService.generateSkillGapAnalysis(
-            userProfile.skills, contactProfile.skills
-          );
+          const suggestions =
+            enhancedExplainabilityService.generateImprovementSuggestions(
+              userProfile,
+              [],
+              [],
+            );
+          const skillGap =
+            enhancedExplainabilityService.generateSkillGapAnalysis(
+              userProfile.skills,
+              contactProfile.skills,
+            );
 
           insights = { profileImprovements: suggestions, skillGap };
         }
       } catch (insightErr) {
-        logger.debug('Failed to generate match insights', { error: insightErr });
+        logger.debug("Failed to generate match insights", {
+          error: insightErr,
+        });
       }
 
       res.status(200).json({
@@ -189,17 +221,21 @@ export class MatchController {
    *
    * GET /api/v1/matches/intersections/:contactId
    */
-  async getIntersections(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getIntersections(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const orgId = req.orgContext?.organizationId || undefined;
       const intersections = await matchingService.getIntersections(
         req.user.userId,
-        req.params.contactId,
-        orgId
+        String(req.params.contactId),
+        orgId,
       );
 
       res.status(200).json({
@@ -222,10 +258,14 @@ export class MatchController {
    * Query params:
    * - count: number of recommendations (default 3, max 10)
    */
-  async getDailyRecommendations(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getDailyRecommendations(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const count = req.query.count
@@ -236,14 +276,14 @@ export class MatchController {
       const recommendations = await matchingService.getDailyRecommendations(
         req.user.userId,
         count,
-        orgId
+        orgId,
       );
 
       res.status(200).json({
         success: true,
         data: {
           recommendations,
-          date: new Date().toISOString().split('T')[0],
+          date: new Date().toISOString().split("T")[0],
         },
       });
     } catch (error) {
@@ -259,15 +299,22 @@ export class MatchController {
    * Query params:
    * - days: days since last contact (default 30)
    */
-  async getFollowUpReminders(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getFollowUpReminders(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const days = req.query.days ? parseInt(req.query.days as string, 10) : 30;
 
-      const contacts = await getFollowUpContactsUseCase.execute(req.user.userId, days);
+      const contacts = await getFollowUpContactsUseCase.execute(
+        req.user.userId,
+        days,
+      );
 
       res.status(200).json({
         success: true,
@@ -286,17 +333,21 @@ export class MatchController {
    *
    * POST /api/v1/matches/:contactId/recalculate
    */
-  async recalculateScore(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async recalculateScore(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const orgId = req.orgContext?.organizationId || undefined;
       const newScore = await matchingService.recalculateScore(
         req.user.userId,
-        req.params.contactId,
-        orgId
+        String(req.params.contactId),
+        orgId,
       );
 
       res.status(200).json({
@@ -322,43 +373,60 @@ export class MatchController {
    * - feedbackNote: string (optional)
    * - source: where feedback was given (optional)
    */
-  async recordFeedback(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async recordFeedback(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const { action, rating, feedbackNote, source } = req.body;
-      const contactId = req.params.contactId;
+      const contactId = String(req.params.contactId);
 
       // Validate action
-      const validActions: MatchFeedbackAction[] = ['ACCEPT', 'REJECT', 'SAVE', 'CONNECT', 'MESSAGE', 'HIDE'];
+      const validActions: MatchFeedbackAction[] = [
+        "ACCEPT",
+        "REJECT",
+        "SAVE",
+        "CONNECT",
+        "MESSAGE",
+        "HIDE",
+      ];
       if (!action || !validActions.includes(action)) {
-        throw new ValidationError('Invalid feedback action. Must be one of: ' + validActions.join(', '));
+        throw new ValidationError(
+          "Invalid feedback action. Must be one of: " + validActions.join(", "),
+        );
       }
 
       // Validate rating if provided
       if (rating !== undefined && (rating < 1 || rating > 5)) {
-        throw new ValidationError('Rating must be between 1 and 5');
+        throw new ValidationError("Rating must be between 1 and 5");
       }
 
       // Get current match score for tracking
       const orgId = req.orgContext?.organizationId || undefined;
-      const matchDetails = await matchingService.getMatchDetails(req.user.userId, contactId, orgId);
+      const matchDetails = await matchingService.getMatchDetails(
+        req.user.userId,
+        contactId,
+        orgId,
+      );
       const matchScoreAtFeedback = matchDetails?.score;
 
       await matchFeedbackService.recordFeedback({
         userId: req.user.userId,
         contactId,
         action: action as MatchFeedbackAction,
-        matchType: 'contact',
+        matchType: "contact",
         matchScoreAtFeedback,
         rating,
         feedbackNote,
         feedbackSource: source,
       });
 
-      logger.info('Recorded match feedback', {
+      logger.info("Recorded match feedback", {
         userId: req.user.userId,
         contactId,
         action,
@@ -382,15 +450,19 @@ export class MatchController {
    *
    * GET /api/v1/matches/:contactId/feedback
    */
-  async getFeedbackStats(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getFeedbackStats(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
       const stats = await matchFeedbackService.getFeedbackStats(
         req.user.userId,
-        req.params.contactId
+        String(req.params.contactId),
       );
 
       res.status(200).json({
@@ -407,13 +479,19 @@ export class MatchController {
    *
    * GET /api/v1/matches/feedback/summary
    */
-  async getFeedbackSummary(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getFeedbackSummary(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const summary = await matchFeedbackService.getUserFeedbackSummary(req.user.userId);
+      const summary = await matchFeedbackService.getUserFeedbackSummary(
+        req.user.userId,
+      );
 
       res.status(200).json({
         success: true,
@@ -429,18 +507,24 @@ export class MatchController {
    *
    * GET /api/v1/matches/:contactId/history
    */
-  async getMatchHistory(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getMatchHistory(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 30;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string, 10)
+        : 30;
 
       const history = await matchHistoryService.getContactHistory(
         req.user.userId,
-        req.params.contactId,
-        limit
+        String(req.params.contactId),
+        limit,
       );
 
       res.status(200).json({
@@ -460,16 +544,29 @@ export class MatchController {
    *
    * GET /api/v1/matches/analytics
    */
-  async getMatchAnalytics(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getMatchAnalytics(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.user) {
-        throw new AuthenticationError('Authentication required');
+        throw new AuthenticationError("Authentication required");
       }
 
-      const daysBack = req.query.days ? parseInt(req.query.days as string, 10) : 30;
+      const daysBack = req.query.days
+        ? parseInt(req.query.days as string, 10)
+        : 30;
 
-      const analytics = await matchHistoryService.getAnalytics(req.user.userId, daysBack);
-      const trends = await matchHistoryService.getScoreTrends(req.user.userId, daysBack, 10);
+      const analytics = await matchHistoryService.getAnalytics(
+        req.user.userId,
+        daysBack,
+      );
+      const trends = await matchHistoryService.getScoreTrends(
+        req.user.userId,
+        daysBack,
+        10,
+      );
 
       res.status(200).json({
         success: true,

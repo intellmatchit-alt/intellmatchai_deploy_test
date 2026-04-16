@@ -348,7 +348,7 @@ superAdminRoutes.get("/users", async (req: Request, res: Response) => {
 superAdminRoutes.get("/users/:id", async (req: Request, res: Response) => {
   try {
     const user = await prisma.user.findUnique({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       select: {
         id: true,
         email: true,
@@ -431,7 +431,7 @@ superAdminRoutes.patch("/users/:id", async (req: Request, res: Response) => {
     }
 
     const user = await prisma.user.update({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       data,
       select: {
         id: true,
@@ -446,7 +446,7 @@ superAdminRoutes.patch("/users/:id", async (req: Request, res: Response) => {
       req.superAdmin!.adminId,
       "UPDATE_USER",
       "User",
-      req.params.id,
+      String(req.params.id),
       data,
       getIp(req),
     );
@@ -471,7 +471,7 @@ superAdminRoutes.post("/users/:id/ban", async (req: Request, res: Response) => {
     const { reason } = req.body;
 
     const user = await prisma.user.update({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       data: { isActive: false, status: "INACTIVE" },
       select: { id: true, email: true, fullName: true },
     });
@@ -480,7 +480,7 @@ superAdminRoutes.post("/users/:id/ban", async (req: Request, res: Response) => {
       req.superAdmin!.adminId,
       "BAN_USER",
       "User",
-      req.params.id,
+      String(req.params.id),
       { reason },
       getIp(req),
     );
@@ -509,7 +509,7 @@ superAdminRoutes.post(
   async (req: Request, res: Response) => {
     try {
       const user = await prisma.user.update({
-        where: { id: req.params.id },
+        where: { id: String(req.params.id) },
         data: { isActive: true, status: "ACTIVE" },
         select: { id: true, email: true, fullName: true },
       });
@@ -518,7 +518,7 @@ superAdminRoutes.post(
         req.superAdmin!.adminId,
         "UNBAN_USER",
         "User",
-        req.params.id,
+        String(req.params.id),
         null,
         getIp(req),
       );
@@ -554,12 +554,12 @@ superAdminRoutes.delete(
         req.superAdmin!.adminId,
         "DELETE_USER",
         "User",
-        req.params.id,
+        String(req.params.id),
         null,
         getIp(req),
       );
 
-      await prisma.user.delete({ where: { id: req.params.id } });
+      await prisma.user.delete({ where: { id: String(req.params.id) } });
 
       return res.json({ success: true, message: "User deleted successfully" });
     } catch (error: any) {
@@ -599,7 +599,7 @@ superAdminRoutes.post(
 
       // Ensure user exists
       const user = await prisma.user.findUnique({
-        where: { id: req.params.id },
+        where: { id: String(req.params.id) },
       });
       if (!user) {
         return res
@@ -609,8 +609,8 @@ superAdminRoutes.post(
 
       // Upsert wallet
       const wallet = await prisma.wallet.upsert({
-        where: { userId: req.params.id },
-        create: { userId: req.params.id, balance: Math.max(0, amount) },
+        where: { userId: String(req.params.id) },
+        create: { userId: String(req.params.id), balance: Math.max(0, amount) },
         update: { balance: { increment: amount } },
       });
 
@@ -631,7 +631,7 @@ superAdminRoutes.post(
         "ADJUST_WALLET",
         "Wallet",
         wallet.id,
-        { userId: req.params.id, amount, description },
+        { userId: String(req.params.id), amount, description },
         getIp(req),
       );
 
@@ -659,17 +659,15 @@ superAdminRoutes.patch(
       const validPlans = ["FREE", "PRO", "TEAM"];
 
       if (!validPlans.includes(plan)) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            error: `Plan must be one of: ${validPlans.join(", ")}`,
-          });
+        return res.status(400).json({
+          success: false,
+          error: `Plan must be one of: ${validPlans.join(", ")}`,
+        });
       }
 
       // Ensure user exists
       const user = await prisma.user.findUnique({
-        where: { id: req.params.id },
+        where: { id: String(req.params.id) },
       });
       if (!user) {
         return res
@@ -678,8 +676,8 @@ superAdminRoutes.patch(
       }
 
       const subscription = await prisma.subscription.upsert({
-        where: { userId: req.params.id },
-        create: { userId: req.params.id, plan, status: "ACTIVE" },
+        where: { userId: String(req.params.id) },
+        create: { userId: String(req.params.id), plan, status: "ACTIVE" },
         update: { plan, status: "ACTIVE" },
       });
 
@@ -688,7 +686,7 @@ superAdminRoutes.patch(
         "CHANGE_PLAN",
         "Subscription",
         subscription.id,
-        { userId: req.params.id, plan },
+        { userId: String(req.params.id), plan },
         getIp(req),
       );
 
@@ -859,7 +857,7 @@ superAdminRoutes.patch(
       }
 
       const plan = await prisma.planConfig.update({
-        where: { id: req.params.id },
+        where: { id: String(req.params.id) },
         data,
       });
 
@@ -867,7 +865,7 @@ superAdminRoutes.patch(
         req.superAdmin!.adminId,
         "UPDATE_PLAN",
         "PlanConfig",
-        req.params.id,
+        String(req.params.id),
         data,
         getIp(req),
       );
@@ -899,12 +897,12 @@ superAdminRoutes.delete(
         req.superAdmin!.adminId,
         "DELETE_PLAN",
         "PlanConfig",
-        req.params.id,
+        String(req.params.id),
         null,
         getIp(req),
       );
 
-      await prisma.planConfig.delete({ where: { id: req.params.id } });
+      await prisma.planConfig.delete({ where: { id: String(req.params.id) } });
 
       return res.json({ success: true, message: "Plan deleted successfully" });
     } catch (error: any) {
@@ -966,22 +964,18 @@ superAdminRoutes.post(
       const { email, password, fullName, role } = req.body;
 
       if (!email || !password || !fullName) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            error: "email, password, and fullName are required",
-          });
+        return res.status(400).json({
+          success: false,
+          error: "email, password, and fullName are required",
+        });
       }
 
       const validRoles = ["SUPER_ADMIN", "ADMIN", "MODERATOR", "SUPPORT"];
       if (role && !validRoles.includes(role)) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            error: `Role must be one of: ${validRoles.join(", ")}`,
-          });
+        return res.status(400).json({
+          success: false,
+          error: `Role must be one of: ${validRoles.join(", ")}`,
+        });
       }
 
       const passwordHash = await bcrypt.hash(password, 12);
@@ -1037,12 +1031,10 @@ superAdminRoutes.patch(
       if (data.role) {
         const validRoles = ["SUPER_ADMIN", "ADMIN", "MODERATOR", "SUPPORT"];
         if (!validRoles.includes(data.role)) {
-          return res
-            .status(400)
-            .json({
-              success: false,
-              error: `Role must be one of: ${validRoles.join(", ")}`,
-            });
+          return res.status(400).json({
+            success: false,
+            error: `Role must be one of: ${validRoles.join(", ")}`,
+          });
         }
       }
 
@@ -1053,7 +1045,7 @@ superAdminRoutes.patch(
       }
 
       const admin = await prisma.superAdmin.update({
-        where: { id: req.params.id },
+        where: { id: String(req.params.id) },
         data,
         select: {
           id: true,
@@ -1068,7 +1060,7 @@ superAdminRoutes.patch(
         req.superAdmin!.adminId,
         "UPDATE_ADMIN",
         "SuperAdmin",
-        req.params.id,
+        String(req.params.id),
         data,
         getIp(req),
       );
@@ -1107,12 +1099,12 @@ superAdminRoutes.delete(
         req.superAdmin!.adminId,
         "DELETE_ADMIN",
         "SuperAdmin",
-        req.params.id,
+        String(req.params.id),
         null,
         getIp(req),
       );
 
-      await prisma.superAdmin.delete({ where: { id: req.params.id } });
+      await prisma.superAdmin.delete({ where: { id: String(req.params.id) } });
 
       return res.json({ success: true, message: "Admin deleted successfully" });
     } catch (error: any) {
@@ -1282,12 +1274,10 @@ superAdminRoutes.post("/point-packs", async (req: Request, res: Response) => {
       req.body;
 
     if (!name || points === undefined || price === undefined) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          error: "name, points, and price are required",
-        });
+      return res.status(400).json({
+        success: false,
+        error: "name, points, and price are required",
+      });
     }
 
     const pack = await prisma.pointPack.create({
@@ -1327,7 +1317,7 @@ superAdminRoutes.patch(
   "/point-packs/:id",
   async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
       const { name, nameAr, points, price, currency, isActive, sortOrder } =
         req.body;
 
@@ -1378,7 +1368,7 @@ superAdminRoutes.delete(
   "/point-packs/:id",
   async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
 
       const existing = await prisma.pointPack.findUnique({ where: { id } });
       if (!existing) {
@@ -1553,7 +1543,7 @@ superAdminRoutes.get(
   async (req: Request, res: Response) => {
     try {
       const report = await prisma.bugReport.findUnique({
-        where: { id: req.params.id },
+        where: { id: String(req.params.id) },
         include: {
           user: { select: { fullName: true, email: true } },
         },
@@ -1582,7 +1572,7 @@ superAdminRoutes.patch(
   "/bug-reports/:id/status",
   async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
       const { status, adminNotes } = req.body;
 
       const validStatuses = ["OPEN", "IN_PROGRESS", "DONE", "WONT_FIX"];
@@ -1631,7 +1621,7 @@ superAdminRoutes.patch(
         req.superAdmin!.adminId,
         "UPDATE_BUG_REPORT_STATUS",
         "BugReport",
-        id,
+        String(id),
         { status, adminNotes },
         getIp(req),
       );
@@ -1741,8 +1731,8 @@ superAdminRoutes.get(
   authenticateSuperAdmin,
   async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
-      const detail = await affiliateService.getAffiliateDetail(id);
+      const { id } = req.params as { id: string };
+      const detail = await affiliateService.getAffiliateDetail(String(id));
       return res.json({ success: true, data: detail });
     } catch (error: any) {
       if (error.message === "Affiliate not found") {
@@ -1792,7 +1782,7 @@ superAdminRoutes.patch(
   authenticateSuperAdmin,
   async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
       const { status, reason } = req.body;
 
       if (!["APPROVED", "SUSPENDED", "REJECTED"].includes(status)) {
@@ -1834,7 +1824,7 @@ superAdminRoutes.patch(
   authenticateSuperAdmin,
   async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
       const { action, notes } = req.body;
 
       if (!["approve", "reject"].includes(action)) {
@@ -1843,7 +1833,11 @@ superAdminRoutes.patch(
           .json({ success: false, error: "Action must be approve or reject" });
       }
 
-      const payout = await affiliateService.processPayout(id, action, notes);
+      const payout = await affiliateService.processPayout(
+        String(id),
+        action,
+        notes,
+      );
 
       await logAudit(
         req.superAdmin!.adminId,
@@ -1875,9 +1869,7 @@ superAdminRoutes.patch(
 // ============================================================
 
 /** Parse YouTube/Vimeo URL to extract type, ID, and thumbnail */
-function parseVideoUrl(
-  url: string,
-): {
+function parseVideoUrl(url: string): {
   videoType: "YOUTUBE" | "VIMEO";
   videoId: string;
   thumbnailUrl: string | null;
@@ -1966,12 +1958,10 @@ superAdminRoutes.delete("/video-categories/:id", async (req, res) => {
     where: { categoryId: req.params.id },
   });
   if (videoCount > 0) {
-    res
-      .status(400)
-      .json({
-        success: false,
-        error: `Cannot delete: ${videoCount} videos use this category. Reassign or delete them first.`,
-      });
+    res.status(400).json({
+      success: false,
+      error: `Cannot delete: ${videoCount} videos use this category. Reassign or delete them first.`,
+    });
     return;
   }
   await prisma.videoCategory.delete({ where: { id: req.params.id } });
@@ -2017,12 +2007,10 @@ superAdminRoutes.delete("/video-tags/:id", async (req, res) => {
     where: { tagId: req.params.id },
   });
   if (usageCount > 0) {
-    res
-      .status(400)
-      .json({
-        success: false,
-        error: `Cannot delete: ${usageCount} videos use this tag. Remove tag from videos first.`,
-      });
+    res.status(400).json({
+      success: false,
+      error: `Cannot delete: ${usageCount} videos use this tag. Remove tag from videos first.`,
+    });
     return;
   }
   await prisma.videoTag.delete({ where: { id: req.params.id } });
@@ -2069,23 +2057,19 @@ superAdminRoutes.post("/videos", async (req, res) => {
     isFeatured = false,
   } = req.body;
   if (!title || !videoUrl || !categoryId) {
-    res
-      .status(400)
-      .json({
-        success: false,
-        error: "Title, videoUrl, and categoryId are required",
-      });
+    res.status(400).json({
+      success: false,
+      error: "Title, videoUrl, and categoryId are required",
+    });
     return;
   }
 
   const parsed = parseVideoUrl(videoUrl);
   if (!parsed) {
-    res
-      .status(400)
-      .json({
-        success: false,
-        error: "Invalid video URL. Must be a YouTube or Vimeo link.",
-      });
+    res.status(400).json({
+      success: false,
+      error: "Invalid video URL. Must be a YouTube or Vimeo link.",
+    });
     return;
   }
 

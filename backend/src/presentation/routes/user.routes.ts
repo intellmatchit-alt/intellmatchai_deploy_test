@@ -4,11 +4,11 @@
  * Routes for user-related operations like searching users.
  */
 
-import { Router } from 'express';
-import { authenticate } from '../middleware/auth.middleware.js';
-import { rateLimiter } from '../middleware/rateLimiter.js';
-import { prisma } from '../../infrastructure/database/prisma/client.js';
-import rateLimit from 'express-rate-limit';
+import { Router } from "express";
+import { authenticate } from "../middleware/auth.middleware.js";
+import { rateLimiter } from "../middleware/rateLimiter.js";
+import { prisma } from "../../infrastructure/database/prisma/client.js";
+import rateLimit from "express-rate-limit";
 
 const router = Router();
 
@@ -16,63 +16,71 @@ const router = Router();
 const searchRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 30, // 30 searches per 15 minutes
-  message: { success: false, error: { code: 'RATE_LIMIT', message: 'Too many search requests' } },
+  message: {
+    success: false,
+    error: { code: "RATE_LIMIT", message: "Too many search requests" },
+  },
 });
 
 /**
  * Search users by name or email
  * GET /api/v1/users/search?q=query&limit=10
  */
-router.get('/search', searchRateLimiter, authenticate, async (req, res, next) => {
-  try {
-    const { q, limit = '10' } = req.query;
-    const userId = req.user!.userId;
+router.get(
+  "/search",
+  searchRateLimiter,
+  authenticate,
+  async (req, res, next) => {
+    try {
+      const { q, limit = "10" } = req.query;
+      const userId = req.user!.userId;
 
-    if (!q || typeof q !== 'string' || q.length < 2) {
+      if (!q || typeof q !== "string" || q.length < 2) {
+        res.json({
+          success: true,
+          data: [],
+        });
+        return;
+      }
+
+      const searchTerm = q.trim();
+      const maxResults = Math.min(parseInt(limit as string, 10) || 10, 50);
+
+      // Search users by name or company only (not email — prevents enumeration)
+      const users = await prisma.user.findMany({
+        where: {
+          AND: [
+            { id: { not: userId } }, // Exclude current user
+            { isActive: true },
+            { status: "ACTIVE" },
+            {
+              OR: [
+                { fullName: { contains: searchTerm } },
+                { company: { contains: searchTerm } },
+              ],
+            },
+          ],
+        },
+        select: {
+          id: true,
+          fullName: true,
+          avatarUrl: true,
+          company: true,
+          jobTitle: true,
+        },
+        take: maxResults,
+        orderBy: { fullName: "asc" },
+      });
+
       res.json({
         success: true,
-        data: [],
+        data: users,
       });
-      return;
+    } catch (error) {
+      next(error);
     }
-
-    const searchTerm = q.trim();
-    const maxResults = Math.min(parseInt(limit as string, 10) || 10, 50);
-
-    // Search users by name or company only (not email — prevents enumeration)
-    const users = await prisma.user.findMany({
-      where: {
-        AND: [
-          { id: { not: userId } }, // Exclude current user
-          { isActive: true },
-          { status: 'ACTIVE' },
-          {
-            OR: [
-              { fullName: { contains: searchTerm } },
-              { company: { contains: searchTerm } },
-            ],
-          },
-        ],
-      },
-      select: {
-        id: true,
-        fullName: true,
-        avatarUrl: true,
-        company: true,
-        jobTitle: true,
-      },
-      take: maxResults,
-      orderBy: { fullName: 'asc' },
-    });
-
-    res.json({
-      success: true,
-      data: users,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+  },
+);
 
 /**
  * Check which emails have accounts
@@ -80,7 +88,7 @@ router.get('/search', searchRateLimiter, authenticate, async (req, res, next) =>
  * Body: { emails: string[] }
  * Returns: { existingEmails: string[] }
  */
-router.post('/check-emails', authenticate, async (req, res, next) => {
+router.post("/check-emails", authenticate, async (req, res, next) => {
   try {
     const { emails } = req.body;
 
@@ -93,7 +101,9 @@ router.post('/check-emails', authenticate, async (req, res, next) => {
     }
 
     // Limit to prevent abuse
-    const emailsToCheck = emails.slice(0, 500).map((e: string) => e.toLowerCase().trim());
+    const emailsToCheck = emails
+      .slice(0, 500)
+      .map((e: string) => e.toLowerCase().trim());
 
     // Find users with these emails
     const users = await prisma.user.findMany({
@@ -106,7 +116,7 @@ router.post('/check-emails', authenticate, async (req, res, next) => {
       },
     });
 
-    const existingEmails = users.map(u => u.email.toLowerCase());
+    const existingEmails = users.map((u) => u.email.toLowerCase());
 
     res.json({
       success: true,
@@ -123,7 +133,7 @@ router.post('/check-emails', authenticate, async (req, res, next) => {
  * Body: { phones: string[] }
  * Returns: { "+962791234567": "userId_abc123", ... } — only matching phones included
  */
-router.post('/check-phones', authenticate, async (req, res, next) => {
+router.post("/check-phones", authenticate, async (req, res, next) => {
   try {
     const { phones } = req.body;
 
@@ -136,12 +146,13 @@ router.post('/check-phones', authenticate, async (req, res, next) => {
     const phonesToCheck = phones.slice(0, 500);
 
     // Normalize: strip everything except digits and leading +
-    const normalize = (p: string) => p.replace(/[\s\-\(\)]/g, '').replace(/^00/, '+');
+    const normalize = (p: string) =>
+      p.replace(/[\s\-\(\)]/g, "").replace(/^00/, "+");
 
     const normalized = phonesToCheck.map((p: string) => ({
       original: p,
       clean: normalize(p),
-      digitsOnly: normalize(p).replace(/[^0-9]/g, ''),
+      digitsOnly: normalize(p).replace(/[^0-9]/g, ""),
     }));
 
     // Fetch all users that have a phone number
@@ -164,14 +175,16 @@ router.post('/check-phones', authenticate, async (req, res, next) => {
       for (const user of usersWithPhone) {
         if (!user.phone) continue;
         const userClean = normalize(user.phone);
-        const userDigits = userClean.replace(/[^0-9]/g, '');
+        const userDigits = userClean.replace(/[^0-9]/g, "");
 
         // Match by full normalized, digits-only, or suffix (last 9+ digits)
         if (
           userClean === input.clean ||
           userDigits === input.digitsOnly ||
-          (input.digitsOnly.length >= 9 && userDigits.endsWith(input.digitsOnly.slice(-9))) ||
-          (userDigits.length >= 9 && input.digitsOnly.endsWith(userDigits.slice(-9)))
+          (input.digitsOnly.length >= 9 &&
+            userDigits.endsWith(input.digitsOnly.slice(-9))) ||
+          (userDigits.length >= 9 &&
+            input.digitsOnly.endsWith(userDigits.slice(-9)))
         ) {
           result[input.original] = user.id;
           break;
@@ -189,9 +202,9 @@ router.post('/check-phones', authenticate, async (req, res, next) => {
  * Get user by ID (public profile)
  * GET /api/v1/users/:id
  */
-router.get('/:id', authenticate, async (req, res, next) => {
+router.get("/:id", authenticate, async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
 
     const user = await prisma.user.findUnique({
       where: { id, isActive: true },
@@ -212,7 +225,7 @@ router.get('/:id', authenticate, async (req, res, next) => {
     if (!user) {
       res.status(404).json({
         success: false,
-        error: 'User not found',
+        error: "User not found",
       });
       return;
     }

@@ -11,23 +11,23 @@
  * @module controllers/opportunity-matching.controller
  */
 
-import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-import { logger } from '../../../../shared/logger';
-import { prisma } from '../../../database/prisma/client';
+import { Request, Response } from "express";
+import { PrismaClient } from "@prisma/client";
+import { logger } from "../../../../shared/logger";
+import { prisma } from "../../../database/prisma/client";
 import {
   MatchingConfig,
   DEFAULT_MATCHING_CONFIG,
   MatchResult,
   MatchLevel,
-} from '../types/opportunity-matching.types';
-import { createOpportunityMatchingService } from '../services/opportunity-matching.service';
+} from "../types/opportunity-matching.types";
+import { createOpportunityMatchingService } from "../services/opportunity-matching.service";
 import {
   enqueueOpportunityMatching,
   getJobStatus as getWorkerJobStatus,
   cancelJob as cancelWorkerJob,
   getWorkerHealth,
-} from '../workers/opportunity-matching.worker';
+} from "../workers/opportunity-matching.worker";
 
 // ============================================================================
 // Types
@@ -82,7 +82,7 @@ export class OpportunityMatchingController {
     const userId = req.user?.userId;
 
     if (!userId) {
-      this.sendError(res, 401, 'UNAUTHORIZED', 'Authentication required');
+      this.sendError(res, 401, "UNAUTHORIZED", "Authentication required");
       return;
     }
 
@@ -104,23 +104,27 @@ export class OpportunityMatchingController {
       const matches = await service.findMatchesForIntent(
         userId,
         undefined,
-        req.user?.organizationId
+        req.user?.organizationId,
       );
 
       const processingTime = Date.now() - startTime;
 
-      logger.info('Matches found', {
+      logger.info("Matches found", {
         userId,
         matchCount: matches.length,
         processingTime,
       });
 
-      this.sendSuccess(res, {
-        matches: this.formatMatchResults(matches),
-        summary: this.generateMatchSummary(matches),
-      }, { processingTime });
+      this.sendSuccess(
+        res,
+        {
+          matches: this.formatMatchResults(matches),
+          summary: this.generateMatchSummary(matches),
+        },
+        { processingTime },
+      );
     } catch (error) {
-      this.handleError(res, error, 'findMatches');
+      this.handleError(res, error, "findMatches");
     }
   }
 
@@ -128,13 +132,16 @@ export class OpportunityMatchingController {
    * Find matches for a specific intent
    * POST /api/opportunities/match/:intentId
    */
-  async findMatchesForIntent(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async findMatchesForIntent(
+    req: AuthenticatedRequest,
+    res: Response,
+  ): Promise<void> {
     const startTime = Date.now();
     const userId = req.user?.userId;
-    const { intentId } = req.params;
+    const { intentId } = req.params as { intentId: string };
 
     if (!userId) {
-      this.sendError(res, 401, 'UNAUTHORIZED', 'Authentication required');
+      this.sendError(res, 401, "UNAUTHORIZED", "Authentication required");
       return;
     }
 
@@ -145,7 +152,12 @@ export class OpportunityMatchingController {
       });
 
       if (!intent) {
-        this.sendError(res, 404, 'INTENT_NOT_FOUND', 'Intent not found or access denied');
+        this.sendError(
+          res,
+          404,
+          "INTENT_NOT_FOUND",
+          "Intent not found or access denied",
+        );
         return;
       }
 
@@ -161,8 +173,8 @@ export class OpportunityMatchingController {
 
         this.sendSuccess(res, {
           jobId,
-          status: 'PENDING',
-          message: 'Matching job submitted',
+          status: "PENDING",
+          message: "Matching job submitted",
         });
         return;
       }
@@ -176,17 +188,21 @@ export class OpportunityMatchingController {
       const matches = await service.findMatchesForIntent(
         userId,
         intentId,
-        req.user?.organizationId
+        req.user?.organizationId,
       );
 
       const processingTime = Date.now() - startTime;
 
-      this.sendSuccess(res, {
-        matches: this.formatMatchResults(matches),
-        summary: this.generateMatchSummary(matches),
-      }, { processingTime });
+      this.sendSuccess(
+        res,
+        {
+          matches: this.formatMatchResults(matches),
+          summary: this.generateMatchSummary(matches),
+        },
+        { processingTime },
+      );
     } catch (error) {
-      this.handleError(res, error, 'findMatchesForIntent');
+      this.handleError(res, error, "findMatchesForIntent");
     }
   }
 
@@ -194,11 +210,14 @@ export class OpportunityMatchingController {
    * Submit async matching job
    * POST /api/opportunities/match/async
    */
-  async submitAsyncMatching(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async submitAsyncMatching(
+    req: AuthenticatedRequest,
+    res: Response,
+  ): Promise<void> {
     const userId = req.user?.userId;
 
     if (!userId) {
-      this.sendError(res, 401, 'UNAUTHORIZED', 'Authentication required');
+      this.sendError(res, 401, "UNAUTHORIZED", "Authentication required");
       return;
     }
 
@@ -212,7 +231,12 @@ export class OpportunityMatchingController {
         });
 
         if (!intent) {
-          this.sendError(res, 404, 'INTENT_NOT_FOUND', 'Intent not found or access denied');
+          this.sendError(
+            res,
+            404,
+            "INTENT_NOT_FOUND",
+            "Intent not found or access denied",
+          );
           return;
         }
       }
@@ -220,12 +244,19 @@ export class OpportunityMatchingController {
       // Get active intent if not specified
       let targetIntentId = intentId;
       if (!targetIntentId) {
-        const activeIntent = await (this.prisma.opportunityIntent as any).findFirst({
+        const activeIntent = await (
+          this.prisma.opportunityIntent as any
+        ).findFirst({
           where: { userId, isActive: true },
         });
 
         if (!activeIntent) {
-          this.sendError(res, 400, 'NO_ACTIVE_INTENT', 'No active opportunity intent found');
+          this.sendError(
+            res,
+            400,
+            "NO_ACTIVE_INTENT",
+            "No active opportunity intent found",
+          );
           return;
         }
 
@@ -240,7 +271,7 @@ export class OpportunityMatchingController {
         priority,
       });
 
-      logger.info('Async matching job submitted', {
+      logger.info("Async matching job submitted", {
         userId,
         intentId: targetIntentId,
         jobId,
@@ -251,12 +282,12 @@ export class OpportunityMatchingController {
         data: {
           jobId,
           intentId: targetIntentId,
-          status: 'PENDING',
-          message: 'Matching job submitted successfully',
+          status: "PENDING",
+          message: "Matching job submitted successfully",
         },
       });
     } catch (error) {
-      this.handleError(res, error, 'submitAsyncMatching');
+      this.handleError(res, error, "submitAsyncMatching");
     }
   }
 
@@ -266,18 +297,18 @@ export class OpportunityMatchingController {
    */
   async getJobStatus(req: AuthenticatedRequest, res: Response): Promise<void> {
     const userId = req.user?.userId;
-    const { jobId } = req.params;
+    const { jobId } = req.params as { jobId: string };
 
     if (!userId) {
-      this.sendError(res, 401, 'UNAUTHORIZED', 'Authentication required');
+      this.sendError(res, 401, "UNAUTHORIZED", "Authentication required");
       return;
     }
 
     try {
       const status = await getWorkerJobStatus(jobId);
 
-      if (status.status === 'unknown') {
-        this.sendError(res, 404, 'JOB_NOT_FOUND', 'Job not found');
+      if (status.status === "unknown") {
+        this.sendError(res, 404, "JOB_NOT_FOUND", "Job not found");
         return;
       }
 
@@ -290,20 +321,20 @@ export class OpportunityMatchingController {
         progress: status.progress,
       };
 
-      if (status.status === 'completed' && status.result) {
+      if (status.status === "completed" && status.result) {
         response.result = {
           matchCount: status.result.matchCount,
           durationMs: status.result.durationMs,
         };
       }
 
-      if (status.status === 'failed' && status.error) {
+      if (status.status === "failed" && status.error) {
         response.error = status.error;
       }
 
       this.sendSuccess(res, response);
     } catch (error) {
-      this.handleError(res, error, 'getJobStatus');
+      this.handleError(res, error, "getJobStatus");
     }
   }
 
@@ -313,10 +344,10 @@ export class OpportunityMatchingController {
    */
   async cancelJob(req: AuthenticatedRequest, res: Response): Promise<void> {
     const userId = req.user?.userId;
-    const { jobId } = req.params;
+    const { jobId } = req.params as { jobId: string };
 
     if (!userId) {
-      this.sendError(res, 401, 'UNAUTHORIZED', 'Authentication required');
+      this.sendError(res, 401, "UNAUTHORIZED", "Authentication required");
       return;
     }
 
@@ -324,19 +355,24 @@ export class OpportunityMatchingController {
       const cancelled = await cancelWorkerJob(jobId);
 
       if (!cancelled) {
-        this.sendError(res, 400, 'CANNOT_CANCEL', 'Job cannot be cancelled (already processing or completed)');
+        this.sendError(
+          res,
+          400,
+          "CANNOT_CANCEL",
+          "Job cannot be cancelled (already processing or completed)",
+        );
         return;
       }
 
-      logger.info('Job cancelled', { userId, jobId });
+      logger.info("Job cancelled", { userId, jobId });
 
       this.sendSuccess(res, {
         jobId,
         cancelled: true,
-        message: 'Job cancelled successfully',
+        message: "Job cancelled successfully",
       });
     } catch (error) {
-      this.handleError(res, error, 'cancelJob');
+      this.handleError(res, error, "cancelJob");
     }
   }
 
@@ -352,7 +388,7 @@ export class OpportunityMatchingController {
     const userId = req.user?.userId;
 
     if (!userId) {
-      this.sendError(res, 401, 'UNAUTHORIZED', 'Authentication required');
+      this.sendError(res, 401, "UNAUTHORIZED", "Authentication required");
       return;
     }
 
@@ -396,22 +432,26 @@ export class OpportunityMatchingController {
               },
             },
           },
-          orderBy: { matchScore: 'desc' },
+          orderBy: { matchScore: "desc" },
           take: Number(limit),
           skip: Number(offset),
         }),
         (this.prisma.opportunityMatch as any).count({ where }),
       ]);
 
-      this.sendSuccess(res, {
-        matches: matches.map((m: any) => this.formatStoredMatch(m)),
-      }, {
-        total,
-        limit: Number(limit),
-        offset: Number(offset),
-      });
+      this.sendSuccess(
+        res,
+        {
+          matches: matches.map((m: any) => this.formatStoredMatch(m)),
+        },
+        {
+          total,
+          limit: Number(limit),
+          offset: Number(offset),
+        },
+      );
     } catch (error) {
-      this.handleError(res, error, 'listMatches');
+      this.handleError(res, error, "listMatches");
     }
   }
 
@@ -424,7 +464,7 @@ export class OpportunityMatchingController {
     const { matchId } = req.params;
 
     if (!userId) {
-      this.sendError(res, 401, 'UNAUTHORIZED', 'Authentication required');
+      this.sendError(res, 401, "UNAUTHORIZED", "Authentication required");
       return;
     }
 
@@ -442,13 +482,18 @@ export class OpportunityMatchingController {
       });
 
       if (!match) {
-        this.sendError(res, 404, 'MATCH_NOT_FOUND', 'Match not found or access denied');
+        this.sendError(
+          res,
+          404,
+          "MATCH_NOT_FOUND",
+          "Match not found or access denied",
+        );
         return;
       }
 
       this.sendSuccess(res, { match: this.formatStoredMatch(match) });
     } catch (error) {
-      this.handleError(res, error, 'getMatch');
+      this.handleError(res, error, "getMatch");
     }
   }
 
@@ -461,7 +506,7 @@ export class OpportunityMatchingController {
     const { matchId } = req.params;
 
     if (!userId) {
-      this.sendError(res, 401, 'UNAUTHORIZED', 'Authentication required');
+      this.sendError(res, 401, "UNAUTHORIZED", "Authentication required");
       return;
     }
 
@@ -475,7 +520,12 @@ export class OpportunityMatchingController {
       });
 
       if (!existing) {
-        this.sendError(res, 404, 'MATCH_NOT_FOUND', 'Match not found or access denied');
+        this.sendError(
+          res,
+          404,
+          "MATCH_NOT_FOUND",
+          "Match not found or access denied",
+        );
         return;
       }
 
@@ -490,11 +540,11 @@ export class OpportunityMatchingController {
         },
       });
 
-      logger.info('Match updated', { userId, matchId, status });
+      logger.info("Match updated", { userId, matchId, status });
 
       this.sendSuccess(res, { match: this.formatStoredMatch(updated) });
     } catch (error) {
-      this.handleError(res, error, 'updateMatch');
+      this.handleError(res, error, "updateMatch");
     }
   }
 
@@ -508,10 +558,10 @@ export class OpportunityMatchingController {
    */
   async getStats(req: AuthenticatedRequest, res: Response): Promise<void> {
     const userId = req.user?.userId;
-    const { intentId } = req.params;
+    const { intentId } = req.params as { intentId: string };
 
     if (!userId) {
-      this.sendError(res, 401, 'UNAUTHORIZED', 'Authentication required');
+      this.sendError(res, 401, "UNAUTHORIZED", "Authentication required");
       return;
     }
 
@@ -522,7 +572,12 @@ export class OpportunityMatchingController {
       });
 
       if (!intent) {
-        this.sendError(res, 404, 'INTENT_NOT_FOUND', 'Intent not found or access denied');
+        this.sendError(
+          res,
+          404,
+          "INTENT_NOT_FOUND",
+          "Intent not found or access denied",
+        );
         return;
       }
 
@@ -531,7 +586,7 @@ export class OpportunityMatchingController {
 
       this.sendSuccess(res, { stats });
     } catch (error) {
-      this.handleError(res, error, 'getStats');
+      this.handleError(res, error, "getStats");
     }
   }
 
@@ -544,12 +599,12 @@ export class OpportunityMatchingController {
       const workerHealth = await getWorkerHealth();
 
       this.sendSuccess(res, {
-        status: workerHealth.isRunning ? 'healthy' : 'degraded',
+        status: workerHealth.isRunning ? "healthy" : "degraded",
         worker: workerHealth,
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      this.handleError(res, error, 'getHealth');
+      this.handleError(res, error, "getHealth");
     }
   }
 
@@ -558,7 +613,7 @@ export class OpportunityMatchingController {
   // ============================================================================
 
   private formatMatchResults(matches: MatchResult[]): any[] {
-    return matches.map(m => ({
+    return matches.map((m) => ({
       candidateId: m.candidateId,
       candidateType: m.candidateType,
       candidateName: m.candidateName,
@@ -623,20 +678,21 @@ export class OpportunityMatchingController {
     return {
       total: matches.length,
       byMatchLevel: byLevel,
-      averageScore: matches.length > 0 ? Math.round(totalScore / matches.length) : 0,
+      averageScore:
+        matches.length > 0 ? Math.round(totalScore / matches.length) : 0,
       topScore: matches.length > 0 ? matches[0].score : 0,
     };
   }
 
   private mapJobStatus(status: string): string {
     const mapping: Record<string, string> = {
-      waiting: 'PENDING',
-      delayed: 'PENDING',
-      active: 'PROCESSING',
-      completed: 'COMPLETED',
-      failed: 'FAILED',
+      waiting: "PENDING",
+      delayed: "PENDING",
+      active: "PROCESSING",
+      completed: "COMPLETED",
+      failed: "FAILED",
     };
-    return mapping[status] || 'UNKNOWN';
+    return mapping[status] || "UNKNOWN";
   }
 
   private sendSuccess(res: Response, data: any, meta?: any): void {
@@ -645,7 +701,13 @@ export class OpportunityMatchingController {
     res.json(response);
   }
 
-  private sendError(res: Response, status: number, code: string, message: string, details?: any): void {
+  private sendError(
+    res: Response,
+    status: number,
+    code: string,
+    message: string,
+    details?: any,
+  ): void {
     const response: ApiResponse = {
       success: false,
       error: { code, message },
@@ -655,7 +717,8 @@ export class OpportunityMatchingController {
   }
 
   private handleError(res: Response, error: unknown, operation: string): void {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     const errorStack = error instanceof Error ? error.stack : undefined;
 
     logger.error(`Controller error: ${operation}`, {
@@ -664,12 +727,20 @@ export class OpportunityMatchingController {
       stack: errorStack,
     });
 
-    if (errorMessage.includes('not found')) {
-      this.sendError(res, 404, 'NOT_FOUND', errorMessage);
-    } else if (errorMessage.includes('unauthorized') || errorMessage.includes('access denied')) {
-      this.sendError(res, 403, 'FORBIDDEN', errorMessage);
+    if (errorMessage.includes("not found")) {
+      this.sendError(res, 404, "NOT_FOUND", errorMessage);
+    } else if (
+      errorMessage.includes("unauthorized") ||
+      errorMessage.includes("access denied")
+    ) {
+      this.sendError(res, 403, "FORBIDDEN", errorMessage);
     } else {
-      this.sendError(res, 500, 'INTERNAL_ERROR', 'An unexpected error occurred');
+      this.sendError(
+        res,
+        500,
+        "INTERNAL_ERROR",
+        "An unexpected error occurred",
+      );
     }
   }
 }

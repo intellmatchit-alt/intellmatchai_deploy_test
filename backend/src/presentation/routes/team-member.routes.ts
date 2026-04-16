@@ -3,9 +3,9 @@
  * API endpoints for managing team members on Projects, Opportunities, Pitches, and Deals
  */
 
-import { Router } from 'express';
-import { authenticate } from '../middleware/auth.middleware.js';
-import * as CollaborationController from '../controllers/CollaborationController';
+import { Router } from "express";
+import { authenticate } from "../middleware/auth.middleware.js";
+import * as CollaborationController from "../controllers/CollaborationController";
 
 const router = Router();
 
@@ -21,8 +21,8 @@ router.use(authenticate);
  * @desc List team members for a project
  * @access Private (owner or team member)
  */
-router.get('/projects/:sourceId/team', (req, res, next) => {
-  (req.params as any).sourceType = 'project';
+router.get("/projects/:sourceId/team", (req, res, next) => {
+  (req.params as any).sourceType = "project";
   CollaborationController.listTeamMembers(req, res, next);
 });
 
@@ -31,8 +31,8 @@ router.get('/projects/:sourceId/team', (req, res, next) => {
  * @desc Remove a team member from a project
  * @access Private (owner only)
  */
-router.delete('/projects/:sourceId/team/:memberId', (req, res, next) => {
-  (req.params as any).sourceType = 'project';
+router.delete("/projects/:sourceId/team/:memberId", (req, res, next) => {
+  (req.params as any).sourceType = "project";
   CollaborationController.removeTeamMember(req, res, next);
 });
 
@@ -45,8 +45,8 @@ router.delete('/projects/:sourceId/team/:memberId', (req, res, next) => {
  * @desc List team members for an opportunity
  * @access Private (owner or team member)
  */
-router.get('/opportunities/:sourceId/team', (req, res, next) => {
-  (req.params as any).sourceType = 'opportunity';
+router.get("/opportunities/:sourceId/team", (req, res, next) => {
+  (req.params as any).sourceType = "opportunity";
   CollaborationController.listTeamMembers(req, res, next);
 });
 
@@ -55,8 +55,8 @@ router.get('/opportunities/:sourceId/team', (req, res, next) => {
  * @desc Remove a team member from an opportunity
  * @access Private (owner only)
  */
-router.delete('/opportunities/:sourceId/team/:memberId', (req, res, next) => {
-  (req.params as any).sourceType = 'opportunity';
+router.delete("/opportunities/:sourceId/team/:memberId", (req, res, next) => {
+  (req.params as any).sourceType = "opportunity";
   CollaborationController.removeTeamMember(req, res, next);
 });
 
@@ -69,8 +69,8 @@ router.delete('/opportunities/:sourceId/team/:memberId', (req, res, next) => {
  * @desc List team members for a pitch
  * @access Private (owner or team member)
  */
-router.get('/pitches/:sourceId/team', (req, res, next) => {
-  (req.params as any).sourceType = 'pitch';
+router.get("/pitches/:sourceId/team", (req, res, next) => {
+  (req.params as any).sourceType = "pitch";
   CollaborationController.listTeamMembers(req, res, next);
 });
 
@@ -79,8 +79,8 @@ router.get('/pitches/:sourceId/team', (req, res, next) => {
  * @desc Remove a team member from a pitch
  * @access Private (owner only)
  */
-router.delete('/pitches/:sourceId/team/:memberId', (req, res, next) => {
-  (req.params as any).sourceType = 'pitch';
+router.delete("/pitches/:sourceId/team/:memberId", (req, res, next) => {
+  (req.params as any).sourceType = "pitch";
   CollaborationController.removeTeamMember(req, res, next);
 });
 
@@ -93,8 +93,8 @@ router.delete('/pitches/:sourceId/team/:memberId', (req, res, next) => {
  * @desc List team members for a deal
  * @access Private (owner or team member)
  */
-router.get('/deals/:sourceId/team', (req, res, next) => {
-  (req.params as any).sourceType = 'deal';
+router.get("/deals/:sourceId/team", (req, res, next) => {
+  (req.params as any).sourceType = "deal";
   CollaborationController.listTeamMembers(req, res, next);
 });
 
@@ -103,8 +103,8 @@ router.get('/deals/:sourceId/team', (req, res, next) => {
  * @desc Remove a team member from a deal
  * @access Private (owner only)
  */
-router.delete('/deals/:sourceId/team/:memberId', (req, res, next) => {
-  (req.params as any).sourceType = 'deal';
+router.delete("/deals/:sourceId/team/:memberId", (req, res, next) => {
+  (req.params as any).sourceType = "deal";
   CollaborationController.removeTeamMember(req, res, next);
 });
 
