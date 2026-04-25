@@ -8,7 +8,7 @@
  */
 
 import { createHash } from 'crypto';
-import { logger } from '../../../shared/logger/index.js';
+import { logger } from '../../../shared/logger/index';
 
 /**
  * Raw contact data from import

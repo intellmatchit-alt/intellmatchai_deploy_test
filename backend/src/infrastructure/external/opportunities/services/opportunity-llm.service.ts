@@ -436,9 +436,9 @@ Respond ONLY with valid JSON:
       let content: string;
 
       if (providerCfg.provider === 'gemini') {
-        content = await this.callGeminiAPI(providerCfg, prompt, controller.signal);
+        content = await this.callGeminiAPI(providerCfg, prompt, (controller.signal as AbortSignal));
       } else {
-        content = await this.callOpenAICompatibleAPI(providerCfg, prompt, controller.signal);
+        content = await this.callOpenAICompatibleAPI(providerCfg, prompt, (controller.signal as AbortSignal));
       }
 
       return content;
@@ -546,3 +546,4 @@ Respond ONLY with valid JSON:
 
 // Export singleton
 export const opportunityLLMService = new OpportunityLLMService();
+

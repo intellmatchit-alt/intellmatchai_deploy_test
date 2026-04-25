@@ -7,8 +7,8 @@
  */
 
 import neo4j, { Driver, Session, Result } from 'neo4j-driver';
-import { config } from '../../../config/index.js';
-import { logger } from '../../../shared/logger/index.js';
+import { config } from '../../../config/index';
+import { logger } from '../../../shared/logger/index';
 
 /**
  * Neo4j client instance

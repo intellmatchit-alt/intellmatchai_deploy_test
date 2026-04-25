@@ -5,9 +5,9 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../../infrastructure/database/prisma/client.js';
-import { AuthenticationError, ForbiddenError } from '../../shared/errors/index.js';
-import { logger } from '../../shared/logger/index.js';
+import { prisma } from '../../infrastructure/database/prisma/client';
+import { AuthenticationError, ForbiddenError } from '../../shared/errors/index';
+import { logger } from '../../shared/logger/index';
 
 // Extend Express Request with subscription and org context
 declare global {

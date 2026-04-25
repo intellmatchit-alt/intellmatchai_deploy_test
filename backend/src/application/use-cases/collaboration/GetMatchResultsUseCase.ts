@@ -8,7 +8,7 @@ import {
   ICollaborationMatchResultRepository,
 } from '../../../domain/repositories/ICollaborationRepository';
 import { CollaborationMatchReason } from '../../../domain/entities/Collaboration';
-import { NotFoundError, ForbiddenError } from '../../../shared/errors/index.js';
+import { NotFoundError, ForbiddenError } from '../../../shared/errors/index';
 
 export interface GetMatchResultsInput {
   minScore?: number;

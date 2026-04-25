@@ -9,12 +9,12 @@
  */
 
 import { Job } from 'bullmq';
-import { logger } from '../../../shared/logger/index.js';
-import { emitProductMatchProgress, emitProductMatchComplete } from '../../websocket/index.js';
-import { queueService, QueueName, ProductMatchJobData } from '../QueueService.js';
-import { ProductMatchingService } from '../../services/product/ProductMatchingService.js';
-import { PrismaProductMatchRunRepository, PrismaProductMatchResultRepository, PrismaContactMatchingRepository, PrismaProductProfileRepository } from '../../repositories/PrismaProductMatchRepository.js';
-import { ProductMatchRunStatus, ProductMatchScoringResult } from '../../../domain/entities/ProductMatch.js';
+import { logger } from '../../../shared/logger/index';
+import { emitProductMatchProgress, emitProductMatchComplete } from '../../websocket/index';
+import { queueService, QueueName, ProductMatchJobData } from '../QueueService';
+import { ProductMatchingService } from '../../services/product/ProductMatchingService';
+import { PrismaProductMatchRunRepository, PrismaProductMatchResultRepository, PrismaContactMatchingRepository, PrismaProductProfileRepository } from '../../repositories/PrismaProductMatchRepository';
+import { ProductMatchRunStatus, ProductMatchScoringResult } from '../../../domain/entities/ProductMatch';
 
 /**
  * Product match result

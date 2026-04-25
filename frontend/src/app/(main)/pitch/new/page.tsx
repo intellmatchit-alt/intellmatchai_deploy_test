@@ -4,19 +4,19 @@
  * Slim wrapper around PitchForm for creating a new pitch.
  */
 
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useI18n } from '@/lib/i18n';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useI18n } from "@/lib/i18n";
 import {
   ArrowLeft24Regular,
   Checkmark24Regular,
   Add24Regular,
-} from '@fluentui/react-icons';
-import { createPitch, CreatePitchInput } from '@/lib/api/pitch';
-import { toast } from '@/components/ui/Toast';
-import PitchForm from '@/components/pitch/PitchForm';
+} from "@fluentui/react-icons";
+import { createPitch, CreatePitchInput } from "@/lib/api/pitch";
+import { toast } from "@/components/ui/Toast";
+import PitchForm from "@/components/pitch/PitchForm";
 
 export default function NewPitchPage() {
   const { t } = useI18n();
@@ -32,7 +32,11 @@ export default function NewPitchPage() {
       setCreatedPitchId(pitch.id);
       setShowSuccess(true);
     } catch (error: any) {
-      toast({ title: t.common?.error || 'Error', description: error.message, variant: 'error' });
+      toast({
+        title: t.common?.error || "Error",
+        description: error.message,
+        variant: "error",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -46,7 +50,7 @@ export default function NewPitchPage() {
     setShowSuccess(false);
     setCreatedPitchId(null);
     // Force a full remount of the form by navigating to the same page
-    router.replace('/pitch/new');
+    router.replace("/pitch/new");
   };
 
   return (
@@ -59,7 +63,9 @@ export default function NewPitchPage() {
         >
           <ArrowLeft24Regular className="w-5 h-5 rtl:rotate-180" />
         </button>
-        <h1 className="text-2xl font-bold text-th-text">{t.pitch?.newPitch || 'New Pitch'}</h1>
+        <h1 className="text-2xl font-bold text-th-text">
+          {t.pitch?.newPitch || "New Pitch"}
+        </h1>
       </div>
 
       <PitchForm
@@ -76,8 +82,12 @@ export default function NewPitchPage() {
               <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Checkmark24Regular className="w-8 h-8 text-green-400" />
               </div>
-              <h2 className="text-xl font-semibold text-th-text mb-2">Pitch Created!</h2>
-              <p className="text-th-text-t mb-6">Your pitch is live and ready for AI matching.</p>
+              <h2 className="text-xl font-semibold text-th-text mb-2">
+                Pitch Created!
+              </h2>
+              <p className="text-th-text-t mb-6">
+                Your pitch is live and ready for AI matching.
+              </p>
               <div className="flex flex-col gap-3">
                 <button
                   onClick={handleViewPitch}

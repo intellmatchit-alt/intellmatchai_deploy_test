@@ -9,21 +9,21 @@
  */
 
 import { Job } from 'bullmq';
-import { logger } from '../../../shared/logger/index.js';
-import { queueService, QueueName, CollaborationMatchingJobData } from '../QueueService.js';
-import { CollaborationMatchingService, CollaboratorContact } from '../../services/collaboration/CollaborationMatchingService.js';
+import { logger } from '../../../shared/logger/index';
+import { queueService, QueueName, CollaborationMatchingJobData } from '../QueueService';
+import { CollaborationMatchingService, CollaboratorContact } from '../../services/collaboration/CollaborationMatchingService';
 import {
   PrismaCollaborationRequestRepository,
   PrismaCollaborationSessionRepository,
   PrismaCollaborationMatchResultRepository,
-} from '../../repositories/PrismaCollaborationRepository.js';
-import { PrismaContactRepository } from '../../repositories/PrismaContactRepository.js';
+} from '../../repositories/PrismaCollaborationRepository';
+import { PrismaContactRepository } from '../../repositories/PrismaContactRepository';
 import {
   CollaborationSessionStatus,
   CollaborationSourceType,
   CollaborationCriteria,
-} from '../../../domain/entities/Collaboration.js';
-import { prisma } from '../../database/prisma/client.js';
+} from '../../../domain/entities/Collaboration';
+import { prisma } from '../../database/prisma/client';
 
 /**
  * Collaboration match result

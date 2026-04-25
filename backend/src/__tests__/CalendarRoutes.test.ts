@@ -51,8 +51,8 @@ jest.mock('../presentation/middleware/auth.middleware.js', () => ({
   },
 }));
 
-import { prisma } from '../infrastructure/database/prisma/client.js';
-import { meetingService } from '../application/use-cases/meeting/index.js';
+import { prisma } from '../infrastructure/database/prisma/client';
+import { meetingService } from '../application/use-cases/meeting/index';
 
 // Create a simple test handler that mimics the route logic
 const createMockHandler = () => {

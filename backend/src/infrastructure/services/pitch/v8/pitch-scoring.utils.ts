@@ -15,8 +15,7 @@ import {
 } from './pitch-matching.types';
 
 import {
-  HardFilterStatus, ScoringComponent, normalizeTag, SECTOR_RELATIONSHIPS,
-  areSectorsRelated, calculateCosineSimilarity, clampScore,
+  HardFilterStatus, ScoringComponent, normalizeTag, clampScore, areSectorsRelated, calculateCosineSimilarity,
 } from './matching-bands.constants';
 
 export interface HardFilterResult {
@@ -665,3 +664,5 @@ function matchedPhraseTaxonomy(need: string, offer: string): string[] { const nn
 function phraseTaxonomySimilarity(a: string, b: string): number { const m = matchedPhraseTaxonomy(a, b).length; return m ? Math.min(1, 0.34 + m * 0.18) : 0; }
 function comp(name: string, score: number, weight: number, evidence: string[], penalties: string[], confidence: number): ScoringComponent { return { name, score: clampScore(score), weight, weightedScore: 0, explanation: evidence.length ? evidence.join('; ') : penalties.length ? penalties.join('; ') : `${name}: ${Math.round(score)}`, confidence, evidence, penalties }; }
 function getClosestStageDistance(stage: PitchStage, candidates: PitchStage[]): number { if (!candidates.length) return Infinity; const si = STAGE_ORDER.indexOf(stage); return Math.min(...candidates.map(c => Math.abs(STAGE_ORDER.indexOf(c) - si))); }
+
+

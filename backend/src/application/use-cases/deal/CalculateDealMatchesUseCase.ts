@@ -13,9 +13,9 @@ import {
   SYNC_CONTACT_THRESHOLD,
 } from '../../../domain/entities/Deal';
 import { DealMatchingService, ContactProfile } from '../../../infrastructure/services/deal/DealMatchingService';
-import { NotFoundError, AuthorizationError, ConflictError } from '../../../shared/errors/index.js';
+import { NotFoundError, AuthorizationError, ConflictError } from '../../../shared/errors/index';
 import { logger } from '../../../shared/logger';
-import { prisma } from '../../../infrastructure/database/prisma/client.js';
+import { prisma } from '../../../infrastructure/database/prisma/client';
 
 export interface CalculateMatchesOutput {
   status: 'COMPLETED' | 'PROCESSING';

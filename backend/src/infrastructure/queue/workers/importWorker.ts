@@ -9,20 +9,20 @@
 
 import { Job } from 'bullmq';
 import Redis from 'ioredis';
-import { logger } from '../../../shared/logger/index.js';
-import { queueService, QueueName, ImportJobData, ImportStage } from '../QueueService.js';
-import { prisma } from '../../database/prisma/client.js';
-import { config } from '../../../config/index.js';
+import { logger } from '../../../shared/logger/index';
+import { queueService, QueueName, ImportJobData, ImportStage } from '../QueueService';
+import { prisma } from '../../database/prisma/client';
+import { config } from '../../../config/index';
 import {
   normalizationService,
   deduplicationService,
   tagExtractionService,
   profileSummaryService,
   NormalizedContact,
-} from '../../services/import/index.js';
-import { DeterministicMatchingService } from '../../external/matching/DeterministicMatchingService.js';
-import { getEnrichmentOrchestrator } from '../../external/enrichment/EnrichmentOrchestrator.js';
-import { getPhoneEnrichmentPipeline } from '../../services/import/PhoneEnrichmentPipeline.js';
+} from '../../services/import/index';
+import { DeterministicMatchingService } from '../../external/matching/DeterministicMatchingService';
+import { getEnrichmentOrchestrator } from '../../external/enrichment/EnrichmentOrchestrator';
+import { getPhoneEnrichmentPipeline } from '../../services/import/PhoneEnrichmentPipeline';
 
 /**
  * Import worker result

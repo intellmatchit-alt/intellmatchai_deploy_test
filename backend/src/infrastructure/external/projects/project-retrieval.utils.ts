@@ -138,10 +138,16 @@ export async function retrieveProjectCandidates(args: {
   intent: ProjectIntent;
   config: ProjectMatchingConfig;
   filters?: ProjectFilterOptions;
+  networkUserIds?: Set<string>;
 }): Promise<RetrievalCandidate[]> {
   const project = normalizeProjectProfile(args.project);
   const targetType = mapIntentToCounterpart(args.intent);
   const where = buildStructuredWhere(project, args.intent, args.filters);
+
+  // Network-scoped: only discover providers whose userId is in the requester's network
+  if (args.networkUserIds && args.networkUserIds.size > 0) {
+    (where as any).userId = { in: [...args.networkUserIds] };
+  }
 
   const rows = await args.prisma.providerProfile.findMany({
     where,

@@ -151,10 +151,10 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
     throw error;
   }
 }
-import { authenticate } from '../middleware/auth.middleware.js';
-import { profileController } from '../controllers/ProfileController.js';
-import { logger } from '../../shared/logger/index.js';
-import { ProfileEnrichmentService } from '../../infrastructure/external/enrichment/ProfileEnrichmentService.js';
+import { authenticate } from '../middleware/auth.middleware';
+import { profileController } from '../controllers/ProfileController';
+import { logger } from '../../shared/logger/index';
+import { ProfileEnrichmentService } from '../../infrastructure/external/enrichment/ProfileEnrichmentService';
 
 // Initialize profile enrichment service
 const profileEnrichmentService = new ProfileEnrichmentService();

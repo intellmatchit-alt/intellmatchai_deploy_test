@@ -4,8 +4,8 @@
  */
 
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth.middleware.js';
-import { validate as validateRequest } from '../middleware/validate.middleware.js';
+import { authenticate } from '../middleware/auth.middleware';
+import { validate as validateRequest } from '../middleware/validate.middleware';
 import { pitchMatchValidators } from '../validators/pitchMatch.validators';
 import * as PitchController from '../controllers/PitchController';
 

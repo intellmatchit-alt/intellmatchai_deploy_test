@@ -15,9 +15,9 @@ import {
   TeamMemberStatus,
   getSourceId,
 } from '../../../domain/entities/Collaboration';
-import { NotFoundError, ValidationError } from '../../../shared/errors/index.js';
+import { NotFoundError, ValidationError } from '../../../shared/errors/index';
 import { logger } from '../../../shared/logger';
-import { prisma } from '../../../infrastructure/database/prisma/client.js';
+import { prisma } from '../../../infrastructure/database/prisma/client';
 
 export class RespondToIntroductionUseCase {
   constructor(

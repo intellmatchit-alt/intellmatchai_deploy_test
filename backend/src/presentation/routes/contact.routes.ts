@@ -13,7 +13,7 @@ import { authenticate } from '../middleware/auth.middleware';
 import { orgContext } from '../middleware/orgContext.middleware';
 import { inviteContactService } from '../../application/use-cases/invitation';
 import { logger } from '../../shared/logger';
-import { getContactLimitForUser } from '../../shared/helpers/planLimits.js';
+import { getContactLimitForUser } from '../../shared/helpers/planLimits';
 import { prisma } from '../../infrastructure/database/prisma/client';
 import { validate } from '../middleware/validate.middleware';
 import {

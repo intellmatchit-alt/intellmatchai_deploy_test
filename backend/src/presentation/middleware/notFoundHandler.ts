@@ -7,7 +7,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { NotFoundError } from '../../shared/errors/index.js';
+import { NotFoundError } from '../../shared/errors/index';
 
 /**
  * Not found handler middleware

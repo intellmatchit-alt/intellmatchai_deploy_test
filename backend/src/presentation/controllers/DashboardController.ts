@@ -7,9 +7,9 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { dashboardService, ComparisonPeriod } from '../../infrastructure/services/DashboardService.js';
-import { AuthenticationError } from '../../shared/errors/index.js';
-import { logger } from '../../shared/logger/index.js';
+import { dashboardService, ComparisonPeriod } from '../../infrastructure/services/DashboardService';
+import { AuthenticationError } from '../../shared/errors/index';
+import { logger } from '../../shared/logger/index';
 
 /**
  * Dashboard Controller

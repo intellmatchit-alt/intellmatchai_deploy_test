@@ -7,8 +7,8 @@
  */
 
 import { Job } from 'bullmq';
-import { logger } from '../../../shared/logger/index.js';
-import { queueService, QueueName, EmailJobData } from '../QueueService.js';
+import { logger } from '../../../shared/logger/index';
+import { queueService, QueueName, EmailJobData } from '../QueueService';
 
 /**
  * Email result

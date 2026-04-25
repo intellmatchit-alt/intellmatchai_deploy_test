@@ -129,4 +129,20 @@ export class ProjectLLMService {
       return {};
     }
   }
+
+  async extractProjectFields(text: string): Promise<Record<string, unknown>> {
+    if (!this.llmClient) return {};
+    try {
+      const response = await this.llmClient.complete?.({
+        model: 'gpt-4.1-mini', temperature: 0.2,
+        response_format: { type: 'json_object' },
+        prompt: JSON.stringify({
+          task: 'Extract structured project fields from the following document text. Return only grounded facts. Use null for uncertain fields.',
+          fields: ['projectTitle', 'summary', 'detailedDescription', 'projectNeeds', 'projectStage', 'primaryCategory', 'timeline', 'lookingFor', 'industrySectors', 'skillsNeeded', 'operatingMarkets', 'fundingAskMin', 'fundingAskMax', 'tractionSignals', 'advisoryTopics', 'partnerTypeNeeded', 'targetCustomerTypes', 'fieldConfidence'],
+          text: text.slice(0, 12000),
+        }),
+      });
+      return this.safeParse(response?.text);
+    } catch { return {}; }
+  }
 }

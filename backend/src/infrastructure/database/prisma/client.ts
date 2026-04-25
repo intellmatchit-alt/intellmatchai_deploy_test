@@ -7,7 +7,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { logger } from '../../../shared/logger/index.js';
+import { logger } from '../../../shared/logger/index';
 
 /**
  * Prisma client instance - initialized on first access

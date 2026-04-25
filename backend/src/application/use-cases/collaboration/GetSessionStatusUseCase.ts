@@ -8,7 +8,7 @@ import {
   ICollaborationSessionRepository,
 } from '../../../domain/repositories/ICollaborationRepository';
 import { CollaborationSessionStatus } from '../../../domain/entities/Collaboration';
-import { NotFoundError, ForbiddenError } from '../../../shared/errors/index.js';
+import { NotFoundError, ForbiddenError } from '../../../shared/errors/index';
 
 export interface GetSessionStatusOutput {
   id: string;

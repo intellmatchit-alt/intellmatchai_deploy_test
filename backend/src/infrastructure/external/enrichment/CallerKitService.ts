@@ -169,7 +169,7 @@ export class CallerKitService {
       const processingTimeMs = Date.now() - startTime;
 
       if (!response.ok) {
-        const errorBody = await response.text();
+        const errorBody = String(await response.json());
         logger.warn("CallerKit API error", {
           status: response.status,
           phone: normalizedPhone,
@@ -257,3 +257,4 @@ export class CallerKitService {
     }
   }
 }
+

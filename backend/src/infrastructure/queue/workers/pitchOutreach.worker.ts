@@ -14,7 +14,7 @@ import {
 import { IOutreachGeneratorService } from '../../../application/interfaces/IPitchAIService';
 import { OutreachGenerateJobData } from '../../../application/interfaces/IPitchQueueService';
 import { logger } from '../../../shared/logger';
-import { redisConnection, getRedisClient } from '../../database/redis/client.js';
+import { redisConnection, getRedisClient } from '../../database/redis/client';
 
 const QUEUE_NAME = 'pitch-outreach-generate';
 

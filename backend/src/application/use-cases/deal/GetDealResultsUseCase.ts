@@ -13,7 +13,7 @@ import {
   MatchReason,
   MatchBreakdown,
 } from '../../../domain/entities/Deal';
-import { NotFoundError, AuthorizationError, ConflictError } from '../../../shared/errors/index.js';
+import { NotFoundError, AuthorizationError, ConflictError } from '../../../shared/errors/index';
 
 // ============================================================================
 // DTOs

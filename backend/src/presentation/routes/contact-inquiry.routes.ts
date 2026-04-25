@@ -8,8 +8,8 @@
 
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { emailService } from '../../infrastructure/services/EmailService.js';
-import { logger } from '../../shared/logger/index.js';
+import { emailService } from '../../infrastructure/services/EmailService';
+import { logger } from '../../shared/logger/index';
 
 const router = Router();
 

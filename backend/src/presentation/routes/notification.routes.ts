@@ -7,8 +7,8 @@
  */
 
 import { Router } from 'express';
-import { notificationController } from '../controllers/NotificationController.js';
-import { authenticate } from '../middleware/auth.middleware.js';
+import { notificationController } from '../controllers/NotificationController';
+import { authenticate } from '../middleware/auth.middleware';
 
 export const notificationRoutes = Router();
 notificationRoutes.use(authenticate);

@@ -13,7 +13,7 @@ import { CreateContactDTO, ContactResponseDTO } from '../../dto/contact.dto';
 import { ConflictError, ValidationError } from '../../../shared/errors';
 import { logger } from '../../../shared/logger';
 import { ContactSource, ProficiencyLevel } from '../../../domain/value-objects';
-import { getContactLimitForUser } from '../../../shared/helpers/planLimits.js';
+import { getContactLimitForUser } from '../../../shared/helpers/planLimits';
 
 /**
  * Create contact use case

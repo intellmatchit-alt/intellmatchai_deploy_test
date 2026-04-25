@@ -8,9 +8,9 @@
  */
 
 import Redis from 'ioredis';
-import { prisma } from '../../../infrastructure/database/prisma/client.js';
-import { config } from '../../../config/index.js';
-import { logger } from '../../../shared/logger/index.js';
+import { prisma } from '../../../infrastructure/database/prisma/client';
+import { config } from '../../../config/index';
+import { logger } from '../../../shared/logger/index';
 
 /**
  * Raw contact data in a chunk

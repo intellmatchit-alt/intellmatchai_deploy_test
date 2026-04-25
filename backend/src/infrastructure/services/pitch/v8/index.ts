@@ -1,14 +1,27 @@
 /**
- * IntellMatch Pitch Matching Engine — Main Entry
- * v8.0.0 — production-hardened
+ * IntellMatch Project Matching Engine — Main Entry
+ *
+ * Network-scoped counterpart matching for projects.
+ *
+ * @module project-matching
  */
 
-export * from './matching-bands.constants';
-export * from './pitch-matching.types';
-export * from './pitch-scoring.utils';
-export { PitchMatchingService, createPitchMatchingService } from './pitch-matching.service';
-export { PitchLLMService, getPitchLLMService, createPitchLLMService } from './pitch-llm.service';
-export { PitchMatchingController, createPitchMatchingController, createPitchMatchingRoutes } from './pitch-matching.controller';
-export { PitchMatchingWorker, createPitchMatchingWorker } from './pitch-matching.worker';
+export * from "./matching-bands.constants";
+export * from "../../../external/projects/project-matching.types";
+export * from "../../../external/projects/project-scoring.utils";
+export * from "../../../external/projects/project-normalization.utils";
+export * from "../../../external/projects/project-ontology.constants";
+export { retrieveProjectCandidates } from "../../../external/projects/project-retrieval.utils";
+export { ProjectMatchingService } from "../../../external/projects/project-matching.service";
+export { ProjectLLMService } from "../../../external/projects/project-llm.service";
+export {
+  ProjectMatchingController,
+  createProjectMatchingController,
+  createProjectMatchingRoutes,
+} from "../../../external/projects/project-matching.controller";
+export {
+  ProjectMatchingWorker,
+  createProjectMatchingWorker,
+} from "../../../external/projects/project-matching.worker";
 
-export const PITCH_ENGINE_VERSION = '8.0.0';
+export const PROJECT_ENGINE_VERSION = "2.0.0";

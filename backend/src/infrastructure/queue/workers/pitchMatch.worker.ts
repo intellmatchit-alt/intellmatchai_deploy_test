@@ -30,8 +30,8 @@ import { IPitchQueueService, MatchComputeJobData } from '../../../application/in
 import { ContactProfileDTO, MatchWeightsDTO } from '../../../application/dto/pitch.dto';
 import { STRATEGIC_ROLE_KEYWORDS } from '../../services/pitch/PitchMatchingService';
 import { logger } from '../../../shared/logger';
-import { redisConnection, getRedisClient } from '../../database/redis/client.js';
-import { registerOutreachBatch } from './pitchOutreach.worker.js';
+import { redisConnection, getRedisClient } from '../../database/redis/client';
+import { registerOutreachBatch } from './pitchOutreach.worker';
 
 const QUEUE_NAME = 'pitch-match-compute';
 const MAX_MATCHES_PER_SECTION = 20;

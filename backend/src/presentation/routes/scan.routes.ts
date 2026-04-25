@@ -8,10 +8,10 @@
 
 import { Router } from 'express';
 import multer from 'multer';
-import { scanController } from '../controllers/ScanController.js';
-import { authenticate } from '../middleware/auth.middleware.js';
-import { validate } from '../middleware/validate.middleware.js';
-import { scanCardSchema } from '../validators/contact.validator.js';
+import { scanController } from '../controllers/ScanController';
+import { authenticate } from '../middleware/auth.middleware';
+import { validate } from '../middleware/validate.middleware';
+import { scanCardSchema } from '../validators/contact.validator';
 
 // Configure multer for image uploads
 const imageUpload = multer({

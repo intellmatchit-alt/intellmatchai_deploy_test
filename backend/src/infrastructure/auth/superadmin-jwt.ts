@@ -8,7 +8,7 @@
  */
 
 import jwt, { SignOptions } from 'jsonwebtoken';
-import { config } from '../../config/index.js';
+import { config } from '../../config/index';
 
 export interface SuperAdminTokenPayload {
   adminId: string;

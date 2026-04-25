@@ -7,8 +7,8 @@
  */
 
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth.middleware.js';
-import { importController } from '../controllers/ImportController.js';
+import { authenticate } from '../middleware/auth.middleware';
+import { importController } from '../controllers/ImportController';
 
 const router = Router();
 

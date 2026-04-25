@@ -10,9 +10,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { Prisma } from '@prisma/client';
-import { BaseError } from '../../shared/errors/index.js';
-import { logger } from '../../shared/logger/index.js';
-import { generateRequestId } from '../../shared/utils/index.js';
+import { BaseError } from '../../shared/errors/index';
+import { logger } from '../../shared/logger/index';
+import { generateRequestId } from '../../shared/utils/index';
 
 /**
  * Error response interface

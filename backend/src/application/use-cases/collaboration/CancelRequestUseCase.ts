@@ -5,10 +5,10 @@
 
 import { ICollaborationRequestRepository } from '../../../domain/repositories/ICollaborationRepository';
 import { CollaborationRequestStatus } from '../../../domain/entities/Collaboration';
-import { NotFoundError, ForbiddenError, ValidationError } from '../../../shared/errors/index.js';
+import { NotFoundError, ForbiddenError, ValidationError } from '../../../shared/errors/index';
 import { logger } from '../../../shared/logger';
-import { walletService } from '../../../infrastructure/services/WalletService.js';
-import { systemConfigService } from '../../../infrastructure/services/SystemConfigService.js';
+import { walletService } from '../../../infrastructure/services/WalletService';
+import { systemConfigService } from '../../../infrastructure/services/SystemConfigService';
 
 export interface CancelRequestOutput {
   id: string;

@@ -1,5 +1,5 @@
 import { CreateDealUseCase } from '../application/use-cases/deal/CreateDealUseCase';
-import { ValidationError } from '../shared/errors/index.js';
+import { ValidationError } from '../shared/errors/index';
 import { DealMode } from '../domain/entities/Deal';
 
 const mockRepository = {

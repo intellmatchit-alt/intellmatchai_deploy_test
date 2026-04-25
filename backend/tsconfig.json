@@ -2,12 +2,11 @@
   "compilerOptions": {
     /* Language and Environment */
     "target": "ES2022",
-    "ignoreDeprecations": "6.0",
     "lib": [
-      "ES2022"
+      "es2022"
     ],
-    "module": "Node16",
-    "moduleResolution": "node16",
+    "module": "commonjs",
+    "moduleResolution": "node",
     /* Emit */
     "outDir": "./dist",
     "rootDir": "./src",

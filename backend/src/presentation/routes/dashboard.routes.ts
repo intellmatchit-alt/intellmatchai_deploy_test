@@ -7,8 +7,8 @@
  */
 
 import { Router } from 'express';
-import { dashboardController } from '../controllers/DashboardController.js';
-import { authenticate } from '../middleware/auth.middleware.js';
+import { dashboardController } from '../controllers/DashboardController';
+import { authenticate } from '../middleware/auth.middleware';
 import { orgContext } from '../middleware/orgContext.middleware';
 
 export const dashboardRoutes = Router();

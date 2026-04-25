@@ -1,4 +1,4 @@
-import { prisma } from '../../infrastructure/database/prisma/client.js';
+import { prisma } from '../../infrastructure/database/prisma/client';
 
 export async function getContactLimitForUser(userId: string): Promise<{ limit: number; current: number; remaining: number }> {
   // Get user's subscription

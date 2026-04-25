@@ -7,8 +7,8 @@
  */
 
 import { Server as SocketIOServer, Socket } from 'socket.io';
-import { verifyAccessToken } from '../auth/jwt.js';
-import { logger } from '../../shared/logger/index.js';
+import { verifyAccessToken } from '../auth/jwt';
+import { logger } from '../../shared/logger/index';
 
 /**
  * Socket.IO server instance

@@ -4,7 +4,7 @@
  */
 
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth.middleware.js';
+import { authenticate } from '../middleware/auth.middleware';
 import * as DealController from '../controllers/DealController';
 
 const router = Router();

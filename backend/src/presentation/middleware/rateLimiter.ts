@@ -7,7 +7,7 @@
  */
 
 import rateLimit from 'express-rate-limit';
-import { config } from '../../config/index.js';
+import { config } from '../../config/index';
 
 /**
  * General API rate limiter

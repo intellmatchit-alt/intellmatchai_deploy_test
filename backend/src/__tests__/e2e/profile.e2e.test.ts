@@ -76,7 +76,7 @@ jest.mock('../../shared/logger/index.js', () => ({
 }));
 
 import { ProfileController } from '../../presentation/controllers/ProfileController';
-import { prisma } from '../../infrastructure/database/prisma/client.js';
+import { prisma } from '../../infrastructure/database/prisma/client';
 
 describe('Profile Management E2E Tests', () => {
   let controller: ProfileController;

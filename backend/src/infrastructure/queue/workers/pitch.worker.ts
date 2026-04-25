@@ -21,8 +21,8 @@ import {
 import { IPitchQueueService, PitchProcessingJobData } from '../../../application/interfaces/IPitchQueueService';
 import { IContactRepository } from '../../../domain/repositories/IContactRepository';
 import { logger } from '../../../shared/logger';
-import { redisConnection } from '../../database/redis/client.js';
-import { registerProfileBatch } from './pitchProfile.worker.js';
+import { redisConnection } from '../../database/redis/client';
+import { registerProfileBatch } from './pitchProfile.worker';
 
 const QUEUE_NAME = 'pitch-processing';
 

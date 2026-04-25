@@ -6,9 +6,9 @@
  * @module infrastructure/database/redis/client
  */
 
-import Redis from 'ioredis';
-import { config } from '../../../config/index.js';
-import { logger } from '../../../shared/logger/index.js';
+import Redis from "ioredis";
+import { config } from "../../../config/index.js";
+import { logger } from "../../../shared/logger/index.js";
 
 /**
  * Redis client instance
@@ -45,18 +45,18 @@ export const getRedisClient = (): Redis | null => {
       lazyConnect: true, // Don't connect until first command
     });
 
-    redis.on('connect', () => {
+    redis.on("connect", () => {
       redisAvailable = true;
-      logger.info('Redis connected');
+      logger.info("Redis connected");
     });
 
-    redis.on('error', () => {
+    redis.on("error", () => {
       // Silently ignore errors - Redis is optional
     });
 
-    redis.on('close', () => {
+    redis.on("close", () => {
       if (redisAvailable) {
-        logger.warn('Redis connection closed');
+        logger.warn("Redis connection closed");
         redisAvailable = false;
       }
     });
@@ -75,21 +75,21 @@ export const initializeRedis = async (): Promise<void> => {
   try {
     const client = getRedisClient();
     if (!client) {
-      logger.info('Redis not configured - continuing without cache');
+      logger.info("Redis not configured - continuing without cache");
       redisChecked = true;
       return;
     }
     await client.connect();
     const pong = await client.ping();
-    if (pong === 'PONG') {
+    if (pong === "PONG") {
       redisAvailable = true;
       redisChecked = true;
-      logger.info('Redis connection verified');
+      logger.info("Redis connection verified");
     }
   } catch (error) {
     redisChecked = true;
     redisAvailable = false;
-    logger.info('Redis not available - continuing without cache');
+    logger.info("Redis not available - continuing without cache");
     // Disconnect to stop retry attempts
     if (redis) {
       try {
@@ -110,7 +110,7 @@ export const disconnectRedis = async (): Promise<void> => {
   if (redis) {
     await redis.quit();
     redis = null;
-    logger.info('Redis disconnected');
+    logger.info("Redis disconnected");
   }
 };
 
@@ -145,12 +145,17 @@ export const cacheService = {
    * @param value - Value to cache
    * @param ttlSeconds - Time to live in seconds (default: 1 hour)
    */
-  async set(key: string, value: unknown, ttlSeconds: number = 3600): Promise<void> {
+  async set(
+    key: string,
+    value: unknown,
+    ttlSeconds: number = 3600,
+  ): Promise<void> {
     if (!redisAvailable) return;
     const client = getRedisClient();
     if (!client) return;
     try {
-      const serialized = typeof value === 'string' ? value : JSON.stringify(value);
+      const serialized =
+        typeof value === "string" ? value : JSON.stringify(value);
       await client.setex(key, ttlSeconds, serialized);
     } catch {
       // Silently fail - caching is optional
@@ -237,8 +242,8 @@ export default getRedisClient;
  */
 const redisUrl = new URL(config.redis.url);
 export const redisConnection = {
-  host: redisUrl.hostname || 'localhost',
-  port: parseInt(redisUrl.port || '6379', 10),
+  host: redisUrl.hostname || "localhost",
+  port: parseInt(redisUrl.port || "6380", 10),
   password: redisUrl.password || undefined,
   maxRetriesPerRequest: null, // Required for BullMQ
 };

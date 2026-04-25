@@ -7,8 +7,8 @@
  * @module infrastructure/services/import/TaxonomyMappingService
  */
 
-import { prisma } from '../../database/prisma/client.js';
-import { logger } from '../../../shared/logger/index.js';
+import { prisma } from '../../database/prisma/client';
+import { logger } from '../../../shared/logger/index';
 
 /**
  * Extracted tags from contact data

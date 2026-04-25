@@ -239,3 +239,4 @@ function sanitizeStringArray(val: unknown, maxItems: number): string[] {
 let singleton: PitchLLMService | null = null;
 export function getPitchLLMService(): PitchLLMService { if (!singleton) singleton = new PitchLLMService(); return singleton; }
 export function createPitchLLMService(): PitchLLMService { return new PitchLLMService(); }
+

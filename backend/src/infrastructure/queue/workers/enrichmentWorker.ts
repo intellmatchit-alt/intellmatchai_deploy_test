@@ -7,10 +7,10 @@
  */
 
 import { Job } from 'bullmq';
-import { prisma } from '../../database/prisma/client.js';
-import { logger } from '../../../shared/logger/index.js';
-import { emitEnrichmentProgress, emitEnrichmentComplete } from '../../websocket/index.js';
-import { queueService, QueueName, EnrichmentJobData } from '../QueueService.js';
+import { prisma } from '../../database/prisma/client';
+import { logger } from '../../../shared/logger/index';
+import { emitEnrichmentProgress, emitEnrichmentComplete } from '../../websocket/index';
+import { queueService, QueueName, EnrichmentJobData } from '../QueueService';
 
 /**
  * Enrichment result

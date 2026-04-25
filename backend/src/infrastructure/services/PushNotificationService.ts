@@ -7,8 +7,8 @@
  */
 
 import webpush from 'web-push';
-import { prisma } from '../database/prisma/client.js';
-import { logger } from '../../shared/logger/index.js';
+import { prisma } from '../database/prisma/client';
+import { logger } from '../../shared/logger/index';
 
 const vapidPublicKey = process.env.VAPID_PUBLIC_KEY || '';
 const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || '';

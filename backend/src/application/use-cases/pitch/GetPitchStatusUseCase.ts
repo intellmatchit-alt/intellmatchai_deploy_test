@@ -6,7 +6,7 @@
 import { IPitchRepository, IPitchJobRepository, IPitchSectionRepository, IPitchNeedRepository } from '../../../domain/repositories/IPitchRepository';
 import { PitchJobStep, PitchJobStatus } from '../../../domain/entities/Pitch';
 import { PitchStatusResponseDTO, PitchProgressDTO, PitchJobProgressDTO } from '../../dto/pitch.dto';
-import { NotFoundError, AuthorizationError, DomainException } from '../../../shared/errors/index.js';
+import { NotFoundError, AuthorizationError, DomainException } from '../../../shared/errors/index';
 
 // Step weights for overall progress calculation
 const STEP_WEIGHTS: Record<PitchJobStep, number> = {

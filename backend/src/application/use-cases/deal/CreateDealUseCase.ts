@@ -10,7 +10,7 @@ import {
   DealTargetEntityType,
   DealRequestEntity,
 } from '../../../domain/entities/Deal';
-import { ValidationError } from '../../../shared/errors/index.js';
+import { ValidationError } from '../../../shared/errors/index';
 import { logger } from '../../../shared/logger';
 
 export interface CreateDealInput {

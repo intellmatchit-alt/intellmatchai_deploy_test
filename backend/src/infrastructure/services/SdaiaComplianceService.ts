@@ -11,9 +11,9 @@
  */
 
 import { SdaiaLegalBasis } from '@prisma/client';
-import { prisma } from '../database/prisma/client.js';
-import { config } from '../../config/index.js';
-import { logger } from '../../shared/logger/index.js';
+import { prisma } from '../database/prisma/client';
+import { config } from '../../config/index';
+import { logger } from '../../shared/logger/index';
 
 /**
  * SDAIA compliance metadata attached to enrichment results

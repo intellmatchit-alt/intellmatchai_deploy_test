@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth.middleware.js';
-import { affiliateController } from '../controllers/AffiliateController.js';
+import { authenticate } from '../middleware/auth.middleware';
+import { affiliateController } from '../controllers/AffiliateController';
 
 export const affiliateRoutes = Router();
 

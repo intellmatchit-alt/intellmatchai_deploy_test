@@ -2,6 +2,6 @@
  * Payment Use Cases Exports
  */
 
-export * from './CreateCheckoutUseCase.js';
-export * from './ProcessPaymentCallbackUseCase.js';
-export * from './GetSubscriptionUseCase.js';
+export * from './CreateCheckoutUseCase';
+export * from './ProcessPaymentCallbackUseCase';
+export * from './GetSubscriptionUseCase';

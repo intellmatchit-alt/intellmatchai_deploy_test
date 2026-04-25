@@ -4,7 +4,7 @@
  */
 
 import { Router } from 'express';
-import { authenticate, optionalAuth } from '../middleware/auth.middleware.js';
+import { authenticate, optionalAuth } from '../middleware/auth.middleware';
 import * as CollaborationController from '../controllers/CollaborationController';
 
 const router = Router();

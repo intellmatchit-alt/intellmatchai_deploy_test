@@ -1,12 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
-import { walletService } from '../../infrastructure/services/WalletService.js';
-import { systemConfigService } from '../../infrastructure/services/SystemConfigService.js';
-import { prisma } from '../../infrastructure/database/prisma/client.js';
-import { logger } from '../../shared/logger/index.js';
-import { getPayTabsService } from '../../infrastructure/external/payment/PayTabsService.js';
-import { config } from '../../config/index.js';
-import { emailService } from '../../infrastructure/services/EmailService.js';
-import { affiliateService } from '../../infrastructure/services/AffiliateService.js';
+import { walletService } from '../../infrastructure/services/WalletService';
+import { systemConfigService } from '../../infrastructure/services/SystemConfigService';
+import { prisma } from '../../infrastructure/database/prisma/client';
+import { logger } from '../../shared/logger/index';
+import { getPayTabsService } from '../../infrastructure/external/payment/PayTabsService';
+import { config } from '../../config/index';
+import { emailService } from '../../infrastructure/services/EmailService';
+import { affiliateService } from '../../infrastructure/services/AffiliateService';
 
 export class WalletController {
   async getWallet(req: Request, res: Response, next: NextFunction): Promise<void> {

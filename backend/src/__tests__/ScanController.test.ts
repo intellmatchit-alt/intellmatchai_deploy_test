@@ -85,8 +85,8 @@ jest.mock('../shared/logger/index.js', () => ({
 
 // Import after mocks
 import { ScanController } from '../presentation/controllers/ScanController';
-import { scanCardUseCase, createContactFromScanUseCase } from '../application/use-cases/scan/index.js';
-import { prisma } from '../infrastructure/database/prisma/client.js';
+import { scanCardUseCase, createContactFromScanUseCase } from '../application/use-cases/scan/index';
+import { prisma } from '../infrastructure/database/prisma/client';
 
 describe('ScanController', () => {
   let controller: ScanController;

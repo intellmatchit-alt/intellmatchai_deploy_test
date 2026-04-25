@@ -8,7 +8,7 @@ import {
   IProductMatchResultRepository,
 } from '../../../domain/repositories/IProductMatchRepository';
 import { ProductMatchResultEntity, UpdateProductMatchResultInput } from '../../../domain/entities/ProductMatch';
-import { NotFoundError, AuthorizationError, ValidationError } from '../../../shared/errors/index.js';
+import { NotFoundError, AuthorizationError, ValidationError } from '../../../shared/errors/index';
 import { logger } from '../../../shared/logger';
 
 export interface UpdateResultInput {

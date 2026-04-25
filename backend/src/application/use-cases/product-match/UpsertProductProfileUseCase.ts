@@ -9,7 +9,7 @@ import {
   ProductType,
   UpsertProductProfileInput,
 } from '../../../domain/entities/ProductMatch';
-import { ValidationError } from '../../../shared/errors/index.js';
+import { ValidationError } from '../../../shared/errors/index';
 import { logger } from '../../../shared/logger';
 
 export interface UpsertProductProfileInputDTO {

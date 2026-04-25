@@ -12,7 +12,7 @@ import {
 import { IPitchQueueService } from '../../interfaces/IPitchQueueService';
 import { RematchRequestDTO } from '../../dto/pitch.dto';
 import { PitchStatus, PitchJobStep, PitchJobStatus } from '../../../domain/entities/Pitch';
-import { NotFoundError, AuthorizationError, ConflictError, DomainException } from '../../../shared/errors/index.js';
+import { NotFoundError, AuthorizationError, ConflictError, DomainException } from '../../../shared/errors/index';
 import { logger } from '../../../shared/logger';
 
 export class RematchPitchUseCase {

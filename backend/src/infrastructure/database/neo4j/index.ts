@@ -12,7 +12,7 @@ export {
   isNeo4jAvailable,
   runQuery,
   queryRecords,
-} from './client.js';
+} from './client';
 
 export {
   Neo4jGraphService,
@@ -23,4 +23,4 @@ export {
   type GraphRelationshipData,
   type PathResult,
   type ConnectionSuggestion,
-} from './GraphService.js';
+} from './GraphService';

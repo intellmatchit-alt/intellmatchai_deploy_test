@@ -5,16 +5,16 @@
  * Updates payment status and activates subscription if approved.
  */
 
-import { prisma } from '../../../infrastructure/database/prisma/client.js';
+import { prisma } from '../../../infrastructure/database/prisma/client';
 import {
   getPayTabsService,
   PaymentCallbackData,
-} from '../../../infrastructure/external/payment/index.js';
-import { logger } from '../../../shared/logger/index.js';
-import { ValidationError, NotFoundError } from '../../../shared/errors/index.js';
-import { emailService } from '../../../infrastructure/services/EmailService.js';
-import { walletService } from '../../../infrastructure/services/WalletService.js';
-import { affiliateService } from '../../../infrastructure/services/AffiliateService.js';
+} from '../../../infrastructure/external/payment/index';
+import { logger } from '../../../shared/logger/index';
+import { ValidationError, NotFoundError } from '../../../shared/errors/index';
+import { emailService } from '../../../infrastructure/services/EmailService';
+import { walletService } from '../../../infrastructure/services/WalletService';
+import { affiliateService } from '../../../infrastructure/services/AffiliateService';
 
 export interface ProcessCallbackResult {
   success: boolean;

@@ -6,8 +6,8 @@
  * @module application/use-cases/import/CreateImportBatchUseCase
  */
 
-import { prisma } from '../../../infrastructure/database/prisma/client.js';
-import { logger } from '../../../shared/logger/index.js';
+import { prisma } from '../../../infrastructure/database/prisma/client';
+import { logger } from '../../../shared/logger/index';
 
 /**
  * Input for creating an import batch

@@ -8,11 +8,11 @@
  */
 
 import { Job } from 'bullmq';
-import { prisma } from '../../database/prisma/client.js';
-import { logger } from '../../../shared/logger/index.js';
-import { emitProjectMatchComplete, emitProjectMatchProgress } from '../../websocket/index.js';
-import { queueService, QueueName, ProjectMatchingJobData } from '../QueueService.js';
-import { ProjectMatchingService } from '../../external/projects/ProjectMatchingService.js';
+import { prisma } from '../../database/prisma/client';
+import { logger } from '../../../shared/logger/index';
+import { emitProjectMatchComplete, emitProjectMatchProgress } from '../../websocket/index';
+import { queueService, QueueName, ProjectMatchingJobData } from '../QueueService';
+import { ProjectMatchingService } from '../../external/projects/ProjectMatchingService';
 
 /**
  * Project matching result

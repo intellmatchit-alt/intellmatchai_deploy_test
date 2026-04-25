@@ -7,11 +7,11 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../../infrastructure/database/prisma/client.js';
-import { AuthenticationError, ValidationError } from '../../shared/errors/index.js';
-import { logger } from '../../shared/logger/index.js';
+import { prisma } from '../../infrastructure/database/prisma/client';
+import { AuthenticationError, ValidationError } from '../../shared/errors/index';
+import { logger } from '../../shared/logger/index';
 import { GoalType, ProficiencyLevel, Intensity, ConsentType, ConsentAction } from '@prisma/client';
-import { normalizePhone, extractCountryCode } from '../../infrastructure/utils/phone.utils.js';
+import { normalizePhone, extractCountryCode } from '../../infrastructure/utils/phone.utils';
 
 /**
  * Profile Controller

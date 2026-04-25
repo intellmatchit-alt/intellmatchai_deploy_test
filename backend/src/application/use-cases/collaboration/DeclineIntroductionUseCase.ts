@@ -5,7 +5,7 @@
 
 import { IIntroductionRepository } from '../../../domain/repositories/ICollaborationRepository';
 import { IntroductionStatus } from '../../../domain/entities/Collaboration';
-import { NotFoundError, ForbiddenError, ValidationError } from '../../../shared/errors/index.js';
+import { NotFoundError, ForbiddenError, ValidationError } from '../../../shared/errors/index';
 import { logger } from '../../../shared/logger';
 
 export interface DeclineIntroductionOutput {

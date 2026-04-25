@@ -42,7 +42,7 @@ jest.mock('../shared/logger/index.js', () => ({
 
 // Import after mocks
 import { MatchController } from '../presentation/controllers/MatchController';
-import { getMatchingService } from '../infrastructure/external/matching/index.js';
+import { getMatchingService } from '../infrastructure/external/matching/index';
 
 describe('MatchController', () => {
   let controller: MatchController;

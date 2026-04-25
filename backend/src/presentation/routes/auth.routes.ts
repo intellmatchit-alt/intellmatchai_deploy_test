@@ -117,8 +117,8 @@ authRoutes.get("/verify-email/:token", async (req, res, next) => {
 
     if (result.success) {
       // Redirect to frontend success page
-      const frontendUrl = "http://10.200.56.22:3000/";
-      // const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      // const frontendUrl = "http://10.200.56.22:3000/";
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
       res.redirect(`${frontendUrl}/email-verified?success=true`);
     } else {
       const frontendUrl = "http://10.200.56.22:3000/";

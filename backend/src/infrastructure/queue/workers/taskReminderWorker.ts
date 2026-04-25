@@ -7,13 +7,13 @@
  * @module infrastructure/queue/workers/taskReminderWorker
  */
 
-import { Job } from 'bullmq';
-import { prisma } from '../../database/prisma/client.js';
-import { logger } from '../../../shared/logger/index.js';
-import { queueService, QueueName } from '../QueueService.js';
+import { Job } from "bullmq";
+import { prisma } from "../../database/prisma/client.js";
+import { logger } from "../../../shared/logger/index.js";
+import { queueService, QueueName } from "../QueueService.js";
 
 interface TaskReminderJobData {
-  type: 'check-due-reminders';
+  type: "check-due-reminders";
 }
 
 /**
@@ -53,7 +53,7 @@ async function processDueReminders(): Promise<number> {
   for (const reminder of dueReminders) {
     try {
       // Skip if task is already completed or cancelled
-      if (['COMPLETED', 'CANCELLED'].includes(reminder.task.status)) {
+      if (["COMPLETED", "CANCELLED"].includes(reminder.task.status)) {
         await prisma.taskReminder.update({
           where: { id: reminder.id },
           data: { isSent: true },
@@ -68,13 +68,13 @@ async function processDueReminders(): Promise<number> {
       });
 
       // For email type, queue an email job
-      if (reminder.type === 'EMAIL' && reminder.task.user.email) {
+      if (reminder.type === "EMAIL" && reminder.task.user.email) {
         await queueService.addEmailJob({
           to: reminder.task.user.email,
           subject: `Task Reminder: ${reminder.task.title}`,
-          template: 'task-reminder',
+          template: "task-reminder",
           data: {
-            userName: reminder.task.user.firstName || 'User',
+            userName: reminder.task.user.firstName || "User",
             taskTitle: reminder.task.title,
             taskDescription: reminder.task.description,
             dueDate: reminder.task.dueDate?.toISOString(),
@@ -84,36 +84,43 @@ async function processDueReminders(): Promise<number> {
       }
 
       // For IN_APP type, create a notification record
-      if (reminder.type === 'IN_APP') {
+      if (reminder.type === "IN_APP") {
         await prisma.notification.create({
           data: {
             userId: reminder.task.user.id,
-            type: 'task_reminder',
-            title: 'Task Reminder',
-            message: `Reminder: "${reminder.task.title}"${reminder.task.contact ? ` (${reminder.task.contact.fullName})` : ''}`,
-            data: { taskId: reminder.task.id, contactId: reminder.task.contact?.id },
+            type: "task_reminder",
+            title: "Task Reminder",
+            message: `Reminder: "${reminder.task.title}"${reminder.task.contact ? ` (${reminder.task.contact.fullName})` : ""}`,
+            data: {
+              taskId: reminder.task.id,
+              contactId: reminder.task.contact?.id,
+            },
           },
         });
       }
 
       // For PUSH type, send push notification
-      if (reminder.type === 'PUSH') {
+      if (reminder.type === "PUSH") {
         try {
-          const { PushNotificationService } = await import('../../services/PushNotificationService.js');
+          const { PushNotificationService } =
+            await import("../../services/PushNotificationService.js");
           await PushNotificationService.sendPush(
             reminder.task.user.id,
-            'Task Reminder',
+            "Task Reminder",
             `Reminder: "${reminder.task.title}"`,
-            { taskId: reminder.task.id }
+            { taskId: reminder.task.id },
           );
         } catch (e) {
-          logger.error('Push notification failed for reminder', { reminderId: reminder.id, error: e });
+          logger.error("Push notification failed for reminder", {
+            reminderId: reminder.id,
+            error: e,
+          });
         }
       }
 
       sentCount++;
     } catch (error) {
-      logger.error('Failed to process task reminder', {
+      logger.error("Failed to process task reminder", {
         reminderId: reminder.id,
         error,
       });
@@ -130,22 +137,22 @@ export function startTaskReminderWorker(): void {
   const worker = queueService.registerWorker<TaskReminderJobData, number>(
     QueueName.TASK_REMINDER,
     async (job: Job<TaskReminderJobData>) => {
-      logger.debug('Processing task reminder job', { type: job.data.type });
+      logger.debug("Processing task reminder job", { type: job.data.type });
       const count = await processDueReminders();
       if (count > 0) {
-        logger.info('Task reminders processed', { sentCount: count });
+        logger.info("Task reminders processed", { sentCount: count });
       }
       return count;
     },
-    { concurrency: 1 }
+    { concurrency: 1 },
   );
 
   if (!worker) {
-    logger.warn('Task reminder worker not started (queue unavailable)');
+    logger.warn("Task reminder worker not started (queue unavailable)");
     return;
   }
 
-  logger.info('Task reminder worker started');
+  logger.info("Task reminder worker started");
 }
 
 /**
@@ -154,21 +161,21 @@ export function startTaskReminderWorker(): void {
 export async function scheduleTaskReminderCheck(): Promise<void> {
   const queue = queueService.getQueue(QueueName.TASK_REMINDER);
   if (!queue) {
-    logger.warn('Cannot schedule task reminder check (queue unavailable)');
+    logger.warn("Cannot schedule task reminder check (queue unavailable)");
     return;
   }
 
   // Add repeatable job
   await queue.add(
-    'check-due-reminders',
-    { type: 'check-due-reminders' },
+    "check-due-reminders",
+    { type: "check-due-reminders" },
     {
       repeat: {
-        pattern: '* * * * *', // Every minute
+        pattern: "* * * * *", // Every minute
       },
-      jobId: 'task-reminder-cron',
-    }
+      jobId: "task-reminder-cron",
+    },
   );
 
-  logger.info('Task reminder check scheduled (every minute)');
+  logger.info("Task reminder check scheduled (every minute)");
 }

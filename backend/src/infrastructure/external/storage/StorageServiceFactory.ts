@@ -6,9 +6,9 @@
  * @module infrastructure/external/storage/StorageServiceFactory
  */
 
-import { IStorageService } from './IStorageService.js';
-import { MinIOStorageService } from './MinIOStorageService.js';
-import { logger } from '../../../shared/logger/index.js';
+import { IStorageService } from './IStorageService';
+import { MinIOStorageService } from './MinIOStorageService';
+import { logger } from '../../../shared/logger/index';
 
 /**
  * Storage provider types

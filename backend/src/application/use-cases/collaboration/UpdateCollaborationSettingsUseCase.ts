@@ -8,7 +8,7 @@ import {
   CollaborationSourceType,
   PerTypeOverrides,
 } from '../../../domain/entities/Collaboration';
-import { ValidationError } from '../../../shared/errors/index.js';
+import { ValidationError } from '../../../shared/errors/index';
 import { logger } from '../../../shared/logger';
 
 export interface UpdateCollaborationSettingsInput {

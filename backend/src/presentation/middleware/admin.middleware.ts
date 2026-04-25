@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../../infrastructure/database/prisma/client.js';
+import { prisma } from '../../infrastructure/database/prisma/client';
 
 export async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {

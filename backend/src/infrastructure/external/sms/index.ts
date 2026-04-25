@@ -6,4 +6,4 @@
  * @module infrastructure/external/sms
  */
 
-export { TwilioSmsService, twilioSmsService } from './TwilioSmsService.js';
+export { TwilioSmsService, twilioSmsService } from './TwilioSmsService';

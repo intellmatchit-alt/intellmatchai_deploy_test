@@ -25,7 +25,7 @@ import {
   NotFoundError,
   ForbiddenError,
   ValidationError,
-} from '../../../shared/errors/index.js';
+} from '../../../shared/errors/index';
 import { logger } from '../../../shared/logger';
 
 export interface SendCollaborationInvitationInput {

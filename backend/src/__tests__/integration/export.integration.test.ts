@@ -45,8 +45,8 @@ jest.mock('../../application/use-cases/contact/index.js', () => ({
 }));
 
 import { ContactController } from '../../presentation/controllers/ContactController';
-import { prisma } from '../../infrastructure/database/prisma/client.js';
-import { exportService } from '../../infrastructure/services/ExportService.js';
+import { prisma } from '../../infrastructure/database/prisma/client';
+import { exportService } from '../../infrastructure/services/ExportService';
 
 describe('Export Integration Tests', () => {
   let controller: ContactController;

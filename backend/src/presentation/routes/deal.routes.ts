@@ -5,7 +5,7 @@
 
 import { Router } from 'express';
 import multer from 'multer';
-import { authenticate } from '../middleware/auth.middleware.js';
+import { authenticate } from '../middleware/auth.middleware';
 import { orgContext } from '../middleware/orgContext.middleware';
 import * as DealController from '../controllers/DealController';
 import { itemizedMatchController } from '../controllers/ItemizedMatchController';

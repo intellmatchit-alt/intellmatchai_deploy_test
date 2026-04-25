@@ -20,8 +20,8 @@ import {
 } from '../../../application/interfaces/IPitchAIService';
 import { IPitchQueueService, ProfileBuildJobData } from '../../../application/interfaces/IPitchQueueService';
 import { logger } from '../../../shared/logger';
-import { redisConnection, getRedisClient } from '../../database/redis/client.js';
-import { registerMatchBatch } from './pitchMatch.worker.js';
+import { redisConnection, getRedisClient } from '../../database/redis/client';
+import { registerMatchBatch } from './pitchMatch.worker';
 
 const QUEUE_NAME = 'pitch-profile-build';
 const BATCH_TRACKER_PREFIX = 'pitch:profile-batch:';

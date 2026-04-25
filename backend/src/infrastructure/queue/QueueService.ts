@@ -7,9 +7,9 @@
  */
 
 import { Queue, Worker, Job, QueueEvents } from 'bullmq';
-import { config } from '../../config/index.js';
-import { logger } from '../../shared/logger/index.js';
-import { CollaborationSourceType } from '../../domain/entities/Collaboration.js';
+import { config } from '../../config/index';
+import { logger } from '../../shared/logger/index';
+import { CollaborationSourceType } from '../../domain/entities/Collaboration';
 
 /**
  * Queue names

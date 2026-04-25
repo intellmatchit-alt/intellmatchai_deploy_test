@@ -6,91 +6,91 @@
  * @module infrastructure/queue
  */
 
-export * from './QueueService.js';
-export { startEnrichmentWorker } from './workers/enrichmentWorker.js';
-export { startMatchingWorker } from './workers/matchingWorker.js';
-export { startEmailWorker } from './workers/emailWorker.js';
+export * from './QueueService';
+export { startEnrichmentWorker } from './workers/enrichmentWorker';
+export { startMatchingWorker } from './workers/matchingWorker';
+export { startEmailWorker } from './workers/emailWorker';
 export {
   startScheduledMatchingWorker,
   scheduleRecurringMatchingJobs,
   triggerUserRecalculation,
   triggerContactsRecalculation,
-} from './workers/scheduledMatchingWorker.js';
+} from './workers/scheduledMatchingWorker';
 export {
   startNotificationWorker,
   scheduleRecurringNotificationJobs,
   triggerMatchNotification,
-} from './workers/notificationWorker.js';
+} from './workers/notificationWorker';
 export {
   startProjectMatchingWorker,
   scheduleProjectRematchJobs,
   triggerProjectMatching,
   getProjectMatchingJobStatus,
-} from './workers/projectMatchingWorker.js';
+} from './workers/projectMatchingWorker';
 export {
   startProductMatchWorker,
   triggerProductMatchAsync,
   getProductMatchJobStatus,
-} from './workers/productMatchWorker.js';
+} from './workers/productMatchWorker';
 export {
   startCollaborationMatchWorker,
   getCollaborationMatchJobStatus,
-} from './workers/collaborationMatchWorker.js';
+} from './workers/collaborationMatchWorker';
 export {
   startImportWorker,
   getImportJobStatus,
-} from './workers/importWorker.js';
+} from './workers/importWorker';
 
-import { queueService } from './QueueService.js';
-import { startEnrichmentWorker } from './workers/enrichmentWorker.js';
-import { startMatchingWorker } from './workers/matchingWorker.js';
-import { startEmailWorker } from './workers/emailWorker.js';
+import { queueService } from './QueueService';
+import { startEnrichmentWorker } from './workers/enrichmentWorker';
+import { startMatchingWorker } from './workers/matchingWorker';
+import { startEmailWorker } from './workers/emailWorker';
 import {
   startScheduledMatchingWorker,
   scheduleRecurringMatchingJobs,
-} from './workers/scheduledMatchingWorker.js';
+} from './workers/scheduledMatchingWorker';
 import {
   startNotificationWorker,
   scheduleRecurringNotificationJobs,
-} from './workers/notificationWorker.js';
+} from './workers/notificationWorker';
 import {
   startProjectMatchingWorker,
   scheduleProjectRematchJobs,
-} from './workers/projectMatchingWorker.js';
+} from './workers/projectMatchingWorker';
 import {
   startProductMatchWorker,
-} from './workers/productMatchWorker.js';
+} from './workers/productMatchWorker';
 import {
   startCollaborationMatchWorker,
-} from './workers/collaborationMatchWorker.js';
+} from './workers/collaborationMatchWorker';
 import {
   startImportWorker,
-} from './workers/importWorker.js';
+} from './workers/importWorker';
 import {
   createPitchProcessingWorker,
-} from './workers/pitch.worker.js';
+} from './workers/pitch.worker';
 import {
   createProfileBuildWorker,
-} from './workers/pitchProfile.worker.js';
+} from './workers/pitchProfile.worker';
 import {
   createMatchComputeWorker,
-} from './workers/pitchMatch.worker.js';
+} from './workers/pitchMatch.worker';
 import {
   createOutreachGenerateWorker,
-} from './workers/pitchOutreach.worker.js';
+} from './workers/pitchOutreach.worker';
 import {
   startRecurringTaskWorker,
   scheduleRecurringTaskCheck,
-} from './workers/recurringTaskWorker.js';
+} from './workers/recurringTaskWorker';
 import {
   startOverdueTaskWorker,
   scheduleOverdueTaskCheck,
-} from './workers/overdueTaskWorker.js';
+} from './workers/overdueTaskWorker';
 import {
   startTaskReminderWorker,
   scheduleTaskReminderCheck,
-} from './workers/taskReminderWorker.js';
-import { logger } from '../../shared/logger/index.js';
+} from './workers/taskReminderWorker';
+import { logger } from '../../shared/logger/index';
 
 /**
  * Initialize queue service and all workers

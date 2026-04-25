@@ -11,7 +11,7 @@ import {
 } from '../../../domain/repositories/IPitchRepository';
 import { IOutreachGeneratorService } from '../../interfaces/IPitchAIService';
 import { RegenerateOutreachRequestDTO, OutreachRegenerateResponseDTO } from '../../dto/pitch.dto';
-import { NotFoundError, AuthorizationError } from '../../../shared/errors/index.js';
+import { NotFoundError, AuthorizationError } from '../../../shared/errors/index';
 import { PitchMatchStatus } from '../../../domain/entities/Pitch';
 
 export class RegenerateOutreachUseCase {

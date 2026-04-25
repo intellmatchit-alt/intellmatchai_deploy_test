@@ -10,7 +10,8 @@
 /**
  * API configuration
  */
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
 
 /**
  * API response interface
@@ -33,24 +34,24 @@ export class ApiError extends Error {
     public code: string,
     message: string,
     public status: number,
-    public details?: string[]
+    public details?: string[],
   ) {
     super(message);
-    this.name = 'ApiError';
+    this.name = "ApiError";
   }
 }
 
 /**
  * Token storage keys
  */
-const ACCESS_TOKEN_KEY = 'p2p_access_token';
-const REFRESH_TOKEN_KEY = 'p2p_refresh_token';
+const ACCESS_TOKEN_KEY = "p2p_access_token";
+const REFRESH_TOKEN_KEY = "p2p_refresh_token";
 
 /**
  * Get stored access token
  */
 export function getAccessToken(): string | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === "undefined") return null;
   return localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
@@ -58,7 +59,7 @@ export function getAccessToken(): string | null {
  * Get stored refresh token
  */
 export function getRefreshToken(): string | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === "undefined") return null;
   return localStorage.getItem(REFRESH_TOKEN_KEY);
 }
 
@@ -66,7 +67,7 @@ export function getRefreshToken(): string | null {
  * Store tokens
  */
 export function setTokens(accessToken: string, refreshToken: string): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
   localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
   localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
 }
@@ -75,7 +76,7 @@ export function setTokens(accessToken: string, refreshToken: string): void {
  * Clear tokens
  */
 export function clearTokens(): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
@@ -108,13 +109,13 @@ async function refreshAccessToken(): Promise<string> {
   const refreshToken = getRefreshToken();
 
   if (!refreshToken) {
-    throw new ApiError('NO_REFRESH_TOKEN', 'No refresh token available', 401);
+    throw new ApiError("NO_REFRESH_TOKEN", "No refresh token available", 401);
   }
 
   const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({ refreshToken }),
   });
@@ -124,9 +125,9 @@ async function refreshAccessToken(): Promise<string> {
   if (!response.ok || !data.success) {
     clearTokens();
     throw new ApiError(
-      data.error?.code || 'REFRESH_FAILED',
-      data.error?.message || 'Token refresh failed',
-      response.status
+      data.error?.code || "REFRESH_FAILED",
+      data.error?.message || "Token refresh failed",
+      response.status,
     );
   }
 
@@ -138,7 +139,7 @@ async function refreshAccessToken(): Promise<string> {
  * API request options
  */
 export interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   headers?: Record<string, string>;
   requireAuth?: boolean;
@@ -149,20 +150,15 @@ export interface RequestOptions {
  */
 export async function apiRequest<T>(
   endpoint: string,
-  options: RequestOptions = {}
+  options: RequestOptions = {},
 ): Promise<T> {
-  const {
-    method = 'GET',
-    body,
-    headers = {},
-    requireAuth = true,
-  } = options;
+  const { method = "GET", body, headers = {}, requireAuth = true } = options;
 
   const url = `${API_BASE_URL}${endpoint}`;
 
   // Build headers
   const requestHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     ...headers,
   };
 
@@ -170,15 +166,15 @@ export async function apiRequest<T>(
   if (requireAuth) {
     const accessToken = getAccessToken();
     if (accessToken) {
-      requestHeaders['Authorization'] = `Bearer ${accessToken}`;
+      requestHeaders["Authorization"] = `Bearer ${accessToken}`;
     }
   }
 
   // Add organization context header if in org mode
-  if (typeof window !== 'undefined') {
-    const activeOrgId = localStorage.getItem('p2p_active_org');
+  if (typeof window !== "undefined") {
+    const activeOrgId = localStorage.getItem("p2p_active_org");
     if (activeOrgId) {
-      requestHeaders['X-Organization-Id'] = activeOrgId;
+      requestHeaders["X-Organization-Id"] = activeOrgId;
     }
   }
 
@@ -191,7 +187,11 @@ export async function apiRequest<T>(
 
   // Handle 429 - rate limited, don't trigger token refresh or logout
   if (response.status === 429) {
-    throw new ApiError('RATE_LIMIT_EXCEEDED', 'Too many requests, please try again later', 429);
+    throw new ApiError(
+      "RATE_LIMIT_EXCEEDED",
+      "Too many requests, please try again later",
+      429,
+    );
   }
 
   // Handle 401 - try to refresh token
@@ -209,7 +209,7 @@ export async function apiRequest<T>(
           notifyRefreshSubscribers(newToken);
 
           // Retry original request with new token
-          requestHeaders['Authorization'] = `Bearer ${newToken}`;
+          requestHeaders["Authorization"] = `Bearer ${newToken}`;
           response = await fetch(url, {
             method,
             headers: requestHeaders,
@@ -218,7 +218,7 @@ export async function apiRequest<T>(
         } catch {
           isRefreshing = false;
           clearTokens();
-          throw new ApiError('SESSION_EXPIRED', 'Session has expired', 401);
+          throw new ApiError("SESSION_EXPIRED", "Session has expired", 401);
         }
       } else {
         // Wait for ongoing refresh
@@ -227,7 +227,7 @@ export async function apiRequest<T>(
         });
 
         // Retry with new token
-        requestHeaders['Authorization'] = `Bearer ${newToken}`;
+        requestHeaders["Authorization"] = `Bearer ${newToken}`;
         response = await fetch(url, {
           method,
           headers: requestHeaders,
@@ -243,10 +243,10 @@ export async function apiRequest<T>(
   // Handle errors
   if (!response.ok || !data.success) {
     throw new ApiError(
-      data.error?.code || 'UNKNOWN_ERROR',
-      data.error?.message || 'An error occurred',
+      data.error?.code || "UNKNOWN_ERROR",
+      data.error?.message || "An error occurred",
       response.status,
-      data.error?.details
+      data.error?.details,
     );
   }
 
@@ -261,12 +261,12 @@ export function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = {};
   const accessToken = getAccessToken();
   if (accessToken) {
-    headers['Authorization'] = `Bearer ${accessToken}`;
+    headers["Authorization"] = `Bearer ${accessToken}`;
   }
-  if (typeof window !== 'undefined') {
-    const activeOrgId = localStorage.getItem('p2p_active_org');
+  if (typeof window !== "undefined") {
+    const activeOrgId = localStorage.getItem("p2p_active_org");
     if (activeOrgId) {
-      headers['X-Organization-Id'] = activeOrgId;
+      headers["X-Organization-Id"] = activeOrgId;
     }
   }
   return headers;
@@ -276,18 +276,27 @@ export function getAuthHeaders(): Record<string, string> {
  * Shorthand methods
  */
 export const api = {
-  get: <T>(endpoint: string, options?: Omit<RequestOptions, 'method'>) =>
-    apiRequest<T>(endpoint, { ...options, method: 'GET' }),
+  get: <T>(endpoint: string, options?: Omit<RequestOptions, "method">) =>
+    apiRequest<T>(endpoint, { ...options, method: "GET" }),
 
-  post: <T>(endpoint: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>) =>
-    apiRequest<T>(endpoint, { ...options, method: 'POST', body }),
+  post: <T>(
+    endpoint: string,
+    body?: unknown,
+    options?: Omit<RequestOptions, "method" | "body">,
+  ) => apiRequest<T>(endpoint, { ...options, method: "POST", body }),
 
-  put: <T>(endpoint: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>) =>
-    apiRequest<T>(endpoint, { ...options, method: 'PUT', body }),
+  put: <T>(
+    endpoint: string,
+    body?: unknown,
+    options?: Omit<RequestOptions, "method" | "body">,
+  ) => apiRequest<T>(endpoint, { ...options, method: "PUT", body }),
 
-  patch: <T>(endpoint: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>) =>
-    apiRequest<T>(endpoint, { ...options, method: 'PATCH', body }),
+  patch: <T>(
+    endpoint: string,
+    body?: unknown,
+    options?: Omit<RequestOptions, "method" | "body">,
+  ) => apiRequest<T>(endpoint, { ...options, method: "PATCH", body }),
 
-  delete: <T>(endpoint: string, options?: Omit<RequestOptions, 'method'>) =>
-    apiRequest<T>(endpoint, { ...options, method: 'DELETE' }),
+  delete: <T>(endpoint: string, options?: Omit<RequestOptions, "method">) =>
+    apiRequest<T>(endpoint, { ...options, method: "DELETE" }),
 };

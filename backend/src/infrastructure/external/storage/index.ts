@@ -6,11 +6,11 @@
  * @module infrastructure/external/storage
  */
 
-export * from './IStorageService.js';
-export * from './MinIOStorageService.js';
-export * from './StorageServiceFactory.js';
+export * from './IStorageService';
+export * from './MinIOStorageService';
+export * from './StorageServiceFactory';
 
-import { StorageServiceFactory } from './StorageServiceFactory.js';
+import { StorageServiceFactory } from './StorageServiceFactory';
 
 /**
  * Get storage service instance

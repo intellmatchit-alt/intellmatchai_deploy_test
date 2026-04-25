@@ -5,7 +5,7 @@
 
 import { Router } from 'express';
 import multer from 'multer';
-import { authenticate } from '../middleware/auth.middleware.js';
+import { authenticate } from '../middleware/auth.middleware';
 import * as CollaborationController from '../controllers/CollaborationController';
 
 const router = Router();

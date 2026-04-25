@@ -9,7 +9,7 @@ import {
   ProductMatchResultStats,
 } from '../../../domain/repositories/IProductMatchRepository';
 import { ProductMatchResultEntity, ProductMatchBadge } from '../../../domain/entities/ProductMatch';
-import { NotFoundError, AuthorizationError } from '../../../shared/errors/index.js';
+import { NotFoundError, AuthorizationError } from '../../../shared/errors/index';
 import { prisma } from '../../../infrastructure/database/prisma/client';
 
 export interface GetResultsOptions {

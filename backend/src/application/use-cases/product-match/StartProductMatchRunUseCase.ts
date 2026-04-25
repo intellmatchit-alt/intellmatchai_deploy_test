@@ -16,7 +16,7 @@ import {
   CreateProductMatchResultInput,
 } from '../../../domain/entities/ProductMatch';
 import { ProductMatchingService } from '../../../infrastructure/services/product/ProductMatchingService';
-import { NotFoundError, ConflictError } from '../../../shared/errors/index.js';
+import { NotFoundError, ConflictError } from '../../../shared/errors/index';
 import { logger } from '../../../shared/logger';
 
 export interface StartMatchRunOutput {

@@ -19,7 +19,7 @@ import {
 } from './pitch-scoring.utils';
 
 import {
-  applyBoundedAIAdjustment, applyGating, buildExplanation, normalizeTag, clampScore,
+  applyBoundedAIAdjustment, bandExplanation, applyGating, buildExplanation, normalizeTag, clampScore,
 } from './matching-bands.constants';
 
 import { PitchLLMService, createPitchLLMService } from './pitch-llm.service';
@@ -256,7 +256,7 @@ export class PitchMatchingService {
             ...candidate.breakdown,
             penalties: [
               ...candidate.breakdown.penalties,
-              ...(adjusted.bounded ? ['AI adjustment bounded.'] : []),
+              
               ...(ai.redFlags || []).slice(0, 3).map(f => `AI red flag: ${f}`),
             ],
           },
@@ -498,3 +498,8 @@ function normalizeSubProfile(v: any, arrFields: string[], numFields: string[], s
 export function createPitchMatchingService(prisma: any, config?: PitchMatchingConfig, llm?: PitchLLMService): PitchMatchingService {
   return new PitchMatchingService(prisma, config, llm);
 }
+
+
+
+
+

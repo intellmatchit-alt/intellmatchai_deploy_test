@@ -59,7 +59,7 @@ import {
   updateContactUseCase,
   deleteContactUseCase,
   addInteractionUseCase,
-} from '../../application/use-cases/contact/index.js';
+} from '../../application/use-cases/contact/index';
 
 describe('Contact CRUD E2E Tests', () => {
   let controller: ContactController;

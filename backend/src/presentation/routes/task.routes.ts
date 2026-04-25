@@ -8,9 +8,9 @@
 
 import { Router } from 'express';
 import multer from 'multer';
-import { contactController } from '../controllers/ContactController.js';
-import { taskController } from '../controllers/TaskController.js';
-import { authenticate } from '../middleware/auth.middleware.js';
+import { contactController } from '../controllers/ContactController';
+import { taskController } from '../controllers/TaskController';
+import { authenticate } from '../middleware/auth.middleware';
 
 /**
  * Task Routes - Full CRUD

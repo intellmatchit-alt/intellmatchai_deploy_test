@@ -5,8 +5,8 @@
  * Also handles subscription expiration checks.
  */
 
-import { prisma } from '../../../infrastructure/database/prisma/client.js';
-import { logger } from '../../../shared/logger/index.js';
+import { prisma } from '../../../infrastructure/database/prisma/client';
+import { logger } from '../../../shared/logger/index';
 
 export interface SubscriptionResult {
   plan: string;

@@ -57,8 +57,8 @@ import {
   loginUseCase,
   refreshTokenUseCase,
   logoutUseCase,
-} from '../application/use-cases/auth/index.js';
-import { prisma } from '../infrastructure/database/prisma/client.js';
+} from '../application/use-cases/auth/index';
+import { prisma } from '../infrastructure/database/prisma/client';
 
 describe('AuthController', () => {
   let controller: AuthController;

@@ -11,7 +11,7 @@ import {
 } from '../../../domain/repositories/IPitchRepository';
 import { IContactRepository } from '../../../domain/repositories/IContactRepository';
 import { PitchStatus } from '../../../domain/entities/Pitch';
-import { NotFoundError, AuthorizationError, DomainException, ConflictError } from '../../../shared/errors/index.js';
+import { NotFoundError, AuthorizationError, DomainException, ConflictError } from '../../../shared/errors/index';
 
 export interface ExportResult {
   format: string;

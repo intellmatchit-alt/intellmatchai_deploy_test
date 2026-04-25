@@ -6,7 +6,7 @@
 import { IPitchMatchRepository, IPitchSectionRepository, IPitchRepository } from '../../../domain/repositories/IPitchRepository';
 import { PitchMatchStatus } from '../../../domain/entities/Pitch';
 import { UpdateMatchStatusRequestDTO, MatchStatusUpdateResponseDTO } from '../../dto/pitch.dto';
-import { NotFoundError, AuthorizationError } from '../../../shared/errors/index.js';
+import { NotFoundError, AuthorizationError } from '../../../shared/errors/index';
 import { logger } from '../../../shared/logger';
 
 export class UpdateMatchStatusUseCase {

@@ -7,8 +7,8 @@
  * @module infrastructure/external/enrichment/SerpAPIService
  */
 
-import { logger } from '../../../shared/logger/index.js';
-import { config } from '../../../config/index.js';
+import { logger } from '../../../shared/logger/index';
+import { config } from '../../../config/index';
 
 /**
  * SerpAPI search result

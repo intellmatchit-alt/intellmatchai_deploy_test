@@ -1,13 +1,11 @@
-import { HardFilterStatus, MatchingStats, MatchLevel } from '../common/matching-common.types';
 import {
-  applyBoundedAIAdjustment,
-  assignRanks,
-  createEmptyStats,
-  determineMatchLevel,
-  generateMatchId,
-  getExpiryDate,
-  isSparseRecord,
-} from '../common/matching-common.utils';
+  HardFilterStatus,
+  MatchingStats,
+  MatchLevel,
+  
+} from "../common/matching-common.types";
+import { applyBoundedAIAdjustment, assignRanks, createEmptyStats, determineMatchLevel, generateMatchId, getExpiryDate, isSparseRecord } from "../common/matching-common.utils";
+
 import {
   DEFAULT_PROJECT_CONFIG,
   DeterministicProjectScoreBreakdown,
@@ -20,62 +18,99 @@ import {
   ProjectMatchingConfig,
   ProjectProfile,
   ProviderProfile,
+  AuthContext,
+  DEFAULT_NETWORK_SCOPE,
   getPolicyForIntent,
   mapIntentToCounterpart,
-} from './project-matching.types';
-import { normalizeProjectProfile, normalizeProviderProfile } from './project-normalization.utils';
-import { retrieveProjectCandidates } from './project-retrieval.utils';
+} from "./project-matching.types";
+import {
+  normalizeProjectProfile,
+  normalizeProviderProfile,
+} from "./project-normalization.utils";
+
+import { retrieveProjectCandidates } from "./project-retrieval.utils";
 import {
   buildStructuredExplanation,
   calculateProjectDeterministicScore,
   runProjectHardFilters,
-} from './project-scoring.utils';
+} from "./project-scoring.utils";
 
 export class ProjectMatchingService {
   constructor(
     private readonly prisma: any,
     private readonly config: ProjectMatchingConfig = DEFAULT_PROJECT_CONFIG,
-    private readonly llmService?: { validateProjectMatches?: (args: any) => Promise<ProjectAIValidationItem[]> },
+    private readonly llmService?: {
+      validateProjectMatches?: (
+        args: any,
+      ) => Promise<ProjectAIValidationItem[]>;
+    },
   ) {}
 
-  async findMatches(request: FindProjectMatchesRequest): Promise<ProjectMatchResponse> {
+  async findMatches(
+    auth: AuthContext,
+    request: FindProjectMatchesRequest,
+  ): Promise<ProjectMatchResponse> {
     const startedAt = Date.now();
     const stats = createEmptyStats() as MatchingStats & Record<string, number>;
 
-    const project = await this.loadProject(request.projectId);
-    if (!project) throw new Error(`Project not found: ${request.projectId}`);
+    const project = await this.loadProject(request.projectId, auth.userId);
+    if (!project)
+      throw new Error(
+        `Project not found or access denied: ${request.projectId}`,
+      );
 
+    const networkUserIds = await this.getNetworkUserIds(
+      auth.userId,
+      DEFAULT_NETWORK_SCOPE,
+    );
     const candidates = await retrieveProjectCandidates({
       prisma: this.prisma,
       project,
       intent: request.intent,
       config: this.config,
       filters: request.filters,
+      networkUserIds,
     });
 
     stats.totalCandidates = candidates.length;
-    const scored = await this.scoreProviders(project, candidates, request.intent, stats);
+    const scored = await this.scoreProviders(
+      project,
+      candidates,
+      request.intent,
+      stats,
+    );
     const policy = getPolicyForIntent(request.intent, this.config);
 
-    const deterministicPassed = scored.filter(item =>
-      item.hardFilterStatus !== HardFilterStatus.FAIL &&
-      item.deterministicScore >= policy.minDeterministicScore &&
-      item.confidence >= policy.minConfidence,
+    const deterministicPassed = scored.filter(
+      (item) =>
+        item.hardFilterStatus !== HardFilterStatus.FAIL &&
+        item.deterministicScore >= policy.minDeterministicScore &&
+        item.confidence >= policy.minConfidence,
     );
     stats.filteredOutDeterministic = scored.length - deterministicPassed.length;
 
-    const aiValidated = request.includeAI && this.config.features.enableAIValidation && this.llmService
-      ? await this.applyAIValidation(project, deterministicPassed)
-      : deterministicPassed;
+    const aiValidated =
+      request.includeAI &&
+      this.config.features.enableAIValidation &&
+      this.llmService
+        ? await this.applyAIValidation(project, deterministicPassed)
+        : deterministicPassed;
 
-    const finalCandidates = aiValidated.filter(item => item.finalScore >= policy.minPostAIScore && item.confidence >= policy.minConfidence);
+    const finalCandidates = aiValidated.filter(
+      (item) =>
+        item.finalScore >= policy.minPostAIScore &&
+        item.confidence >= policy.minConfidence,
+    );
     stats.filteredOutPostAI = aiValidated.length - finalCandidates.length;
 
     finalCandidates.sort((a, b) => {
       if (b.finalScore !== a.finalScore) return b.finalScore - a.finalScore;
-      if (b.deterministicScore !== a.deterministicScore) return b.deterministicScore - a.deterministicScore;
+      if (b.deterministicScore !== a.deterministicScore)
+        return b.deterministicScore - a.deterministicScore;
       if (b.confidence !== a.confidence) return b.confidence - a.confidence;
-      return (b.retrieval?.retrievalScore || 0) - (a.retrieval?.retrievalScore || 0);
+      return (
+        (b.retrieval?.retrievalScore || 0) - (a.retrieval?.retrievalScore || 0)
+      );
     });
 
     const ranked = assignRanks(finalCandidates) as ProjectMatchResult[];
@@ -108,15 +143,31 @@ export class ProjectMatchingService {
     const results: ProjectMatchResult[] = [];
     for (const candidate of candidates) {
       const provider = candidate.provider;
-      const hardFilter = runProjectHardFilters(project, provider, intent, this.config);
-      if (hardFilter.status === HardFilterStatus.FAIL) stats.failedHardFilters += 1;
-      else if (hardFilter.status === HardFilterStatus.REVIEW) stats.reviewCandidates += 1;
+      const hardFilter = runProjectHardFilters(
+        project,
+        provider,
+        intent,
+        this.config,
+      );
+      if (hardFilter.status === HardFilterStatus.FAIL)
+        stats.failedHardFilters += 1;
+      else if (hardFilter.status === HardFilterStatus.REVIEW)
+        stats.reviewCandidates += 1;
       else stats.passedHardFilters += 1;
 
-      const breakdown = calculateProjectDeterministicScore(project, provider, intent, this.config, candidate.debug.retrievalScore);
+      const breakdown = calculateProjectDeterministicScore(
+        project,
+        provider,
+        intent,
+        this.config,
+        candidate.debug.retrievalScore,
+      );
       stats.scoredCandidates += 1;
 
-      const sparse = isSparseRecord(provider.dataQualityScore, this.config.defaultThresholds.sparseRecordThreshold);
+      const sparse = isSparseRecord(
+        provider.dataQualityScore,
+        this.config.defaultThresholds.sparseRecordThreshold,
+      );
       const { level, reason } = determineMatchLevel(
         breakdown.normalizedScore,
         breakdown.confidence,
@@ -156,7 +207,11 @@ export class ProjectMatchingService {
         retrieval: candidate.debug,
         explanation,
         isVerified: provider.verified,
-        alternativeIntentScores: this.buildAlternativeIntentSnapshot(project, provider, intent),
+        alternativeIntentScores: this.buildAlternativeIntentSnapshot(
+          project,
+          provider,
+          intent,
+        ),
         hydrationSnapshot: {
           providerCounterpartType: provider.counterpartType,
           evidenceLevel: provider.evidenceLevel,
@@ -174,45 +229,68 @@ export class ProjectMatchingService {
     project: ProjectProfile,
     provider: ProviderProfile,
     selectedIntent: ProjectIntent,
-  ): ProjectMatchResult['alternativeIntentScores'] {
-    const intents = [selectedIntent, ...((project.lookingFor || []).map(type => {
-      switch (type) {
-        case mapIntentToCounterpart(ProjectIntent.FIND_INVESTOR): return ProjectIntent.FIND_INVESTOR;
-        case mapIntentToCounterpart(ProjectIntent.FIND_ADVISOR): return ProjectIntent.FIND_ADVISOR;
-        case mapIntentToCounterpart(ProjectIntent.FIND_SERVICE_PROVIDER): return ProjectIntent.FIND_SERVICE_PROVIDER;
-        case mapIntentToCounterpart(ProjectIntent.FIND_PARTNER): return ProjectIntent.FIND_PARTNER;
-        case mapIntentToCounterpart(ProjectIntent.FIND_COFOUNDER): return ProjectIntent.FIND_COFOUNDER;
-        default: return ProjectIntent.FIND_TALENT;
-      }
-    }))];
+  ): ProjectMatchResult["alternativeIntentScores"] {
+    const intents = [
+      selectedIntent,
+      ...(project.lookingFor || []).map((type) => {
+        switch (type) {
+          case mapIntentToCounterpart(ProjectIntent.FIND_INVESTOR):
+            return ProjectIntent.FIND_INVESTOR;
+          case mapIntentToCounterpart(ProjectIntent.FIND_ADVISOR):
+            return ProjectIntent.FIND_ADVISOR;
+          case mapIntentToCounterpart(ProjectIntent.FIND_SERVICE_PROVIDER):
+            return ProjectIntent.FIND_SERVICE_PROVIDER;
+          case mapIntentToCounterpart(ProjectIntent.FIND_PARTNER):
+            return ProjectIntent.FIND_PARTNER;
+          case mapIntentToCounterpart(ProjectIntent.FIND_COFOUNDER):
+            return ProjectIntent.FIND_COFOUNDER;
+          default:
+            return ProjectIntent.FIND_TALENT;
+        }
+      }),
+    ];
     const uniqueIntents = Array.from(new Set(intents)).slice(0, 3);
     return uniqueIntents
-      .map(intent => {
-        const breakdown = calculateProjectDeterministicScore(project, provider, intent, this.config);
+      .map((intent) => {
+        const breakdown = calculateProjectDeterministicScore(
+          project,
+          provider,
+          intent,
+          this.config,
+        );
         return {
           intent,
           deterministicScore: breakdown.normalizedScore,
           confidence: breakdown.confidence,
-          whyNotSelected: intent === selectedIntent ? [] : [`Lower than selected intent ${selectedIntent}.`],
+          whyNotSelected:
+            intent === selectedIntent
+              ? []
+              : [`Lower than selected intent ${selectedIntent}.`],
         };
       })
       .sort((a, b) => b.deterministicScore - a.deterministicScore)
       .slice(0, 3);
   }
 
-  private async applyAIValidation(project: ProjectProfile, matches: ProjectMatchResult[]): Promise<ProjectMatchResult[]> {
-    if (!matches.length || !this.llmService?.validateProjectMatches) return matches;
+  private async applyAIValidation(
+    project: ProjectProfile,
+    matches: ProjectMatchResult[],
+  ): Promise<ProjectMatchResult[]> {
+    if (!matches.length || !this.llmService?.validateProjectMatches)
+      return matches;
 
-    const providers = await Promise.all(matches.map(item => this.loadProvider(item.providerId)));
+    const providers = await Promise.all(
+      matches.map((item) => this.loadProvider(item.providerId)),
+    );
     const providerMap = new Map<string, ProviderProfile>();
-    providers.forEach(provider => {
+    providers.forEach((provider) => {
       if (provider) providerMap.set(provider.id, provider);
     });
 
     const aiItems = await this.llmService.validateProjectMatches({
       project,
       providers: matches
-        .map(match => ({
+        .map((match) => ({
           provider: providerMap.get(match.providerId),
           deterministicScore: match.deterministicScore,
           explanationSeed: {
@@ -226,57 +304,170 @@ export class ProjectMatchingService {
         .filter((x: any) => !!x.provider),
     });
 
-    const aiMap = new Map(aiItems.map(item => [item.providerId, item]));
-    return matches.map(match => {
+    const aiMap = new Map(aiItems.map((item) => [item.providerId, item]));
+    return matches.map((match) => {
       const ai = aiMap.get(match.providerId);
       if (!ai) return match;
-      const finalScore = applyBoundedAIAdjustment(match.deterministicScore, ai.aiScoreDelta, 6);
+      const finalScore = applyBoundedAIAdjustment(
+        match.deterministicScore,
+        ai.aiScoreDelta,
+        6,
+      );
       const comparativeNotes = [
         ...(match.explanation?.comparativeNotes || []),
         ...(ai.aiExplanation ? [`AI validation: ${ai.aiExplanation}`] : []),
-        ...((ai.aiEvidenceFor || []).map(item => `AI evidence for: ${item}`)),
-        ...((ai.aiEvidenceAgainst || []).map(item => `AI evidence against: ${item}`)),
-        ...((ai.warnings || []).map(item => `AI warning: ${item}`)),
+        ...(ai.aiEvidenceFor || []).map((item) => `AI evidence for: ${item}`),
+        ...(ai.aiEvidenceAgainst || []).map(
+          (item) => `AI evidence against: ${item}`,
+        ),
+        ...(ai.warnings || []).map((item) => `AI warning: ${item}`),
       ];
       return {
         ...match,
         aiScore: ai.aiScoreDelta,
         finalScore,
         aiSummary: ai.aiExplanation,
-        explanation: match.explanation ? { ...match.explanation, comparativeNotes } : match.explanation,
+        explanation: match.explanation
+          ? { ...match.explanation, comparativeNotes }
+          : match.explanation,
       };
     });
   }
 
-  private async loadProject(projectId: string): Promise<ProjectProfile | null> {
-    const row = await this.prisma.project.findUnique({ where: { id: projectId } });
-    return row ? this.mapProject(row) : null;
+  private async loadProject(
+    projectId: string,
+    requesterUserId: string,
+  ): Promise<ProjectProfile | null> {
+    const row = await this.prisma.project.findUnique({
+      where: { id: projectId },
+    });
+    if (!row) return null;
+    if (row.ownerId !== requesterUserId) return null;
+    return this.mapProject(row);
   }
 
-  private async loadProvider(providerId: string): Promise<ProviderProfile | null> {
-    const row = await this.prisma.providerProfile.findUnique({ where: { id: providerId } });
+  private async getNetworkUserIds(
+    requesterUserId: string,
+    scope: { maxDegree: number; includeOrganization: boolean },
+  ): Promise<Set<string>> {
+    const ids = new Set<string>();
+    try {
+      const conns = await this.prisma.connection.findMany({
+        where: {
+          OR: [
+            { userIdA: requesterUserId, status: "ACCEPTED" },
+            { userIdB: requesterUserId, status: "ACCEPTED" },
+          ],
+        },
+        select: { userIdA: true, userIdB: true },
+      });
+      for (const c of conns)
+        ids.add(c.userIdA === requesterUserId ? c.userIdB : c.userIdA);
+    } catch {
+      /* graceful */
+    }
+    if (scope.maxDegree >= 2 && ids.size > 0) {
+      try {
+        const second = await this.prisma.connection.findMany({
+          where: {
+            OR: [
+              { userIdA: { in: [...ids] }, status: "ACCEPTED" },
+              { userIdB: { in: [...ids] }, status: "ACCEPTED" },
+            ],
+          },
+          select: { userIdA: true, userIdB: true },
+        });
+        for (const c of second) {
+          ids.add(c.userIdA);
+          ids.add(c.userIdB);
+        }
+      } catch {
+        /* graceful */
+      }
+    }
+    if (scope.includeOrganization) {
+      try {
+        const u = await this.prisma.user.findUnique({
+          where: { id: requesterUserId },
+          select: { organizationId: true },
+        });
+        if (u?.organizationId) {
+          const members = await this.prisma.user.findMany({
+            where: { organizationId: u.organizationId },
+            select: { id: true },
+          });
+          for (const m of members) ids.add(m.id);
+        }
+      } catch {
+        /* graceful */
+      }
+    }
+    ids.delete(requesterUserId);
+    return ids;
+  }
+
+  async getMatches(
+    auth: AuthContext,
+    projectId: string,
+    limit: number = 50,
+  ): Promise<ProjectMatchResult[]> {
+    const project = await this.loadProject(projectId, auth.userId);
+    if (!project) throw new Error("Project not found or access denied");
+    const stored = await this.prisma.projectMatch.findMany({
+      where: { projectId, archived: false },
+      orderBy: { rank: "asc" },
+      take: Math.min(limit, 100),
+    });
+    return stored.map((s: any) => ({
+      ...s,
+      explanation: s.explanationJson || null,
+    }));
+  }
+
+  private async loadProvider(
+    providerId: string,
+  ): Promise<ProviderProfile | null> {
+    const row = await this.prisma.providerProfile.findUnique({
+      where: { id: providerId },
+    });
     return row ? this.mapProvider(row) : null;
   }
 
-  private async saveMatches(project: ProjectProfile, intent: ProjectIntent, matches: ProjectMatchResult[]): Promise<void> {
+  private async saveMatches(
+    project: ProjectProfile,
+    intent: ProjectIntent,
+    matches: ProjectMatchResult[],
+  ): Promise<void> {
     if (!matches.length) return;
-    await this.prisma.projectMatch.createMany({
-      data: matches.map(match => ({
-        id: match.id,
-        projectId: project.id,
-        providerId: match.providerId,
-        intent,
-        deterministicScore: match.deterministicScore,
-        aiScore: match.aiScore,
-        finalScore: match.finalScore,
-        matchLevel: match.matchLevel,
-        confidence: match.confidence,
-        explanationJson: match.explanation,
-        hydrationSnapshot: match.hydrationSnapshot,
-        expiresAt: getExpiryDate(30),
-      })),
-      skipDuplicates: true,
-    });
+    try {
+      await this.prisma.projectMatch
+        .updateMany({
+          where: { projectId: project.id, intent, archived: false },
+          data: { archived: true },
+        })
+        .catch(() => {});
+      await this.prisma.projectMatch.createMany({
+        data: matches.map((match) => ({
+          id: match.id,
+          projectId: project.id,
+          providerId: match.providerId,
+          intent,
+          deterministicScore: match.deterministicScore,
+          aiScore: match.aiScore,
+          finalScore: match.finalScore,
+          matchLevel: match.matchLevel,
+          confidence: match.confidence,
+          explanationJson: match.explanation,
+          hydrationSnapshot: match.hydrationSnapshot,
+          rank: match.rank,
+          archived: false,
+          expiresAt: getExpiryDate(30),
+        })),
+        skipDuplicates: true,
+      });
+    } catch (err) {
+      console.error("[ProjectMatching] Persist failed", err);
+    }
   }
 
   private mapProject(row: any): ProjectProfile {
@@ -284,12 +475,12 @@ export class ProjectMatchingService {
       id: row.id,
       ownerId: row.ownerId,
       organizationId: row.organizationId ?? undefined,
-      projectTitle: row.projectTitle ?? row.title ?? '',
-      summary: row.summary ?? '',
-      detailedDescription: row.detailedDescription ?? row.description ?? '',
-      projectNeeds: row.projectNeeds ?? '',
+      projectTitle: row.projectTitle ?? row.title ?? "",
+      summary: row.summary ?? "",
+      detailedDescription: row.detailedDescription ?? row.description ?? "",
+      projectNeeds: row.projectNeeds ?? "",
       projectStage: row.projectStage,
-      primaryCategory: row.primaryCategory ?? 'OTHER',
+      primaryCategory: row.primaryCategory ?? "OTHER",
       timeline: row.timeline ?? undefined,
       lookingFor: row.lookingFor ?? [],
       industrySectors: row.industrySectors ?? [],
@@ -320,9 +511,9 @@ export class ProjectMatchingService {
       id: row.id,
       userId: row.userId ?? undefined,
       organizationId: row.organizationId ?? undefined,
-      name: row.name ?? row.displayName ?? 'Unknown',
+      name: row.name ?? row.displayName ?? "Unknown",
       title: row.title ?? undefined,
-      description: row.description ?? '',
+      description: row.description ?? "",
       counterpartType: row.counterpartType,
       entityFamily: row.entityFamily,
       executionTrack: row.executionTrack,
@@ -346,10 +537,14 @@ export class ProjectMatchingService {
       investorProfile: row.investorProfile ?? undefined,
       advisorProfile: row.advisorProfile ?? undefined,
       talentProfile: row.talentProfile ?? undefined,
-      serviceProviderProfile: row.serviceProviderProfile ?? row.supplierProfile ?? undefined,
+      serviceProviderProfile:
+        row.serviceProviderProfile ?? row.supplierProfile ?? undefined,
       partnerProfile: row.partnerProfile ?? undefined,
       createdAt: row.createdAt ? new Date(row.createdAt) : new Date(),
       updatedAt: row.updatedAt ? new Date(row.updatedAt) : new Date(),
     });
   }
 }
+
+
+

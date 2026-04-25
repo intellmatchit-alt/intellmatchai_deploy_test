@@ -17,98 +17,97 @@ import {
   FallbackScores,
   FeatureFlags,
   BaseJobPayload,
-} from '../common/matching-common.types';
+} from "../common/matching-common.types";
 
 export enum ProjectIntent {
-  FIND_INVESTOR = 'FIND_INVESTOR',
-  FIND_ADVISOR = 'FIND_ADVISOR',
-  FIND_SERVICE_PROVIDER = 'FIND_SERVICE_PROVIDER',
-  FIND_PARTNER = 'FIND_PARTNER',
-  FIND_COFOUNDER = 'FIND_COFOUNDER',
-  FIND_TALENT = 'FIND_TALENT',
+  FIND_INVESTOR = "FIND_INVESTOR",
+  FIND_ADVISOR = "FIND_ADVISOR",
+  FIND_SERVICE_PROVIDER = "FIND_SERVICE_PROVIDER",
+  FIND_PARTNER = "FIND_PARTNER",
+  FIND_COFOUNDER = "FIND_COFOUNDER",
+  FIND_TALENT = "FIND_TALENT",
 }
 
 export enum ProjectStage {
-  JUST_AN_IDEA = 'JUST_AN_IDEA',
-  VALIDATING = 'VALIDATING',
-  BUILDING_MVP = 'BUILDING_MVP',
-  LAUNCHED = 'LAUNCHED',
-  GROWING = 'GROWING',
-  SCALING = 'SCALING',
+  JUST_AN_IDEA = "JUST_AN_IDEA",
+  VALIDATING = "VALIDATING",
+  BUILDING_MVP = "BUILDING_MVP",
+  LAUNCHED = "LAUNCHED",
+  GROWING = "GROWING",
+  SCALING = "SCALING",
 }
 
 export enum PrimaryCategory {
-  AI = 'AI',
-  FINTECH = 'FINTECH',
-  HEALTHCARE = 'HEALTHCARE',
-  EDTECH = 'EDTECH',
-  ECOMMERCE = 'ECOMMERCE',
-  SAAS = 'SAAS',
-  CYBERSECURITY = 'CYBERSECURITY',
-  IOT = 'IOT',
-  GOVTECH = 'GOVTECH',
-  CLEAN_TECH = 'CLEAN_TECH',
-  AGRITECH = 'AGRITECH',
-  MEDIA = 'MEDIA',
-  LOGISTICS = 'LOGISTICS',
-  REAL_ESTATE = 'REAL_ESTATE',
-  OTHER = 'OTHER',
+  AI = "AI",
+  FINTECH = "FINTECH",
+  HEALTHCARE = "HEALTHCARE",
+  EDTECH = "EDTECH",
+  ECOMMERCE = "ECOMMERCE",
+  SAAS = "SAAS",
+  CYBERSECURITY = "CYBERSECURITY",
+  IOT = "IOT",
+  GOVTECH = "GOVTECH",
+  CLEAN_TECH = "CLEAN_TECH",
+  AGRITECH = "AGRITECH",
+  MEDIA = "MEDIA",
+  LOGISTICS = "LOGISTICS",
+  REAL_ESTATE = "REAL_ESTATE",
+  OTHER = "OTHER",
 }
 
 export enum CounterpartType {
-  INVESTOR = 'INVESTOR',
-  ADVISOR = 'ADVISOR',
-  SERVICE_PROVIDER = 'SERVICE_PROVIDER',
-  PARTNER = 'PARTNER',
-  COFOUNDER = 'COFOUNDER',
-  TALENT = 'TALENT',
+  INVESTOR = "INVESTOR",
+  ADVISOR = "ADVISOR",
+  SERVICE_PROVIDER = "SERVICE_PROVIDER",
+  PARTNER = "PARTNER",
+  COFOUNDER = "COFOUNDER",
+  TALENT = "TALENT",
 }
 
 export enum CommitmentLevel {
-  LOW = 'LOW',
-  PART_TIME = 'PART_TIME',
-  FULL_TIME = 'FULL_TIME',
-  FLEXIBLE = 'FLEXIBLE',
+  LOW = "LOW",
+  PART_TIME = "PART_TIME",
+  FULL_TIME = "FULL_TIME",
+  FLEXIBLE = "FLEXIBLE",
 }
 
 export enum EngagementModel {
-  EQUITY = 'EQUITY',
-  CASH = 'CASH',
-  EQUITY_AND_CASH = 'EQUITY_AND_CASH',
-  REVENUE_SHARE = 'REVENUE_SHARE',
-  PARTNERSHIP = 'PARTNERSHIP',
-  CONTRACT = 'CONTRACT',
-  ADVISORY = 'ADVISORY',
-  STRATEGIC = 'STRATEGIC',
-  FLEXIBLE = 'FLEXIBLE',
+  EQUITY = "EQUITY",
+  CASH = "CASH",
+  EQUITY_AND_CASH = "EQUITY_AND_CASH",
+  REVENUE_SHARE = "REVENUE_SHARE",
+  PARTNERSHIP = "PARTNERSHIP",
+  CONTRACT = "CONTRACT",
+  ADVISORY = "ADVISORY",
+  STRATEGIC = "STRATEGIC",
 }
 
 export enum ProviderEvidenceLevel {
-  LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
-  HIGH = 'HIGH',
+  LOW = "LOW",
+  MEDIUM = "MEDIUM",
+  HIGH = "HIGH",
 }
 
 export type NeedCluster =
-  | 'FUNDING'
-  | 'GO_TO_MARKET'
-  | 'CHANNELS'
-  | 'TECH_BUILD'
-  | 'PRODUCT'
-  | 'DATA_AI'
-  | 'OPERATIONS'
-  | 'SALES'
-  | 'DISTRIBUTION'
-  | 'MANUFACTURING'
-  | 'PARTNERSHIPS'
-  | 'COMPLIANCE'
-  | 'MARKETING'
-  | 'RESEARCH'
-  | 'HIRING'
-  | 'STRATEGY'
-  | 'UX_DESIGN'
-  | 'LEGAL'
-  | 'OTHER';
+  | "FUNDING"
+  | "GO_TO_MARKET"
+  | "CHANNELS"
+  | "TECH_BUILD"
+  | "PRODUCT"
+  | "DATA_AI"
+  | "OPERATIONS"
+  | "SALES"
+  | "DISTRIBUTION"
+  | "MANUFACTURING"
+  | "PARTNERSHIPS"
+  | "COMPLIANCE"
+  | "MARKETING"
+  | "RESEARCH"
+  | "HIRING"
+  | "STRATEGY"
+  | "UX_DESIGN"
+  | "LEGAL"
+  | "OTHER";
 
 export interface ProjectNeedSignal {
   raw: string;
@@ -150,7 +149,7 @@ export interface InvestorProfile {
   operatingMarkets?: string[];
   targetCustomerTypes?: string[];
   notablePortfolio?: string[];
-  tractionTolerance?: 'IDEA' | 'EARLY' | 'GROWTH' | 'ANY';
+  tractionTolerance?: "IDEA" | "EARLY" | "GROWTH" | "ANY";
 }
 
 export interface AdvisorProfile {
@@ -266,25 +265,25 @@ export interface ProviderProfile {
 }
 
 export type ProjectSemanticField =
-  | 'summary'
-  | 'detailedDescription'
-  | 'projectNeeds'
-  | 'skillsNeeded'
-  | 'industrySectors'
-  | 'operatingMarkets'
-  | 'idealCounterpartProfile';
+  | "summary"
+  | "detailedDescription"
+  | "projectNeeds"
+  | "skillsNeeded"
+  | "industrySectors"
+  | "operatingMarkets"
+  | "idealCounterpartProfile";
 
 export type ProviderSemanticField =
-  | 'description'
-  | 'skills'
-  | 'capabilities'
-  | 'sectors'
-  | 'operatingMarkets'
-  | 'investorThesis'
-  | 'advisorTopics'
-  | 'serviceCategories'
-  | 'partnerTypes'
-  | 'desiredRoles';
+  | "description"
+  | "skills"
+  | "capabilities"
+  | "sectors"
+  | "operatingMarkets"
+  | "investorThesis"
+  | "advisorTopics"
+  | "serviceCategories"
+  | "partnerTypes"
+  | "desiredRoles";
 
 export interface SemanticFieldComparison {
   field: string;
@@ -458,17 +457,18 @@ export interface ProjectAIValidationItem {
   aiEvidenceAgainst?: string[];
 }
 
-export const DEFAULT_PROJECT_THRESHOLDS: ProjectMatchingConfig['defaultThresholds'] = {
-  minDeterministicScore: 35,
-  minPostAIScore: 35,
-  minConfidence: 0.45,
-  maxResults: 50,
-  sparseRecordThreshold: 28,
-  dataQualityThreshold: 25,
-  maxCandidatesToScore: 250,
-  retrievalTake: 300,
-  retrievalMinScore: 0.12,
-};
+export const DEFAULT_PROJECT_THRESHOLDS: ProjectMatchingConfig["defaultThresholds"] =
+  {
+    minDeterministicScore: 35,
+    minPostAIScore: 35,
+    minConfidence: 0.45,
+    maxResults: 50,
+    sparseRecordThreshold: 28,
+    dataQualityThreshold: 25,
+    maxCandidatesToScore: 250,
+    retrievalTake: 300,
+    retrievalMinScore: 0.12,
+  };
 
 const BASE_WEIGHTS: ProjectScoringWeights = {
   lookingForFit: 0.1,
@@ -487,7 +487,10 @@ const BASE_WEIGHTS: ProjectScoringWeights = {
   completenessFit: 0.04,
 };
 
-export const COUNTERPART_SCORING_POLICIES: Record<CounterpartType, CounterpartScoringPolicy> = {
+export const COUNTERPART_SCORING_POLICIES: Record<
+  CounterpartType,
+  CounterpartScoringPolicy
+> = {
   [CounterpartType.INVESTOR]: {
     counterpartType: CounterpartType.INVESTOR,
     weights: {
@@ -678,7 +681,9 @@ export function getPolicyForIntent(
   return config.counterpartPolicies[mapIntentToCounterpart(intent)];
 }
 
-export function getAlternativeIntentsForCounterpart(type: CounterpartType): ProjectIntent[] {
+export function getAlternativeIntentsForCounterpart(
+  type: CounterpartType,
+): ProjectIntent[] {
   switch (type) {
     case CounterpartType.INVESTOR:
       return [ProjectIntent.FIND_INVESTOR];
@@ -696,3 +701,48 @@ export function getAlternativeIntentsForCounterpart(type: CounterpartType): Proj
       return [ProjectIntent.FIND_PARTNER];
   }
 }
+
+// ============================================================================
+// AUTH / NETWORK SCOPE
+// ============================================================================
+
+export interface AuthContext {
+  userId: string;
+  organizationId?: string;
+}
+export interface NetworkScopeConfig {
+  maxDegree: number;
+  includeOrganization: boolean;
+}
+export const DEFAULT_NETWORK_SCOPE: NetworkScopeConfig = {
+  maxDegree: 1,
+  includeOrganization: true,
+};
+
+export interface ProjectMatchWorkerPayload extends BaseJobPayload {
+  auth: AuthContext;
+  request: FindProjectMatchesRequest;
+}
+
+export interface ExtractedProjectFields {
+  projectTitle?: string;
+  summary?: string;
+  detailedDescription?: string;
+  projectNeeds?: string;
+  projectStage?: string;
+  primaryCategory?: string;
+  timeline?: string;
+  lookingFor?: CounterpartType[];
+  industrySectors?: string[];
+  skillsNeeded?: string[];
+  operatingMarkets?: string[];
+  fundingAskMin?: number;
+  fundingAskMax?: number;
+  tractionSignals?: string;
+  advisoryTopics?: string[];
+  partnerTypeNeeded?: string[];
+  targetCustomerTypes?: string[];
+  suggestedTags?: string[];
+  fieldConfidence?: Record<string, number>;
+}
+

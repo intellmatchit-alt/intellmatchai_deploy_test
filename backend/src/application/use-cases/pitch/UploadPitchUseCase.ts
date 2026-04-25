@@ -8,7 +8,7 @@ import { PitchJobStep, PitchJobStatus } from '../../../domain/entities/Pitch';
 import { UploadPitchRequestDTO, PitchResponseDTO, PitchJobProgressDTO } from '../../dto/pitch.dto';
 import { IFileStorageService } from '../../interfaces/IFileStorageService';
 import { IPitchQueueService } from '../../interfaces/IPitchQueueService';
-import { ValidationError } from '../../../shared/errors/index.js';
+import { ValidationError } from '../../../shared/errors/index';
 import { logger } from '../../../shared/logger';
 
 // Supported file types

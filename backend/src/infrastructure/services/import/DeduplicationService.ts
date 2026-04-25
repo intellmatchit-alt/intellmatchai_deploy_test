@@ -7,9 +7,9 @@
  * @module infrastructure/services/import/DeduplicationService
  */
 
-import { prisma } from '../../database/prisma/client.js';
-import { logger } from '../../../shared/logger/index.js';
-import { NormalizedContact } from './NormalizationService.js';
+import { prisma } from '../../database/prisma/client';
+import { logger } from '../../../shared/logger/index';
+import { NormalizedContact } from './NormalizationService';
 
 /**
  * Merge result for a contact

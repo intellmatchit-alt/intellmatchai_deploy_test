@@ -5,14 +5,14 @@
  */
 
 import { Router } from 'express';
-import { organizationController } from '../controllers/OrganizationController.js';
-import { authenticate } from '../middleware/auth.middleware.js';
+import { organizationController } from '../controllers/OrganizationController';
+import { authenticate } from '../middleware/auth.middleware';
 import {
   attachSubscriptionContext,
   requirePlan,
   requireOrgRole,
   requireOrgMatch,
-} from '../middleware/featureGate.middleware.js';
+} from '../middleware/featureGate.middleware';
 
 export const organizationRoutes = Router();
 

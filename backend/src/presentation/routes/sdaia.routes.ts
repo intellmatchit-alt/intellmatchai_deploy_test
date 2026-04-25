@@ -8,8 +8,8 @@
  */
 
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth.middleware.js';
-import { sdaiaController } from '../controllers/SdaiaController.js';
+import { authenticate } from '../middleware/auth.middleware';
+import { sdaiaController } from '../controllers/SdaiaController';
 
 const router = Router();
 

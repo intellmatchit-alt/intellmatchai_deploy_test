@@ -6,18 +6,18 @@
  * @module infrastructure/services/import
  */
 
-export * from './NormalizationService.js';
-export * from './DeduplicationService.js';
-export * from './TaxonomyMappingService.js';
-export * from './TagExtractionService.js';
-export * from './ProfileSummaryService.js';
+export * from './NormalizationService';
+export * from './DeduplicationService';
+export * from './TaxonomyMappingService';
+export * from './TagExtractionService';
+export * from './ProfileSummaryService';
 
 // Default exports
-import { normalizationService } from './NormalizationService.js';
-import { deduplicationService } from './DeduplicationService.js';
-import { taxonomyMappingService } from './TaxonomyMappingService.js';
-import { tagExtractionService } from './TagExtractionService.js';
-import { profileSummaryService } from './ProfileSummaryService.js';
+import { normalizationService } from './NormalizationService';
+import { deduplicationService } from './DeduplicationService';
+import { taxonomyMappingService } from './TaxonomyMappingService';
+import { tagExtractionService } from './TagExtractionService';
+import { profileSummaryService } from './ProfileSummaryService';
 
 export default {
   normalizationService,

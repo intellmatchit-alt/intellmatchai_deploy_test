@@ -5,14 +5,14 @@
  */
 
 import { Router } from 'express';
-import { paymentController } from '../controllers/PaymentController.js';
-import { authenticate } from '../middleware/auth.middleware.js';
-import { validate } from '../middleware/validate.middleware.js';
+import { paymentController } from '../controllers/PaymentController';
+import { authenticate } from '../middleware/auth.middleware';
+import { validate } from '../middleware/validate.middleware';
 import {
   createCheckoutSchema,
   paymentCallbackSchema,
   getPaymentSchema,
-} from '../validators/payment.validator.js';
+} from '../validators/payment.validator';
 
 export const paymentRoutes = Router();
 

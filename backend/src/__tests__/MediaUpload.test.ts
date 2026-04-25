@@ -32,7 +32,7 @@ jest.mock('../shared/logger/index.js', () => ({
   },
 }));
 
-import { prisma } from '../infrastructure/database/prisma/client.js';
+import { prisma } from '../infrastructure/database/prisma/client';
 
 describe('Media Upload (Contact Notes)', () => {
   let mockReq: Partial<Request>;

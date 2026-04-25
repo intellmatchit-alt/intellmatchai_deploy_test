@@ -5,7 +5,7 @@
 
 import { IUserPNMEPreferencesRepository } from '../../../domain/repositories/IPitchRepository';
 import { UpdatePNMEPreferencesRequestDTO, PNMEPreferencesResponseDTO } from '../../dto/pitch.dto';
-import { DomainException } from '../../../shared/errors/index.js';
+import { DomainException } from '../../../shared/errors/index';
 
 export class UpdatePNMEPreferencesUseCase {
   constructor(

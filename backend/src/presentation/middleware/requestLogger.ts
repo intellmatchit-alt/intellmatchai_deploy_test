@@ -7,8 +7,8 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { logger } from '../../shared/logger/index.js';
-import { generateRequestId } from '../../shared/utils/index.js';
+import { logger } from '../../shared/logger/index';
+import { generateRequestId } from '../../shared/utils/index';
 
 /**
  * Request logger middleware

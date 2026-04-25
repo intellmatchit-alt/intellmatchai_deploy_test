@@ -4,10 +4,10 @@
  * Creates a payment checkout session with PayTabs and returns the redirect URL.
  */
 
-import { prisma } from '../../../infrastructure/database/prisma/client.js';
-import { getPayTabsService } from '../../../infrastructure/external/payment/PayTabsService.js';
-import { logger } from '../../../shared/logger/index.js';
-import { ValidationError, NotFoundError } from '../../../shared/errors/index.js';
+import { prisma } from '../../../infrastructure/database/prisma/client';
+import { getPayTabsService } from '../../../infrastructure/external/payment/PayTabsService';
+import { logger } from '../../../shared/logger/index';
+import { ValidationError, NotFoundError } from '../../../shared/errors/index';
 
 
 export interface CreateCheckoutDTO {

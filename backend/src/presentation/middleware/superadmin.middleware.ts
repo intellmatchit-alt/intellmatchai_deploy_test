@@ -8,7 +8,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { verifySuperAdminToken } from '../../infrastructure/auth/superadmin-jwt.js';
+import { verifySuperAdminToken } from '../../infrastructure/auth/superadmin-jwt';
 
 declare global {
   namespace Express {

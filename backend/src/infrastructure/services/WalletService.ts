@@ -1,6 +1,6 @@
-import { prisma } from '../database/prisma/client.js';
-import { InsufficientPointsError } from '../../shared/errors/InsufficientPointsError.js';
-import { logger } from '../../shared/logger/index.js';
+import { prisma } from '../database/prisma/client';
+import { InsufficientPointsError } from '../../shared/errors/InsufficientPointsError';
+import { logger } from '../../shared/logger/index';
 import { Decimal } from '@prisma/client/runtime/library';
 
 const LOW_BALANCE_THRESHOLD = 10;

@@ -13,18 +13,18 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { ScanCardUseCase } from '../../application/use-cases/scan/ScanCardUseCase.js';
-import { CreateContactFromScanUseCase } from '../../application/use-cases/scan/CreateContactFromScanUseCase.js';
-import { getOCRService } from '../../infrastructure/external/ocr/index.js';
-import { PrismaContactRepository } from '../../infrastructure/repositories/PrismaContactRepository.js';
-import { StorageServiceFactory } from '../../infrastructure/external/storage/StorageServiceFactory.js';
-import { AuthenticationError } from '../../shared/errors/index.js';
-import { InsufficientPointsError } from '../../shared/errors/InsufficientPointsError.js';
-import { logger } from '../../shared/logger/index.js';
-import { walletService } from '../../infrastructure/services/WalletService.js';
-import { systemConfigService } from '../../infrastructure/services/SystemConfigService.js';
+import { ScanCardUseCase } from '../../application/use-cases/scan/ScanCardUseCase';
+import { CreateContactFromScanUseCase } from '../../application/use-cases/scan/CreateContactFromScanUseCase';
+import { getOCRService } from '../../infrastructure/external/ocr/index';
+import { PrismaContactRepository } from '../../infrastructure/repositories/PrismaContactRepository';
+import { StorageServiceFactory } from '../../infrastructure/external/storage/StorageServiceFactory';
+import { AuthenticationError } from '../../shared/errors/index';
+import { InsufficientPointsError } from '../../shared/errors/InsufficientPointsError';
+import { logger } from '../../shared/logger/index';
+import { walletService } from '../../infrastructure/services/WalletService';
+import { systemConfigService } from '../../infrastructure/services/SystemConfigService';
 import { randomUUID, createHash } from 'crypto';
-import { config } from '../../config/index.js';
+import { config } from '../../config/index';
 
 /**
  * ScrapIn Enrichment Response Types

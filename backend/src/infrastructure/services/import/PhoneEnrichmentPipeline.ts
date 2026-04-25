@@ -17,11 +17,11 @@
  */
 
 import { SdaiaLegalBasis } from '@prisma/client';
-import { prisma } from '../../database/prisma/client.js';
-import { config } from '../../../config/index.js';
-import { logger } from '../../../shared/logger/index.js';
-import { CallerKitService, CallerKitResult } from '../../external/enrichment/CallerKitService.js';
-import { getSdaiaComplianceService, SdaiaComplianceMetadata } from '../SdaiaComplianceService.js';
+import { prisma } from '../../database/prisma/client';
+import { config } from '../../../config/index';
+import { logger } from '../../../shared/logger/index';
+import { CallerKitService, CallerKitResult } from '../../external/enrichment/CallerKitService';
+import { getSdaiaComplianceService, SdaiaComplianceMetadata } from '../SdaiaComplianceService';
 
 /**
  * Result of enriching a single contact

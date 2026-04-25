@@ -14,7 +14,7 @@ import {
   CollaborationMatchingJobData,
   getSourceId,
 } from '../../../domain/entities/Collaboration';
-import { NotFoundError, ForbiddenError, ValidationError } from '../../../shared/errors/index.js';
+import { NotFoundError, ForbiddenError, ValidationError } from '../../../shared/errors/index';
 import { logger } from '../../../shared/logger';
 import { QueueService, QueueName } from '../../../infrastructure/queue/QueueService';
 

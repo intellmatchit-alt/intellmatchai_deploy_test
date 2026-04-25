@@ -54,9 +54,9 @@ import {
   updateContactUseCase,
   deleteContactUseCase,
   addInteractionUseCase,
-} from '../application/use-cases/contact/index.js';
-import { prisma } from '../infrastructure/database/prisma/client.js';
-import { exportService } from '../infrastructure/services/ExportService.js';
+} from '../application/use-cases/contact/index';
+import { prisma } from '../infrastructure/database/prisma/client';
+import { exportService } from '../infrastructure/services/ExportService';
 
 describe('ContactController', () => {
   let controller: ContactController;

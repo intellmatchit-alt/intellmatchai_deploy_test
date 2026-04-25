@@ -5,7 +5,7 @@
 
 import { IProductMatchRunRepository } from '../../../domain/repositories/IProductMatchRepository';
 import { ProductMatchRunEntity } from '../../../domain/entities/ProductMatch';
-import { NotFoundError, AuthorizationError } from '../../../shared/errors/index.js';
+import { NotFoundError, AuthorizationError } from '../../../shared/errors/index';
 
 export class GetProductMatchRunUseCase {
   constructor(

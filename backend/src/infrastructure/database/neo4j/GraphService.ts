@@ -6,8 +6,8 @@
  * @module infrastructure/database/neo4j/GraphService
  */
 
-import { getSession, isNeo4jAvailable, queryRecords } from './client.js';
-import { logger } from '../../../shared/logger/index.js';
+import { getSession, isNeo4jAvailable, queryRecords } from './client';
+import { logger } from '../../../shared/logger/index';
 
 /**
  * Graph node types

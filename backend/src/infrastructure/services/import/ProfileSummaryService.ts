@@ -7,9 +7,9 @@
  * @module infrastructure/services/import/ProfileSummaryService
  */
 
-import { prisma } from '../../database/prisma/client.js';
-import { logger } from '../../../shared/logger/index.js';
-import { config } from '../../../config/index.js';
+import { prisma } from '../../database/prisma/client';
+import { logger } from '../../../shared/logger/index';
+import { config } from '../../../config/index';
 import OpenAI from 'openai';
 
 /**

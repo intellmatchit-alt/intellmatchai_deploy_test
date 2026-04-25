@@ -102,7 +102,7 @@ jest.mock('../../application/use-cases/contact/index.js', () => {
 });
 
 import { ContactController } from '../../presentation/controllers/ContactController';
-import * as contactUseCases from '../../application/use-cases/contact/index.js';
+import * as contactUseCases from '../../application/use-cases/contact/index';
 
 // Get reference to the mock execute function
 const createContactExecute = (contactUseCases as any).__mockExecute;

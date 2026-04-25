@@ -5,7 +5,7 @@
 
 import { IDealRequestRepository, IDealMatchResultRepository } from '../../../domain/repositories/IDealRepository';
 import { DealMatchStatus } from '../../../domain/entities/Deal';
-import { NotFoundError, AuthorizationError } from '../../../shared/errors/index.js';
+import { NotFoundError, AuthorizationError } from '../../../shared/errors/index';
 import { logger } from '../../../shared/logger';
 
 export interface UpdateMatchStatusInput {

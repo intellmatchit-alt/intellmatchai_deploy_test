@@ -20,7 +20,7 @@ import {
   ContactSummaryDTO,
   MatchBreakdownDTO,
 } from '../../dto/pitch.dto';
-import { NotFoundError, AuthorizationError, DomainException, ConflictError } from '../../../shared/errors/index.js';
+import { NotFoundError, AuthorizationError, DomainException, ConflictError } from '../../../shared/errors/index';
 
 export class GetPitchResultsUseCase {
   constructor(

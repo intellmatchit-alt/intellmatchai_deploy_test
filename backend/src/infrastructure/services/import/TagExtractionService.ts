@@ -7,9 +7,9 @@
  * @module infrastructure/services/import/TagExtractionService
  */
 
-import { prisma } from '../../database/prisma/client.js';
-import { logger } from '../../../shared/logger/index.js';
-import { TaxonomyMappingService, ExtractedTags, taxonomyMappingService } from './TaxonomyMappingService.js';
+import { prisma } from '../../database/prisma/client';
+import { logger } from '../../../shared/logger/index';
+import { TaxonomyMappingService, ExtractedTags, taxonomyMappingService } from './TaxonomyMappingService';
 
 /**
  * Contact data for tag extraction

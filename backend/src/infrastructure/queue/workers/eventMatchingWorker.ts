@@ -8,10 +8,10 @@
  */
 
 import { Job } from 'bullmq';
-import { logger } from '../../../shared/logger/index.js';
-import { queueService, QueueName, EventMatchingJobData } from '../QueueService.js';
-import { eventMatchingService } from '../../services/event/EventMatchingService.js';
-import { prisma } from '../../database/prisma/client.js';
+import { logger } from '../../../shared/logger/index';
+import { queueService, QueueName, EventMatchingJobData } from '../QueueService';
+import { eventMatchingService } from '../../services/event/EventMatchingService';
+import { prisma } from '../../database/prisma/client';
 
 const MIN_EVENT_MATCH_SCORE = 10;
 

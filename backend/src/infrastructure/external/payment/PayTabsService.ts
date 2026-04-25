@@ -6,14 +6,14 @@
  */
 
 import crypto from 'crypto';
-import { config } from '../../../config/index.js';
-import { logger } from '../../../shared/logger/index.js';
+import { config } from '../../../config/index';
+import { logger } from '../../../shared/logger/index';
 import {
   IPaymentService,
   CreatePaymentRequest,
   CreatePaymentResponse,
   PaymentCallbackData,
-} from './IPaymentService.js';
+} from './IPaymentService';
 
 // PayTabs API response type
 interface PayTabsApiResponse {

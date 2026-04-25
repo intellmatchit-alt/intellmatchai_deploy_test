@@ -8,15 +8,15 @@
 
 import { Client } from 'minio';
 import { Readable } from 'stream';
-import { config } from '../../../config/index.js';
-import { logger } from '../../../shared/logger/index.js';
+import { config } from '../../../config/index';
+import { logger } from '../../../shared/logger/index';
 import {
   IStorageService,
   UploadOptions,
   UploadResult,
   PresignedUrlOptions,
   FileMetadata,
-} from './IStorageService.js';
+} from './IStorageService';
 
 /**
  * MinIO Storage Service

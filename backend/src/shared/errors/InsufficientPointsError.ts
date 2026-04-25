@@ -1,4 +1,4 @@
-import { BaseError } from './index.js';
+import { BaseError } from './index';
 
 export class InsufficientPointsError extends BaseError {
   readonly statusCode = 402;

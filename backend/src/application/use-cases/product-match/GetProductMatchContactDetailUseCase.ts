@@ -8,7 +8,7 @@ import {
   IProductMatchResultRepository,
 } from '../../../domain/repositories/IProductMatchRepository';
 import { ProductMatchResultEntity } from '../../../domain/entities/ProductMatch';
-import { NotFoundError, AuthorizationError } from '../../../shared/errors/index.js';
+import { NotFoundError, AuthorizationError } from '../../../shared/errors/index';
 import { prisma } from '../../../infrastructure/database/prisma/client';
 
 export interface ContactDetailOutput {
