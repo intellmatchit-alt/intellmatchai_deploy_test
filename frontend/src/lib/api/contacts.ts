@@ -104,6 +104,9 @@ export interface UpdateContactInput {
   skills?: Array<{ skillId: string; proficiency?: string }>;
   interests?: Array<{ interestId: string; intensity?: string }>;
   hobbies?: Array<{ hobbyId: string }>;
+  customSectors?: string[];
+  customSkills?: string[];
+  customInterests?: string[];
   customHobbies?: string[];
 }
 

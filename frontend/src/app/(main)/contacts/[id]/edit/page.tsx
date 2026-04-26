@@ -604,11 +604,14 @@ export default function EditContactPage() {
         bioSummary: formData.bioSummary || undefined,
         bioFull: formData.bioFull || undefined,
         notes: formData.notes || undefined,
-        sectors: formData.sectorIds.length > 0 ? formData.sectorIds.map(id => ({ sectorId: id })) : undefined,
-        skills: formData.skillIds.length > 0 ? formData.skillIds.map(id => ({ skillId: id })) : undefined,
-        interests: formData.interestIds.length > 0 ? formData.interestIds.map(id => ({ interestId: id })) : undefined,
-        hobbies: formData.hobbyIds.length > 0 ? formData.hobbyIds.map(id => ({ hobbyId: id })) : undefined,
-        customHobbies: formData.customHobbies.length > 0 ? formData.customHobbies : undefined,
+        sectors: formData.sectorIds.map(id => ({ sectorId: id })),
+        skills: formData.skillIds.map(id => ({ skillId: id })),
+        interests: formData.interestIds.map(id => ({ interestId: id })),
+        hobbies: formData.hobbyIds.map(id => ({ hobbyId: id })),
+        customSectors: formData.customSectors,
+        customSkills: formData.customSkills,
+        customInterests: formData.customInterests,
+        customHobbies: formData.customHobbies,
       });
 
       toast({
