@@ -147,6 +147,11 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
   // Custom entries
   const [customSkills, setCustomSkills] = useState<Skill[]>([]);
 
+  // Show all toggles for chip lists
+  const [showAllSectors, setShowAllSectors] = useState(false);
+  const [showAllSkills, setShowAllSkills] = useState(false);
+  const [showAllMarkets, setShowAllMarkets] = useState(false);
+
   // AI suggestion tracking
   const [suggestedSectorIds, setSuggestedSectorIds] = useState<string[]>([]);
   const [suggestedSkillIds, setSuggestedSkillIds] = useState<string[]>([]);
@@ -444,17 +449,17 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
         skills: validSkills,
         visibility,
         isActive,
-        ...(needs.length > 0 && { needs }),
-        ...((markets.length > 0 || customMarkets.length > 0) && { markets: [...markets, ...customMarkets] }),
-        ...(fundingAskMin && { fundingAskMin: Number(fundingAskMin) }),
-        ...(fundingAskMax && { fundingAskMax: Number(fundingAskMax) }),
-        ...(tractionSignals.length > 0 && { tractionSignals }),
-        ...(advisoryTopics.length > 0 && { advisoryTopics }),
-        ...(partnerTypeNeeded.length > 0 && { partnerTypeNeeded }),
-        ...(commitmentLevelNeeded && { commitmentLevelNeeded }),
-        ...(idealCounterpartProfile.trim() && { idealCounterpartProfile: idealCounterpartProfile.trim() }),
-        ...(targetCustomerTypes.length > 0 && { targetCustomerTypes }),
-        ...(engagementModel.length > 0 && { engagementModel }),
+        needs,
+        markets: [...markets, ...customMarkets],
+        fundingAskMin: fundingAskMin ? Number(fundingAskMin) : undefined,
+        fundingAskMax: fundingAskMax ? Number(fundingAskMax) : undefined,
+        tractionSignals,
+        advisoryTopics,
+        partnerTypeNeeded,
+        commitmentLevelNeeded: commitmentLevelNeeded || undefined,
+        idealCounterpartProfile: idealCounterpartProfile.trim() || undefined,
+        targetCustomerTypes,
+        engagementModel,
         strictLookingFor,
       };
       await onSubmit(data);
@@ -714,12 +719,17 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
           <div className={s.srch}><span className={s.srchIco}>⌕</span><input type="text" value={sectorSearch} onChange={e => setSectorSearch(e.target.value)} placeholder="Search sectors..." className={s.inp} /></div>
           <div className={s.ca}>
             <div className={s.cw}>
-              {filteredSec.slice(0, 30).map(o => (
+              {(sectorSearch ? filteredSec : filteredSec.slice(0, showAllSectors ? filteredSec.length : 30)).map(o => (
                 <button key={o.id} type="button" onClick={() => toggleSector(o.id)} className={selectedSectorIds.includes(o.id) ? s.chipC : s.chip}>
                   {suggestedSectorIds.includes(o.id) && <span className={s.star}>★</span>}
                   {o.name}
                 </button>
               ))}
+              {!sectorSearch && filteredSec.length > 30 && (
+                <button type="button" onClick={() => setShowAllSectors(p => !p)} className={s.chip} style={{borderStyle:'dashed', opacity: 0.8}}>
+                  {showAllSectors ? 'Show less' : `+${filteredSec.length - 30} more`}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -738,12 +748,17 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
           <div className={s.srch}><span className={s.srchIco}>⌕</span><input type="text" value={skillSearch} onChange={e => setSkillSearch(e.target.value)} placeholder="Search skills..." className={s.inp} /></div>
           <div className={s.ca}>
             <div className={s.cw}>
-              {filteredSk.slice(0, 30).map(o => (
+              {(skillSearch ? filteredSk : filteredSk.slice(0, showAllSkills ? filteredSk.length : 30)).map(o => (
                 <button key={o.id} type="button" onClick={() => toggleSkill(o.id)} className={selectedSkills.some(sk => sk.skillId === o.id) ? s.chipC : s.chip}>
                   {suggestedSkillIds.includes(o.id) && <span className={s.star}>★</span>}
                   {o.name}
                 </button>
               ))}
+              {!skillSearch && filteredSk.length > 30 && (
+                <button type="button" onClick={() => setShowAllSkills(p => !p)} className={s.chip} style={{borderStyle:'dashed', opacity: 0.8}}>
+                  {showAllSkills ? 'Show less' : `+${filteredSk.length - 30} more`}
+                </button>
+              )}
             </div>
             <div className={s.te}>
               <input type="text" value={customSkillInput} onChange={e => setCustomSkillInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && customSkillInput.trim()) { e.preventDefault(); handleAddCustomSkill(customSkillInput.trim()); setCustomSkillInput(''); } }} placeholder="Add custom skill..." className={s.inp} />
@@ -774,11 +789,15 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
           <AutocompleteTagInput value={marketSearch} onChange={setMarketSearch} onAdd={v => { const mapped = mapMarketValue(v); if (mapped && !markets.includes(mapped)) { setMarkets(p => [...p, mapped]); } else if (!mapped && !customMarkets.some(c => c.toLowerCase() === v.toLowerCase())) { setCustomMarkets(p => [...p, v]); } setMarketSearch(''); }} suggestions={[...MARKET_OPTIONS.filter(o => !markets.includes(o.value)).map(o => o.label), ...MARKET_SUGGESTIONS]} existingTags={[...markets.map(v => MARKET_OPTIONS.find(o => o.value === v)?.label || v), ...customMarkets]} placeholder="Search or add market..." />
         </div>
         <div className={s.msr} style={{marginTop:12}}>
-          {smartSort(MARKET_OPTIONS.filter(o => !marketSearch || o.label.toLowerCase().includes(marketSearch.toLowerCase())), o => o.value, markets, []).slice(0, 20).map(o => (
+          {(() => { const sortedMarkets = smartSort(MARKET_OPTIONS.filter(o => !marketSearch || o.label.toLowerCase().includes(marketSearch.toLowerCase())), o => o.value, markets, []); const visibleMarkets = marketSearch ? sortedMarkets : sortedMarkets.slice(0, showAllMarkets ? sortedMarkets.length : 20); return (<>{visibleMarkets.map(o => (
             <button key={o.value} type="button" onClick={() => { setMarkets(p => p.includes(o.value) ? p.filter(v => v !== o.value) : [...p, o.value]); setMarketsSource('manual'); }} className={markets.includes(o.value) ? s.pillBlu : s.pill}>
               {markets.includes(o.value) && '✓ '}{o.label}
             </button>
-          ))}
+          ))}{!marketSearch && sortedMarkets.length > 20 && (
+            <button type="button" onClick={() => setShowAllMarkets(p => !p)} className={s.pill} style={{borderStyle:'dashed', opacity: 0.8}}>
+              {showAllMarkets ? 'Show less' : `+${sortedMarkets.length - 20} more`}
+            </button>
+          )}</>); })()}
         </div>
       </section>
 

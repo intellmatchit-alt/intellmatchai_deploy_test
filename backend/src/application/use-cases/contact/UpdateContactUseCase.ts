@@ -7,7 +7,7 @@
  */
 
 import { IContactRepository } from '../../../domain/repositories/IContactRepository';
-import { Contact, ContactSector, ContactSkill, ContactInterest } from '../../../domain/entities/Contact';
+import { Contact, ContactSector, ContactSkill, ContactInterest, ContactHobby } from '../../../domain/entities/Contact';
 import { UpdateContactDTO, ContactResponseDTO } from '../../dto/contact.dto';
 import { NotFoundError, ConflictError } from '../../../shared/errors';
 import { logger } from '../../../shared/logger';
@@ -76,7 +76,7 @@ export class UpdateContactUseCase {
       contact.toggleFavorite();
     }
 
-    // Update sectors if provided
+    // Update sectors if provided (including empty array to clear all sectors)
     if (dto.sectors !== undefined) {
       const seenSectorIds = new Set<string>();
       const sectors: ContactSector[] = [];
@@ -89,6 +89,7 @@ export class UpdateContactUseCase {
           });
         }
       }
+      logger.info('Updating contact sectors', { contactId, sectorCount: sectors.length, previousCount: contact.sectors.length });
       contact.updateSectors(sectors);
     }
 
@@ -121,6 +122,21 @@ export class UpdateContactUseCase {
         }
       }
       contact.updateInterests(interests);
+    }
+
+    // Update hobbies if provided
+    if (dto.hobbies !== undefined) {
+      const seenHobbyIds = new Set<string>();
+      const hobbies: ContactHobby[] = [];
+      for (const h of dto.hobbies) {
+        if (!seenHobbyIds.has(h.hobbyId)) {
+          seenHobbyIds.add(h.hobbyId);
+          hobbies.push({
+            hobbyId: h.hobbyId,
+          });
+        }
+      }
+      contact.updateHobbies(hobbies);
     }
 
     // Save updated contact
@@ -164,6 +180,10 @@ export class UpdateContactUseCase {
       interests: contact.interests.map((i) => ({
         id: i.interestId,
         name: i.interestName || '',
+      })),
+      hobbies: contact.hobbies.map((h) => ({
+        id: h.hobbyId,
+        name: h.hobbyName || '',
       })),
       isFavorite: contact.isFavorite,
       matchScore: contact.matchScore,

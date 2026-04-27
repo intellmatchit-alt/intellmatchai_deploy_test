@@ -51,6 +51,9 @@ export class GetFollowUpContactsUseCase {
       company: contact.company,
       jobTitle: contact.jobTitle,
       bio: contact.bio,
+      bioSummary: contact.bioSummary,
+      bioFull: contact.bioFull,
+      notes: contact.notes,
       avatarUrl: contact.avatarUrl,
       linkedInUrl: contact.linkedInUrl,
       websiteUrl: contact.websiteUrl,
@@ -70,6 +73,10 @@ export class GetFollowUpContactsUseCase {
       interests: contact.interests.map((i) => ({
         id: i.interestId,
         name: i.interestName || '',
+      })),
+      hobbies: contact.hobbies.map((h) => ({
+        id: h.hobbyId,
+        name: h.hobbyName || '',
       })),
       isFavorite: contact.isFavorite,
       matchScore: contact.matchScore,

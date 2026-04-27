@@ -140,6 +140,7 @@ export class CreateContactUseCase {
       sectors,
       skills,
       interests,
+      hobbies: [],
       interactions: [],
       notes: dto.notes ? this.sanitizeString(dto.notes) : undefined,
       isFavorite: false,
@@ -177,6 +178,7 @@ export class CreateContactUseCase {
       bio: contact.bio || undefined,
       bioSummary: contact.bioSummary || undefined,
       bioFull: contact.bioFull || undefined,
+      notes: contact.notes || undefined,
       avatarUrl: contact.avatarUrl || undefined,
       linkedInUrl: contact.linkedInUrl || undefined,
       websiteUrl: contact.websiteUrl || undefined,
@@ -196,6 +198,10 @@ export class CreateContactUseCase {
       interests: contact.interests.map((i) => ({
         id: i.interestId,
         name: i.interestName || '',
+      })),
+      hobbies: contact.hobbies.map((h) => ({
+        id: h.hobbyId,
+        name: h.hobbyName || '',
       })),
       isFavorite: contact.isFavorite,
       matchScore: contact.matchScore,

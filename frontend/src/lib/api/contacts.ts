@@ -88,17 +88,17 @@ export interface CreateContactInput {
  */
 export interface UpdateContactInput {
   name?: string;
-  email?: string;
-  phone?: string;
-  company?: string;
-  jobTitle?: string;
-  bio?: string;
-  bioSummary?: string;
-  bioFull?: string;
-  linkedInUrl?: string;
-  websiteUrl?: string;
-  location?: string;
-  notes?: string;
+  email?: string | null;
+  phone?: string | null;
+  company?: string | null;
+  jobTitle?: string | null;
+  bio?: string | null;
+  bioSummary?: string | null;
+  bioFull?: string | null;
+  linkedInUrl?: string | null;
+  websiteUrl?: string | null;
+  location?: string | null;
+  notes?: string | null;
   isFavorite?: boolean;
   sectors?: Array<{ sectorId: string; isPrimary?: boolean }>;
   skills?: Array<{ skillId: string; proficiency?: string }>;

@@ -74,6 +74,7 @@ export class CreateContactFromScanUseCase {
       sectors,
       skills: [],
       interests: [],
+      hobbies: [],
       interactions: [scanInteraction],
       isFavorite: false,
       lastContactedAt: now,
@@ -122,6 +123,10 @@ export class CreateContactFromScanUseCase {
       })),
       interests: contact.interests.map((i) => ({
         id: i.interestId,
+        name: '',
+      })),
+      hobbies: contact.hobbies.map((h) => ({
+        id: h.hobbyId,
         name: '',
       })),
       isFavorite: contact.isFavorite,

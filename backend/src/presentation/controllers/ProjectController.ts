@@ -251,6 +251,13 @@ export class ProjectController {
             ...p,
             lookingFor: safeJsonArray(p.lookingFor),
             keywords: safeJsonArray(p.keywords),
+            needs: safeJsonArray(p.needs),
+            markets: safeJsonArray(p.markets),
+            tractionSignals: safeJsonArray(p.tractionSignals),
+            advisoryTopics: safeJsonArray(p.advisoryTopics),
+            partnerTypeNeeded: safeJsonArray(p.partnerTypeNeeded),
+            targetCustomerTypes: safeJsonArray(p.targetCustomerTypes),
+            engagementModel: safeJsonArray(p.engagementModel),
             sectors: p.sectors.map((ps) => ps.sector),
             skillsNeeded: p.skillsNeeded.map((ps) => ({
               ...ps.skill,
@@ -472,12 +479,20 @@ export class ProjectController {
         throw new NotFoundError("Project not found");
       }
 
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.status(200).json({
         success: true,
         data: {
           ...project,
           lookingFor: safeJsonArray(project.lookingFor),
           keywords: safeJsonArray(project.keywords),
+          needs: safeJsonArray(project.needs),
+          markets: safeJsonArray(project.markets),
+          tractionSignals: safeJsonArray(project.tractionSignals),
+          advisoryTopics: safeJsonArray(project.advisoryTopics),
+          partnerTypeNeeded: safeJsonArray(project.partnerTypeNeeded),
+          targetCustomerTypes: safeJsonArray(project.targetCustomerTypes),
+          engagementModel: safeJsonArray(project.engagementModel),
           sectors: project.sectors.map((ps) => ps.sector),
           skillsNeeded: project.skillsNeeded.map((ps) => ({
             ...ps.skill,
@@ -604,49 +619,53 @@ export class ProjectController {
       if (strictLookingFor !== undefined)
         updateData.strictLookingFor = strictLookingFor;
 
-      // Update sectors if provided
-      if (sectorIds !== undefined) {
-        await prisma.projectSector.deleteMany({
-          where: { projectId: String(req.params.id) },
-        });
-        if (sectorIds.length > 0) {
-          await prisma.projectSector.createMany({
-            data: sectorIds.map((sectorId: string) => ({
-              projectId: req.params.id,
-              sectorId,
-            })),
-          });
-        }
-      }
-
-      // Update skills if provided
-      if (skills !== undefined) {
-        await prisma.projectSkill.deleteMany({
-          where: { projectId: String(req.params.id) },
-        });
-        if (skills.length > 0) {
-          await prisma.projectSkill.createMany({
-            data: skills.map((s: { skillId: string; importance?: string }) => ({
-              projectId: req.params.id,
-              skillId: s.skillId,
-              importance: (s.importance || "REQUIRED") as SkillImportance,
-            })),
-          });
-        }
-      }
-
       // Clear keywords to force re-extraction on next match
       if (title || summary || detailedDesc) {
         updateData.keywords = [];
       }
 
-      const project = await prisma.project.update({
-        where: { id: String(req.params.id) },
-        data: updateData,
-        include: {
-          sectors: { include: { sector: true } },
-          skillsNeeded: { include: { skill: true } },
-        },
+      // Run all updates in a transaction to prevent partial updates
+      const project = await prisma.$transaction(async (tx) => {
+        // Update sectors if provided
+        if (sectorIds !== undefined) {
+          await tx.projectSector.deleteMany({
+            where: { projectId: String(req.params.id) },
+          });
+          if (sectorIds.length > 0) {
+            await tx.projectSector.createMany({
+              data: sectorIds.map((sectorId: string) => ({
+                projectId: req.params.id,
+                sectorId,
+              })),
+            });
+          }
+        }
+
+        // Update skills if provided
+        if (skills !== undefined) {
+          await tx.projectSkill.deleteMany({
+            where: { projectId: String(req.params.id) },
+          });
+          if (skills.length > 0) {
+            await tx.projectSkill.createMany({
+              data: skills.map((s: { skillId: string; importance?: string }) => ({
+                projectId: req.params.id,
+                skillId: s.skillId,
+                importance: (s.importance || "REQUIRED") as SkillImportance,
+              })),
+            });
+          }
+        }
+
+        // Update main project record
+        return tx.project.update({
+          where: { id: String(req.params.id) },
+          data: updateData,
+          include: {
+            sectors: { include: { sector: true } },
+            skillsNeeded: { include: { skill: true } },
+          },
+        });
       });
 
       logger.info("Project updated", {
@@ -658,6 +677,15 @@ export class ProjectController {
         success: true,
         data: {
           ...project,
+          lookingFor: safeJsonArray(project.lookingFor),
+          keywords: safeJsonArray(project.keywords),
+          needs: safeJsonArray(project.needs),
+          markets: safeJsonArray(project.markets),
+          tractionSignals: safeJsonArray(project.tractionSignals),
+          advisoryTopics: safeJsonArray(project.advisoryTopics),
+          partnerTypeNeeded: safeJsonArray(project.partnerTypeNeeded),
+          targetCustomerTypes: safeJsonArray(project.targetCustomerTypes),
+          engagementModel: safeJsonArray(project.engagementModel),
           sectors: project.sectors.map((ps) => ps.sector),
           skillsNeeded: project.skillsNeeded.map((ps) => ({
             ...ps.skill,

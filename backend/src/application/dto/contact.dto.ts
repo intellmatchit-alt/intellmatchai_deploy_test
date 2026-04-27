@@ -65,9 +65,11 @@ export interface UpdateContactDTO {
   sectors?: Array<{ sectorId: string; isPrimary?: boolean }>;
   skills?: Array<{ skillId: string; proficiency?: ProficiencyLevel }>;
   interests?: Array<{ interestId: string }>;
+  hobbies?: Array<{ hobbyId: string }>;
   customSectors?: string[];
   customSkills?: string[];
   customInterests?: string[];
+  customHobbies?: string[];
 }
 
 /**
@@ -115,6 +117,7 @@ export interface ContactResponseDTO {
   bio?: string;
   bioSummary?: string;
   bioFull?: string;
+  notes?: string;
   avatarUrl?: string;
   linkedInUrl?: string;
   websiteUrl?: string;
@@ -134,6 +137,10 @@ export interface ContactResponseDTO {
     proficiency: string;
   }>;
   interests: Array<{
+    id: string;
+    name: string;
+  }>;
+  hobbies: Array<{
     id: string;
     name: string;
   }>;

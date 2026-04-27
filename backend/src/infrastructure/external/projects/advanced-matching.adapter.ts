@@ -37,6 +37,18 @@ import { buildProviderFromUser, buildProviderFromContact, UserWithRelations, Con
 
 const config = DEFAULT_PROJECT_CONFIG;
 
+// Safely parse JSON array values from database (may be string or array)
+function safeJsonArray(value: unknown): unknown[] {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed;
+    } catch { /* not valid JSON */ }
+  }
+  return [];
+}
+
 // Map DB project stage to advanced stage
 function mapProjectStage(stage?: string): AdvancedProjectStage {
   const map: Record<string, AdvancedProjectStage> = {
@@ -75,12 +87,12 @@ function inferIntent(lookingFor: string[]): ProjectIntent {
 
 // Build ProjectProfile from DB project
 function buildProjectProfile(project: any): ProjectProfile {
-  const lookingFor = Array.isArray(project.lookingFor) ? project.lookingFor : [];
+  const lookingFor = safeJsonArray(project.lookingFor) as string[];
   const sectors = (project.sectors || []).map((ps: any) => ps.sector?.name || ps.name).filter(Boolean);
   const skills = (project.skillsNeeded || []).map((ps: any) => ps.skill?.name || ps.name).filter(Boolean);
-  const keywords = Array.isArray(project.keywords) ? project.keywords : [];
-  const needs = Array.isArray(project.needs) ? project.needs : [];
-  const markets = Array.isArray(project.markets) ? project.markets : [];
+  const keywords = safeJsonArray(project.keywords) as string[];
+  const needs = safeJsonArray(project.needs) as string[];
+  const markets = safeJsonArray(project.markets) as string[];
 
   return normalizeProjectProfile({
     id: project.id,
@@ -98,12 +110,12 @@ function buildProjectProfile(project: any): ProjectProfile {
     operatingMarkets: markets,
     fundingAskMin: project.fundingAskMin || undefined,
     fundingAskMax: project.fundingAskMax || undefined,
-    advisoryTopics: Array.isArray(project.advisoryTopics) ? project.advisoryTopics : undefined,
-    partnerTypeNeeded: Array.isArray(project.partnerTypeNeeded) ? project.partnerTypeNeeded : undefined,
+    advisoryTopics: safeJsonArray(project.advisoryTopics) as string[] || undefined,
+    partnerTypeNeeded: safeJsonArray(project.partnerTypeNeeded) as string[] || undefined,
     commitmentLevelNeeded: project.commitmentLevelNeeded || undefined,
     idealCounterpartProfile: project.idealCounterpartProfile || undefined,
-    engagementModel: Array.isArray(project.engagementModel) ? project.engagementModel : undefined,
-    targetCustomerTypes: Array.isArray(project.targetCustomerTypes) ? project.targetCustomerTypes : undefined,
+    engagementModel: safeJsonArray(project.engagementModel) as string[] || undefined,
+    targetCustomerTypes: safeJsonArray(project.targetCustomerTypes) as string[] || undefined,
     keywords,
     dataQualityScore: 70,
     strictLookingFor: project.strictLookingFor || false,
@@ -186,8 +198,19 @@ export async function advancedFindMatches(
   if (project.userId !== userId) throw new Error('Unauthorized');
 
   const projectProfile = buildProjectProfile(project);
-  const lookingFor = Array.isArray(project.lookingFor) ? project.lookingFor as string[] : [];
+  const lookingFor = safeJsonArray(project.lookingFor) as string[];
   const intent = inferIntent(lookingFor);
+
+  logger.info('Project profile built for matching', {
+    projectId,
+    lookingFor,
+    intent,
+    sectors: projectProfile.industrySectors,
+    skills: projectProfile.skillsNeeded,
+    needs: projectProfile.projectNeeds?.substring(0, 100),
+    markets: projectProfile.operatingMarkets,
+    stage: projectProfile.projectStage,
+  });
 
   // 2. Fetch user candidates (same query pattern as legacy)
   const projectSectorIds = project.sectors.map((s: any) => s.sectorId);

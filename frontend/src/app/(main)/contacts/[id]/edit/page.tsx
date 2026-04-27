@@ -593,17 +593,17 @@ export default function EditContactPage() {
     try {
       await updateContact(contactId, {
         name: formData.fullName,
-        email: formData.email || undefined,
-        phone: formData.phone || undefined,
-        company: formData.company || undefined,
-        jobTitle: formData.jobTitle || undefined,
-        websiteUrl: formData.website || undefined,
-        linkedInUrl: formData.linkedInUrl || undefined,
-        location: formData.location || undefined,
-        bio: formData.bioSummary || formData.bio || undefined, // Use summary as main bio for backward compatibility
-        bioSummary: formData.bioSummary || undefined,
-        bioFull: formData.bioFull || undefined,
-        notes: formData.notes || undefined,
+        email: formData.email || null,
+        phone: formData.phone || null,
+        company: formData.company || null,
+        jobTitle: formData.jobTitle || null,
+        websiteUrl: formData.website || null,
+        linkedInUrl: formData.linkedInUrl || null,
+        location: formData.location || null,
+        bio: formData.bioSummary || formData.bio || null,
+        bioSummary: formData.bioSummary || null,
+        bioFull: formData.bioFull || null,
+        notes: formData.notes || null,
         sectors: formData.sectorIds.map(id => ({ sectorId: id })),
         skills: formData.skillIds.map(id => ({ skillId: id })),
         interests: formData.interestIds.map(id => ({ interestId: id })),
@@ -620,7 +620,8 @@ export default function EditContactPage() {
         variant: 'success',
       });
 
-      router.push(`/contacts/${contactId}`);
+      router.push(`/contacts/${contactId}?updated=${Date.now()}`);
+      router.refresh();
     } catch (error: any) {
       console.error('Update contact error:', error);
       toast({ title: 'Error', description: error.message || 'Failed to update contact', variant: 'error' });

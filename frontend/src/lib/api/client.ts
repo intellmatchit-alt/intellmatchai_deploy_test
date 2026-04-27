@@ -178,11 +178,12 @@ export async function apiRequest<T>(
     }
   }
 
-  // Make request
+  // Make request - use no-cache to prevent stale responses from service worker/browser cache
   let response = await fetch(url, {
     method,
     headers: requestHeaders,
     body: body ? JSON.stringify(body) : undefined,
+    cache: "no-cache" as RequestCache,
   });
 
   // Handle 429 - rate limited, don't trigger token refresh or logout

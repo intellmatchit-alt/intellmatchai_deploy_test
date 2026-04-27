@@ -41,7 +41,7 @@ lookupRoutes.get(
       const path = req.baseUrl.split("/").pop();
       const search = req.query.search as string | undefined;
       const parentId = req.query.parentId as string | undefined;
-      const limit = parseInt(req.query.limit as string) || 100;
+      const limit = parseInt(req.query.limit as string) || 500;
 
       // Generate cache key
       const cacheKey = getLookupListCacheKey(

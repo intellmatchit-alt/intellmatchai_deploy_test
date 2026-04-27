@@ -6,6 +6,7 @@
       "es2022"
     ],
     "module": "commonjs",
+    "ignoreDeprecations": "6.0",
     "moduleResolution": "node",
     /* Emit */
     "outDir": "./dist",

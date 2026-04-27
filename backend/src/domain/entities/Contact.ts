@@ -42,6 +42,14 @@ export interface ContactInterest {
 }
 
 /**
+ * Contact Hobby relationship
+ */
+export interface ContactHobby {
+  hobbyId: string;
+  hobbyName?: string;
+}
+
+/**
  * Contact Interaction
  */
 export interface ContactInteraction {
@@ -79,6 +87,7 @@ export interface ContactProps {
   sectors: ContactSector[];
   skills: ContactSkill[];
   interests: ContactInterest[];
+  hobbies: ContactHobby[];
   interactions: ContactInteraction[];
   notes?: string;
   isFavorite: boolean;
@@ -210,6 +219,10 @@ export class Contact {
     return [...this.props.interests];
   }
 
+  get hobbies(): ContactHobby[] {
+    return [...this.props.hobbies];
+  }
+
   get interactions(): ContactInteraction[] {
     return [...this.props.interactions];
   }
@@ -248,37 +261,37 @@ export class Contact {
    * Update basic contact info
    */
   public updateInfo(data: {
-    name?: string;
-    email?: string;
-    phone?: string;
-    company?: string;
-    jobTitle?: string;
-    bio?: string;
-    bioSummary?: string;
-    bioFull?: string;
-    linkedInUrl?: string;
-    websiteUrl?: string;
-    location?: string;
-    notes?: string;
+    name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    company?: string | null;
+    jobTitle?: string | null;
+    bio?: string | null;
+    bioSummary?: string | null;
+    bioFull?: string | null;
+    linkedInUrl?: string | null;
+    websiteUrl?: string | null;
+    location?: string | null;
+    notes?: string | null;
   }): void {
     if (data.name !== undefined) {
-      if (data.name.trim().length < 1) {
+      if (data.name && data.name.trim().length < 1) {
         throw new Error('Contact name is required');
       }
-      this.props.name = data.name.trim();
+      if (data.name) this.props.name = data.name.trim();
     }
 
-    if (data.email !== undefined) this.props.email = data.email;
-    if (data.phone !== undefined) this.props.phone = data.phone;
-    if (data.company !== undefined) this.props.company = data.company;
-    if (data.jobTitle !== undefined) this.props.jobTitle = data.jobTitle;
-    if (data.bio !== undefined) this.props.bio = data.bio;
-    if (data.bioSummary !== undefined) this.props.bioSummary = data.bioSummary;
-    if (data.bioFull !== undefined) this.props.bioFull = data.bioFull;
-    if (data.linkedInUrl !== undefined) this.props.linkedInUrl = data.linkedInUrl;
-    if (data.websiteUrl !== undefined) this.props.websiteUrl = data.websiteUrl;
-    if (data.location !== undefined) this.props.location = data.location;
-    if (data.notes !== undefined) this.props.notes = data.notes;
+    if (data.email !== undefined) this.props.email = data.email || undefined;
+    if (data.phone !== undefined) this.props.phone = data.phone || undefined;
+    if (data.company !== undefined) this.props.company = data.company || undefined;
+    if (data.jobTitle !== undefined) this.props.jobTitle = data.jobTitle || undefined;
+    if (data.bio !== undefined) this.props.bio = data.bio || undefined;
+    if (data.bioSummary !== undefined) this.props.bioSummary = data.bioSummary || undefined;
+    if (data.bioFull !== undefined) this.props.bioFull = data.bioFull || undefined;
+    if (data.linkedInUrl !== undefined) this.props.linkedInUrl = data.linkedInUrl || undefined;
+    if (data.websiteUrl !== undefined) this.props.websiteUrl = data.websiteUrl || undefined;
+    if (data.location !== undefined) this.props.location = data.location || undefined;
+    if (data.notes !== undefined) this.props.notes = data.notes || undefined;
 
     this.props.updatedAt = new Date();
   }
@@ -315,6 +328,14 @@ export class Contact {
    */
   public updateInterests(interests: ContactInterest[]): void {
     this.props.interests = interests;
+    this.props.updatedAt = new Date();
+  }
+
+  /**
+   * Update hobbies
+   */
+  public updateHobbies(hobbies: ContactHobby[]): void {
+    this.props.hobbies = hobbies;
     this.props.updatedAt = new Date();
   }
 

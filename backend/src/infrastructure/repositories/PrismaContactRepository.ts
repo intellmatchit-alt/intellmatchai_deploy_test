@@ -20,6 +20,7 @@ import {
   ContactSector,
   ContactSkill,
   ContactInterest,
+  ContactHobby,
   ContactInteraction,
 } from '../../domain/entities/Contact';
 import { UserId } from '../../domain/entities/User';
@@ -393,6 +394,19 @@ export class PrismaContactRepository implements IContactRepository {
           });
         }
 
+        // Update hobbies
+        await tx.contactHobby.deleteMany({ where: { contactId: props.id } });
+        if (props.hobbies && props.hobbies.length > 0) {
+          await tx.contactHobby.createMany({
+            data: props.hobbies.map((h) => ({
+              contactId: props.id,
+              hobbyId: h.hobbyId,
+              confidence: 1.0,
+              source: 'USER',
+            })),
+          });
+        }
+
         // Add new interactions (existing ones are immutable)
         for (const interaction of props.interactions) {
           const existingInteraction = await tx.interaction.findUnique({
@@ -475,6 +489,18 @@ export class PrismaContactRepository implements IContactRepository {
             data: props.interests.map((i) => ({
               contactId: props.id,
               interestId: i.interestId,
+              confidence: 1.0,
+              source: 'USER',
+            })),
+          });
+        }
+
+        // Create hobbies
+        if (props.hobbies && props.hobbies.length > 0) {
+          await tx.contactHobby.createMany({
+            data: props.hobbies.map((h) => ({
+              contactId: props.id,
+              hobbyId: h.hobbyId,
               confidence: 1.0,
               source: 'USER',
             })),
@@ -572,6 +598,9 @@ export class PrismaContactRepository implements IContactRepository {
       contactInterests: {
         include: { interest: true },
       },
+      contactHobbies: {
+        include: { hobby: true },
+      },
       interactions: {
         orderBy: { occurredAt: 'desc' as const },
         take: 50, // Limit interactions to prevent large responses
@@ -603,6 +632,12 @@ export class PrismaContactRepository implements IContactRepository {
     const interests: ContactInterest[] = prismaContact.contactInterests?.map((ci: any) => ({
       interestId: ci.interestId,
       interestName: ci.interest?.name || '',
+    })) || [];
+
+    // Map hobbies (include name from joined hobby table)
+    const hobbies: ContactHobby[] = prismaContact.contactHobbies?.map((ch: any) => ({
+      hobbyId: ch.hobbyId,
+      hobbyName: ch.hobby?.name || '',
     })) || [];
 
     // Map interactions
@@ -638,6 +673,7 @@ export class PrismaContactRepository implements IContactRepository {
       sectors,
       skills,
       interests,
+      hobbies,
       interactions,
       notes: prismaContact.notes || undefined,
       isFavorite: prismaContact.isFavorite ?? false,

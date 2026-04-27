@@ -39,7 +39,7 @@ export class ProjectMatchingController {
       if (!auth) { res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED' } }); return; }
 
       const request: FindProjectMatchesRequest = {
-        projectId: req.params.projectId,
+        projectId: req.params.projectId as string,
         intent: req.body.intent,
         limit: Math.min(Number(req.body.limit ?? 50), 100),
         offset: Math.max(Number(req.body.offset ?? 0), 0),
@@ -57,7 +57,7 @@ export class ProjectMatchingController {
       const auth = extractAuth(req);
       if (!auth) { res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED' } }); return; }
       const limit = Math.min(Number(req.query.limit ?? 50), 100);
-      const matches = await this.service.getMatches(auth, req.params.projectId, limit);
+      const matches = await this.service.getMatches(auth, req.params.projectId as string, limit);
       res.json({ success: true, data: { matches, total: matches.length } });
     } catch (error) { next(error); }
   };

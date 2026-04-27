@@ -693,7 +693,7 @@ export default function ContactDetailPage() {
     if (contactId) {
       fetchContact();
     }
-  }, [contactId, t, fetchItemizedMatch]);
+  }, [contactId, t, fetchItemizedMatch, searchParams]);
 
   // Fetch user's projects, opportunities, deals, pitches + all matches for this contact
   useEffect(() => {

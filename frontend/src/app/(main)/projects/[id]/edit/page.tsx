@@ -52,7 +52,8 @@ export default function EditProjectPage() {
     try {
       await updateProject(projectId, data as UpdateProjectInput);
       toast({ title: t.projects?.updated || 'Project updated', variant: 'success' });
-      router.push(`/projects/${projectId}`);
+      router.push(`/projects/${projectId}?updated=${Date.now()}`);
+      router.refresh();
     } catch (error: any) {
       toast({ title: t.common?.error || 'Error', description: error.message, variant: 'error' });
     } finally {
