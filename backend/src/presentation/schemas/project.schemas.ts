@@ -131,6 +131,8 @@ export const createProjectSchema = z.object({
     targetCustomerTypes: z.array(z.string().max(100)).optional().default([]),
     engagementModel: z.array(z.string().max(100)).optional().default([]),
     strictLookingFor: z.boolean().optional().default(false),
+    documentUrl: z.string().max(500).optional().nullable(),
+    documentName: z.string().max(255).optional().nullable(),
   }),
 });
 
@@ -167,6 +169,8 @@ export const updateProjectSchema = z.object({
     targetCustomerTypes: z.array(z.string().max(100)).optional(),
     engagementModel: z.array(z.string().max(100)).optional(),
     strictLookingFor: z.boolean().optional(),
+    documentUrl: z.string().max(500).optional().nullable(),
+    documentName: z.string().max(255).optional().nullable(),
   }),
 });
 

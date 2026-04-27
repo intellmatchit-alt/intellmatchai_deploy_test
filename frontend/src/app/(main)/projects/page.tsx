@@ -6,7 +6,8 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
@@ -89,30 +90,50 @@ function CardMenu({
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+
+  const updatePos = useCallback(() => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 4, left: rect.right - 176 }); // 176 = w-44 = 11rem
+    }
+  }, []);
 
   useEffect(() => {
+    if (!open) return;
+    updatePos();
     function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node) &&
+          btnRef.current && !btnRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     }
-    if (open) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [open]);
+    function handleScroll() { setOpen(false); }
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('scroll', handleScroll, true);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [open, updatePos]);
 
   return (
-    <div className="relative" ref={menuRef}>
+    <>
       <button
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(!open); }}
+        ref={btnRef}
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); updatePos(); setOpen(!open); }}
         className="p-1.5 rounded-lg hover:bg-th-surface-h text-th-text-t hover:text-th-text transition-colors"
       >
         <MoreVertical24Regular className="w-5 h-5" />
       </button>
-      {open && (
-        <div className="absolute end-0 top-full mt-1 w-44 bg-[#1e1e2e] border border-th-border rounded-xl shadow-xl z-20 overflow-hidden">
+      {open && typeof document !== 'undefined' && createPortal(
+        <div
+          ref={menuRef}
+          className="fixed w-44 bg-[#1e1e2e] border border-th-border rounded-xl shadow-2xl overflow-hidden"
+          style={{ top: pos.top, left: Math.max(8, pos.left), zIndex: 9999 }}
+        >
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit(); setOpen(false); }}
             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-th-text hover:bg-th-surface-h transition-colors"
@@ -134,9 +155,10 @@ function CardMenu({
             <Delete24Regular className="w-4 h-4" />
             {t.common?.delete || 'Delete'}
           </button>
-        </div>
+        </div>,
+        document.body,
       )}
-    </div>
+    </>
   );
 }
 
@@ -161,9 +183,14 @@ function ProjectCard({
     .map(id => LOOKING_FOR_OPTIONS.find(o => o.id === id)?.label || id)
     .slice(0, 2);
 
+  const router = useRouter();
+
   return (
-    <Link href={`/projects/${project.id}`}>
-      <div className={`group bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-4 hover:bg-th-surface-h transition-all duration-200 ${!project.isActive ? 'opacity-70' : ''}`}>
+    <div className="relative mb-5" style={{ zIndex: 'auto' }}>
+      <div
+        onClick={() => router.push(`/projects/${project.id}`)}
+        className={`group cursor-pointer bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-4 hover:bg-th-surface-h transition-all duration-200 ${!project.isActive ? 'opacity-70' : ''}`}
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
@@ -232,7 +259,7 @@ function ProjectCard({
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
 
@@ -473,7 +500,7 @@ export default function ProjectsPage() {
 
       {/* Content - My Projects */}
       {activeTab === 'projects' && !isLoading && filteredProjects.length > 0 && (
-        <div className="space-y-3">
+        <div>
           {filteredProjects.map((project) => (
             <ProjectCard key={project.id} project={project} onEdit={handleEdit} onDelete={handleDeleteRequest} onArchive={handleArchive} />
           ))}
@@ -482,7 +509,7 @@ export default function ProjectsPage() {
 
       {/* Content - Team Projects */}
       {activeTab === 'team' && !isLoading && teamProjects.length > 0 && (
-        <div className="space-y-3">
+        <div>
           {teamProjects.map((project) => (
             <TeamProjectCard key={project.id} project={project} />
           ))}

@@ -629,12 +629,18 @@ export function runProjectHardFilters(
     policy.hardRequirements.requireCounterpartTypeMatch &&
     provider.counterpartType !== target
   ) {
-    results.push(
-      fail(HardFilterReason.FAMILY_INCOMPATIBLE, "Counterpart type mismatch", [
-        `expected=${target}`,
-        `actual=${provider.counterpartType}`,
-      ]),
-    );
+    // Don't hard-fail — counterpart type is inferred from job title which is unreliable.
+    // Downgrade to REVIEW so the scoring engine can still evaluate the candidate.
+    const allLookingFor = project.lookingFor || [];
+    const inLookingFor = allLookingFor.includes(provider.counterpartType);
+    if (!inLookingFor) {
+      results.push(
+        review(HardFilterReason.FAMILY_INCOMPATIBLE, "Counterpart type inferred as different from target", [
+          `expected=${target}`,
+          `actual=${provider.counterpartType}`,
+        ]),
+      );
+    }
   }
   if (
     policy.hardRequirements.requireLookingForAlignment &&

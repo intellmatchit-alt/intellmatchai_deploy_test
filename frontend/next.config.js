@@ -57,8 +57,8 @@ const withPWA = require("next-pwa")({
       },
     },
     {
-      // Exclude sensitive API routes from caching entirely
-      urlPattern: /\/api\/v1\/(auth|wallet|admin|payments|users)/i,
+      // Exclude sensitive and frequently-changing API routes from caching entirely
+      urlPattern: /\/api\/v1\/(auth|wallet|admin|payments|users|contacts|projects|profile|matches|deals|pitch)/i,
       handler: "NetworkOnly",
     },
     {

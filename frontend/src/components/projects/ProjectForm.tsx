@@ -147,6 +147,10 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
   // Custom entries
   const [customSkills, setCustomSkills] = useState<Skill[]>([]);
 
+  // Document state
+  const [documentUrl, setDocumentUrl] = useState<string | null>(project?.documentUrl || null);
+  const [documentName, setDocumentName] = useState<string | null>(project?.documentName || null);
+
   // Show all toggles for chip lists
   const [showAllSectors, setShowAllSectors] = useState(false);
   const [showAllSkills, setShowAllSkills] = useState(false);
@@ -237,6 +241,8 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
     setTargetCustomerTypes(project.targetCustomerTypes || []);
     setEngagementModel(project.engagementModel || []);
     setStrictLookingFor(project.strictLookingFor || false);
+    setDocumentUrl(project.documentUrl || null);
+    setDocumentName(project.documentName || null);
   }, [project]);
 
   // Fetch sectors and skills
@@ -338,6 +344,12 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
     if (extracted.commitmentLevelNeeded) setCommitmentLevelNeeded(extracted.commitmentLevelNeeded);
     if (extracted.engagementModel?.length) setEngagementModel(extracted.engagementModel);
     if (extracted.targetCustomerTypes?.length) setTargetCustomerTypes(extracted.targetCustomerTypes);
+
+    // Store document URL if returned from extraction
+    if (extracted.documentUrl) {
+      setDocumentUrl(extracted.documentUrl);
+      setDocumentName(extracted.documentName || 'Project Document');
+    }
 
     toast({
       title: 'Data Extracted',
@@ -461,6 +473,8 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
         targetCustomerTypes,
         engagementModel,
         strictLookingFor,
+        ...(documentUrl !== undefined && { documentUrl }),
+        ...(documentName !== undefined && { documentName }),
       };
       await onSubmit(data);
     } else {
@@ -487,6 +501,8 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
         ...(targetCustomerTypes.length > 0 && { targetCustomerTypes }),
         ...(engagementModel.length > 0 && { engagementModel }),
         strictLookingFor,
+        ...(documentUrl && { documentUrl }),
+        ...(documentName && { documentName }),
       };
       await onSubmit(data);
     }
@@ -567,6 +583,9 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
         title="Upload Project Document"
         description="Upload a proposal or business plan. AI will extract details and suggest relevant options."
         accentColor="emerald"
+        existingDocumentUrl={documentUrl}
+        existingDocumentName={documentName}
+        onDocumentRemoved={() => { setDocumentUrl(null); setDocumentName(null); }}
       />
 
       {/* ════ Basic Information ═════════════════════════════════════════ */}

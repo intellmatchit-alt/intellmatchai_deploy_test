@@ -245,6 +245,7 @@ export default function ContactDetailPage() {
   const [showQrPopup, setShowQrPopup] = useState(false);
   const [contact, setContact] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -589,10 +590,13 @@ export default function ContactDetailPage() {
 
   // Fetch contact data and match details
   useEffect(() => {
-    const fetchContact = async () => {
+    let cancelled = false;
+    const fetchContact = async (attempt = 1) => {
       try {
         setIsLoading(true);
+        setLoadError(false);
         const data = await getContact(contactId);
+        if (cancelled) return;
         console.log(
           "Contact API response:",
           JSON.stringify(
@@ -679,20 +683,28 @@ export default function ContactDetailPage() {
           }
         }
       } catch (error) {
-        console.error("Error fetching contact:", error);
+        if (cancelled) return;
+        console.error("Error fetching contact:", error, `(attempt ${attempt})`);
+        // Retry once after a short delay (handles race conditions during navigation)
+        if (attempt < 2) {
+          setTimeout(() => { if (!cancelled) fetchContact(attempt + 1); }, 500);
+          return;
+        }
+        setLoadError(true);
         toast({
           title: t.common.error,
           description: "Failed to load contact",
           variant: "error",
         });
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     if (contactId) {
       fetchContact();
     }
+    return () => { cancelled = true; };
   }, [contactId, t, fetchItemizedMatch, searchParams]);
 
   // Fetch user's projects, opportunities, deals, pitches + all matches for this contact
@@ -1111,10 +1123,17 @@ export default function ContactDetailPage() {
   if (!contact) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
-        <p className="text-th-text-t">Contact not found</p>
-        <Link href="/contacts">
-          <Button variant="secondary">Back to Contacts</Button>
-        </Link>
+        <p className="text-th-text-t">{loadError ? "Failed to load contact" : "Contact not found"}</p>
+        <div className="flex gap-3">
+          {loadError && (
+            <Button variant="primary" onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          )}
+          <Link href="/contacts">
+            <Button variant="secondary">Back to Contacts</Button>
+          </Link>
+        </div>
       </div>
     );
   }

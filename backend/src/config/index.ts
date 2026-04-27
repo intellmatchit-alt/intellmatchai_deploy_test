@@ -54,7 +54,7 @@ const envSchema = z.object({
 
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS: z.string().default("60000"),
-  RATE_LIMIT_MAX_REQUESTS: z.string().default("100"),
+  RATE_LIMIT_MAX_REQUESTS: z.string().default("500"),
 
   // Logging
   LOG_LEVEL: z.string().default("debug"),

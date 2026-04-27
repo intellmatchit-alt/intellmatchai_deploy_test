@@ -56,39 +56,44 @@ import {
 // Objective options
 const OBJECTIVE_OPTIONS = [
   {
-    id: "FIND_MENTOR",
+    id: "MENTORSHIP",
     name: "Find a Mentor",
     description: "Connect with experienced professionals",
   },
   {
-    id: "FIND_PARTNER",
+    id: "PARTNERSHIP",
     name: "Find Business Partners",
     description: "Collaborate on projects or ventures",
   },
   {
-    id: "FIND_INVESTOR",
+    id: "INVESTMENT",
     name: "Find Investors",
     description: "Secure funding for your projects",
   },
   {
-    id: "FIND_TALENT",
+    id: "HIRING",
     name: "Find Talent",
     description: "Recruit skilled professionals",
   },
   {
-    id: "FIND_CLIENTS",
+    id: "SALES",
     name: "Find Clients",
     description: "Acquire new business opportunities",
   },
   {
-    id: "EXPAND_NETWORK",
+    id: "COLLABORATION",
     name: "Expand Network",
     description: "Grow your professional connections",
   },
   {
-    id: "LEARN_SKILL",
+    id: "LEARNING",
     name: "Learn New Skills",
     description: "Develop new competencies",
+  },
+  {
+    id: "JOB_SEEKING",
+    name: "Find a Job",
+    description: "Explore career opportunities",
   },
 ];
 
@@ -502,7 +507,7 @@ export default function EditProfilePage() {
         updateSectors(selectedSectorIds.map((id) => ({ sectorId: id }))),
         updateSkills(selectedSkillIds.map((id) => ({ skillId: id }))),
         updateInterests(selectedInterestIds.map((id) => ({ interestId: id }))),
-        // updateGoals(selectedObjectiveTypes.map((type, index) => ({ type, priority: index + 1 }))),
+        updateGoals(selectedObjectiveTypes.map((type, index) => ({ type, priority: index + 1 }))),
         updateHobbies(selectedHobbyIds.map((id) => ({ hobbyId: id }))),
       ]);
 

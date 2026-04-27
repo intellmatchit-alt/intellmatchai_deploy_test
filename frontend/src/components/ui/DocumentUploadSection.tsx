@@ -18,6 +18,9 @@ interface DocumentUploadSectionProps<T> {
   accentColor?: 'emerald' | 'blue' | 'amber' | 'purple';
   acceptTypes?: string;
   maxSizeMB?: number;
+  existingDocumentUrl?: string | null;
+  existingDocumentName?: string | null;
+  onDocumentRemoved?: () => void;
 }
 
 const gradientMap = {
@@ -42,6 +45,9 @@ export function DocumentUploadSection<T>({
   accentColor = 'emerald',
   acceptTypes = '.pdf,.docx,.doc,.txt',
   maxSizeMB = 10,
+  existingDocumentUrl,
+  existingDocumentName,
+  onDocumentRemoved,
 }: DocumentUploadSectionProps<T>) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -118,6 +124,29 @@ export function DocumentUploadSection<T>({
             <p className="text-[0.96rem] text-th-text-s mt-1.5 leading-relaxed font-medium">{description}</p>
           </div>
         </div>
+
+        {/* Existing Document */}
+        {existingDocumentUrl && !file && (
+          <div className={`flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border ${clr.banner}`}>
+            <div className="flex items-center gap-3 min-w-0">
+              <Document24Regular className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-th-text truncate">{existingDocumentName || 'Project Document'}</p>
+                <p className="text-xs text-th-text-m">Uploaded document</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <a href={existingDocumentUrl} target="_blank" rel="noopener noreferrer" className={`px-3 py-1.5 rounded-xl text-xs font-semibold ${clr.btn}`}>
+                Open
+              </a>
+              {onDocumentRemoved && (
+                <button type="button" onClick={onDocumentRemoved} className="p-1.5 rounded-lg text-th-text-m hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                  <Dismiss24Regular className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Dropzone */}
         <div

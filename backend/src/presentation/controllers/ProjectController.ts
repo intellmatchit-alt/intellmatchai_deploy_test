@@ -327,7 +327,16 @@ export class ProjectController {
         targetCustomerTypes,
         engagementModel,
         strictLookingFor,
+        documentUrl,
+        documentName,
       } = req.body;
+
+      logger.info("Create project request body keys", {
+        hasDocumentUrl: documentUrl !== undefined,
+        documentUrl: documentUrl || null,
+        documentName: documentName || null,
+        bodyKeys: Object.keys(req.body),
+      });
 
       if (!title || !summary) {
         throw new ValidationError("Title and summary are required");
@@ -372,6 +381,8 @@ export class ProjectController {
           ...(targetCustomerTypes !== undefined && { targetCustomerTypes }),
           ...(engagementModel !== undefined && { engagementModel }),
           ...(strictLookingFor !== undefined && { strictLookingFor }),
+          ...(documentUrl !== undefined && { documentUrl }),
+          ...(documentName !== undefined && { documentName }),
           sectors: {
             create: sectorIds.map((sectorId: string) => ({ sectorId })),
           },
@@ -573,6 +584,8 @@ export class ProjectController {
         targetCustomerTypes,
         engagementModel,
         strictLookingFor,
+        documentUrl,
+        documentName,
       } = req.body;
 
       // Update project
@@ -618,6 +631,32 @@ export class ProjectController {
         updateData.engagementModel = engagementModel;
       if (strictLookingFor !== undefined)
         updateData.strictLookingFor = strictLookingFor;
+      if (documentUrl !== undefined) {
+        updateData.documentUrl = documentUrl;
+        // Delete old document from storage if being replaced
+        if (existingProject.documentUrl && documentUrl !== existingProject.documentUrl) {
+          try {
+            const { getStorageService } = require('../../infrastructure/external/storage');
+            const oldKey = existingProject.documentUrl.replace(/^.*\/p2p-uploads\//, '');
+            if (oldKey) {
+              await getStorageService().delete('p2p-uploads', oldKey);
+              logger.info("Old document deleted from storage", { oldKey });
+            }
+          } catch (delErr: any) {
+            logger.warn("Failed to delete old document", { error: delErr.message });
+          }
+        }
+      }
+      if (documentName !== undefined)
+        updateData.documentName = documentName;
+
+      logger.info("Update project data", {
+        projectId: String(req.params.id),
+        hasDocumentUrl: documentUrl !== undefined,
+        documentUrl: documentUrl || null,
+        documentName: documentName || null,
+        updateKeys: Object.keys(updateData),
+      });
 
       // Clear keywords to force re-extraction on next match
       if (title || summary || detailedDesc) {
@@ -1545,6 +1584,24 @@ RULES:
         size: file.size,
       });
 
+      // Save document to storage for later retrieval
+      let documentUrl: string | null = null;
+      let documentName = file.originalname;
+      try {
+        const { getStorageService } = require('../../infrastructure/external/storage');
+        const storage = getStorageService();
+        const ext = file.originalname.split('.').pop() || 'pdf';
+        const key = `projects/documents/${req.user.userId}/${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+        const result = await storage.upload('p2p-uploads', key, file.buffer, {
+          contentType: file.mimetype,
+          metadata: { userId: req.user.userId, originalName: file.originalname },
+        });
+        documentUrl = result.url || `/${key}`;
+        logger.info("Document saved to storage", { key, documentUrl });
+      } catch (storageErr: any) {
+        logger.warn("Failed to save document to storage, continuing with extraction", { error: storageErr.message });
+      }
+
       // Extract text from document based on type
       let textContent = "";
 
@@ -1968,6 +2025,8 @@ IMPORTANT RULES:
           targetCustomerTypes: extractedData.targetCustomerTypes || [],
           tractionSignals: extractedData.tractionSignals || [],
           advisoryTopics: extractedData.advisoryTopics || [],
+          documentUrl,
+          documentName,
           // Also return the raw extracted data for debugging/display
           _extracted: {
             sectors: extractedData.sectors || [],

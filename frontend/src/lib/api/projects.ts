@@ -191,6 +191,8 @@ export interface Project {
   targetCustomerTypes?: string[] | null;
   engagementModel?: string[] | null;
   strictLookingFor?: boolean;
+  documentUrl?: string | null;
+  documentName?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -296,6 +298,8 @@ export interface CreateProjectInput {
   targetCustomerTypes?: string[];
   engagementModel?: string[];
   strictLookingFor?: boolean;
+  documentUrl?: string;
+  documentName?: string;
 }
 
 /**
@@ -327,6 +331,8 @@ export interface UpdateProjectInput {
   targetCustomerTypes?: string[];
   engagementModel?: string[];
   strictLookingFor?: boolean;
+  documentUrl?: string | null;
+  documentName?: string | null;
 }
 
 /**
@@ -544,6 +550,8 @@ export interface ExtractedProjectData {
   commitmentLevelNeeded?: string;
   engagementModel?: string[];
   targetCustomerTypes?: string[];
+  documentUrl?: string | null;
+  documentName?: string | null;
   _extracted: {
     sectors: string[];
     skills: string[];

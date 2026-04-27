@@ -629,6 +629,8 @@ model Project {
   targetCustomerTypes      Json?               @map("target_customer_types")
   engagementModel          Json?               @map("engagement_model")
   strictLookingFor         Boolean             @default(false) @map("strict_looking_for")
+  documentUrl              String?             @map("document_url") @db.VarChar(500)
+  documentName             String?             @map("document_name") @db.VarChar(255)
   // v2 matching fields
   fieldEmbeddings          Json?               @map("field_embeddings")
   normalizedNeedSignals    Json?               @map("normalized_need_signals")
