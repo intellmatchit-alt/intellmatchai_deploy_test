@@ -218,6 +218,8 @@ export async function createPitch(
       problemStatement,
       whatYouNeed,
       metadata,
+      documentUrl,
+      documentName,
     } = req.body;
 
     if (!title || !summary) {
@@ -245,6 +247,8 @@ export async function createPitch(
           fileKey: null,
           fileName: null,
           fileSize: null,
+          ...(documentUrl && { documentUrl }),
+          ...(documentName && { documentName }),
           language: "en",
           ...(problemStatement !== undefined && { problemStatement }),
           ...(whatYouNeed !== undefined && { whatYouNeed }),
@@ -383,6 +387,8 @@ export async function getPitchStatus(
         lookingFor: true,
         keywords: true,
         visibility: true,
+        documentUrl: true,
+        documentName: true,
         pitchSectors: { include: { sector: true } },
         pitchSkills: { include: { skill: true } },
       },
@@ -401,6 +407,8 @@ export async function getPitchStatus(
         lookingFor: safeJsonArray(pitchExtra?.lookingFor),
         keywords: safeJsonArray(pitchExtra?.keywords),
         visibility: pitchExtra?.visibility,
+        documentUrl: pitchExtra?.documentUrl || null,
+        documentName: pitchExtra?.documentName || null,
         sectors: pitchExtra?.pitchSectors.map((ps) => ps.sector) || [],
         skillsNeeded:
           pitchExtra?.pitchSkills.map((ps) => ({
@@ -651,6 +659,8 @@ export async function updatePitch(
       problemStatement,
       whatYouNeed,
       metadata,
+      documentUrl,
+      documentName,
     } = req.body;
 
     // Build update data
@@ -672,6 +682,8 @@ export async function updatePitch(
       updateData.problemStatement = problemStatement;
     if (whatYouNeed !== undefined) updateData.whatYouNeed = whatYouNeed;
     if (metadata !== undefined) updateData.metadata = metadata;
+    if (documentUrl !== undefined) updateData.documentUrl = documentUrl;
+    if (documentName !== undefined) updateData.documentName = documentName;
 
     // Update sectors if provided
     if (sectorIds !== undefined) {
@@ -1916,450 +1928,477 @@ RULES:
  * Extract pitch data from uploaded document using AI
  * POST /api/v1/pitches/extract-document
  */
-// export async function extractPitchFromDocument(
-//   req: Request,
-//   res: Response,
-//   next: NextFunction,
-// ): Promise<void> {
-//   try {
-//     const userId = req.user!.userId;
-//     const file = req.file;
+export async function extractPitchFromDocument(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const file = req.file;
 
-//     if (!file) {
-//       res.status(400).json({ success: false, error: { code: 'VALIDATION', message: 'Document file is required' } });
-//       return;
-//     }
+    if (!file) {
+      res.status(400).json({ success: false, error: { code: 'VALIDATION', message: 'Document file is required' } });
+      return;
+    }
 
-//     logger.info('Extracting pitch data from document', {
-//       userId,
-//       fileName: file.originalname,
-//       mimeType: file.mimetype,
-//       size: file.size,
-//     });
+    logger.info('Extracting pitch data from document', {
+      userId,
+      fileName: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size,
+    });
 
-//     let textContent = '';
+    // Save document to storage for later retrieval
+    let pitchDocumentUrl: string | null = null;
+    let pitchDocumentName = file.originalname;
+    try {
+      const { getStorageService } = require('../../infrastructure/external/storage');
+      const storage = getStorageService();
+      const key = `pitches/documents/${userId}/${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      const result = await storage.upload('p2p-uploads', key, file.buffer, {
+        contentType: file.mimetype,
+        metadata: { userId, originalName: file.originalname },
+      });
+      pitchDocumentUrl = result.url || `/${key}`;
+      logger.info("Pitch document saved to storage", { key, pitchDocumentUrl });
+    } catch (storageErr: any) {
+      logger.warn("Failed to save pitch document to storage", { error: storageErr.message });
+    }
 
-//     if (file.mimetype === 'application/pdf') {
-//       try {
-//         const pdfParse = require('pdf-parse');
-//         const pdfData = await pdfParse(file.buffer);
-//         textContent = cleanExtractedText(pdfData.text);
-//       } catch (pdfError: any) {
-//         logger.warn('Failed to parse PDF file', { error: pdfError.message, fileName: file.originalname });
-//         res.status(400).json({ success: false, error: { code: 'PDF_ERROR', message: 'Could not read the PDF file. It may be corrupted or not a valid PDF. Please try a different file.' } });
-//         return;
-//       }
-//     } else if (
-//       file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-//       file.mimetype === 'application/msword'
-//     ) {
-//       try {
-//         const mammoth = require('mammoth');
-//         const result = await mammoth.extractRawText({ buffer: file.buffer });
-//         textContent = cleanExtractedText(result.value);
-//       } catch (docError: any) {
-//         logger.warn('Failed to parse DOCX file', { error: docError.message, fileName: file.originalname });
-//         res.status(400).json({ success: false, error: { code: 'DOC_ERROR', message: 'Could not read the document file. It may be corrupted or not a valid DOCX/DOC file.' } });
-//         return;
-//       }
-//     } else if (file.mimetype === 'text/plain') {
-//       textContent = file.buffer.toString('utf-8');
-//     } else {
-//       res.status(400).json({ success: false, error: { code: 'VALIDATION', message: 'Unsupported file format. Please upload PDF, DOCX, DOC, or TXT files.' } });
-//       return;
-//     }
+    let textContent = '';
 
-//     if (!textContent || textContent.trim().length < 30) {
-//       res.status(400).json({ success: false, error: { code: 'VALIDATION', message: 'Could not extract sufficient text from document.' } });
-//       return;
-//     }
+    if (file.mimetype === 'application/pdf') {
+      try {
+        const pdfParse = require('pdf-parse');
+        const pdfData = await pdfParse(file.buffer);
+        textContent = cleanExtractedText(pdfData.text);
+      } catch (pdfError: any) {
+        logger.warn('Failed to parse PDF file', { error: pdfError.message, fileName: file.originalname });
+        res.status(400).json({ success: false, error: { code: 'PDF_ERROR', message: 'Could not read the PDF file. It may be corrupted or not a valid PDF. Please try a different file.' } });
+        return;
+      }
+    } else if (
+      file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      file.mimetype === 'application/msword'
+    ) {
+      try {
+        const mammoth = require('mammoth');
+        const result = await mammoth.extractRawText({ buffer: file.buffer });
+        textContent = cleanExtractedText(result.value);
+      } catch (docError: any) {
+        logger.warn('Failed to parse DOCX file', { error: docError.message, fileName: file.originalname });
+        res.status(400).json({ success: false, error: { code: 'DOC_ERROR', message: 'Could not read the document file. It may be corrupted or not a valid DOCX/DOC file.' } });
+        return;
+      }
+    } else if (file.mimetype === 'text/plain') {
+      textContent = file.buffer.toString('utf-8');
+    } else {
+      res.status(400).json({ success: false, error: { code: 'VALIDATION', message: 'Unsupported file format. Please upload PDF, DOCX, DOC, or TXT files.' } });
+      return;
+    }
 
-//     logger.info('Text extracted from pitch document', { textLength: textContent.length });
+    if (!textContent || textContent.trim().length < 30) {
+      res.status(400).json({ success: false, error: { code: 'VALIDATION', message: 'Could not extract sufficient text from document.' } });
+      return;
+    }
 
-//     const groqApiKey = process.env.GROQ_API_KEY;
-//     if (!groqApiKey) {
-//       res.status(500).json({ success: false, error: { code: 'CONFIG', message: 'AI extraction service not configured' } });
-//       return;
-//     }
+    logger.info('Text extracted from pitch document', { textLength: textContent.length });
 
-//     // Get available sectors and skills for matching
-//     const [dbSectors, dbSkills] = await Promise.all([
-//       prisma.sector.findMany({ where: { isActive: true }, select: { id: true, name: true }, take: 200 }),
-//       prisma.skill.findMany({ where: { isActive: true }, select: { id: true, name: true }, take: 200 }),
-//     ]);
+    const openaiApiKey = process.env.OPENAI_API_KEY;
+    const groqApiKey = process.env.GROQ_API_KEY;
+    const useOpenAI = !!openaiApiKey;
+    const aiApiKey = useOpenAI ? openaiApiKey : groqApiKey;
+    const aiEndpoint = useOpenAI
+      ? 'https://api.openai.com/v1/chat/completions'
+      : 'https://api.groq.com/openai/v1/chat/completions';
+    const aiModel = useOpenAI ? 'gpt-4o' : 'llama-3.3-70b-versatile';
 
-//     const maxDocLength = 8000;
-//     const truncatedContent = textContent.substring(0, maxDocLength);
+    if (!aiApiKey) {
+      res.status(500).json({ success: false, error: { code: 'CONFIG', message: 'AI extraction service not configured' } });
+      return;
+    }
 
-//     const validCategories = [
-//       'healthtech', 'fintech', 'edtech', 'saas', 'ecommerce', 'aiml',
-//       'cleantech', 'proptech', 'agritech', 'foodtech', 'legaltech',
-//       'hrtech', 'martech', 'insurtech', 'logistics', 'gaming',
-//       'social', 'media', 'cybersecurity', 'iot', 'blockchain', 'other',
-//     ];
+    // Get available sectors and skills for matching
+    const [dbSectors, dbSkills] = await Promise.all([
+      prisma.sector.findMany({ where: { isActive: true }, select: { id: true, name: true }, take: 200 }),
+      prisma.skill.findMany({ where: { isActive: true }, select: { id: true, name: true }, take: 200 }),
+    ]);
 
-//     const lookingForOptions = [
-//       'cofounder', 'investor', 'technical_partner', 'business_partner',
-//       'advisor', 'employee', 'contractor', 'customer', 'supplier',
-//     ];
+    const maxDocLength = 8000;
+    const truncatedContent = textContent.substring(0, maxDocLength);
 
-//     const prompt = `You are a world-class startup analyst and venture capital expert. Read this entire document VERY carefully, extract EVERY piece of information, and produce a comprehensive structured analysis. ALL OUTPUT IN ENGLISH (translate if needed).
+    const validCategories = [
+      'healthtech', 'fintech', 'edtech', 'saas', 'ecommerce', 'aiml',
+      'cleantech', 'proptech', 'agritech', 'foodtech', 'legaltech',
+      'hrtech', 'martech', 'insurtech', 'logistics', 'gaming',
+      'social', 'media', 'cybersecurity', 'iot', 'blockchain', 'other',
+    ];
 
-// DOCUMENT:
-// ${truncatedContent}
+    const lookingForOptions = [
+      'cofounder', 'investor', 'technical_partner', 'business_partner',
+      'advisor', 'employee', 'contractor', 'customer', 'supplier',
+    ];
 
-// INSTRUCTIONS:
-// 1. Read the ENTIRE document word by word. Do NOT skim.
-// 2. Look for the company/startup name in: page headers, footers, "About Us" sections, team bios, legal text, domain names, email addresses (e.g. info@companyname.com), copyright notices (© 2024 CompanyName), slide titles, logo text.
-// 3. Look for funding asks in: "Investment", "Fundraising", "Use of Funds", "Financial Projections", tables with dollar amounts, "seeking $X", "raising $X", "round size".
-// 4. Determine the business stage from concrete evidence: revenue numbers → EARLY/GROWTH, user/customer counts → MVP+, "prototype"/"beta" → MVP, "concept"/"idea" → IDEA, "pilot"/"testing" → EARLY, growth metrics/KPIs → GROWTH, multi-market expansion → SCALE.
-// 5. For sectors and skills, think about what INDUSTRY this company operates in and what EXPERTISE they need. Be specific and relevant.
+    const prompt = `You are a world-class startup analyst and venture capital expert. Read this entire document VERY carefully, extract EVERY piece of information, and produce a comprehensive structured analysis. ALL OUTPUT IN ENGLISH (translate if needed).
 
-// CATEGORY OPTIONS: ${validCategories.join(', ')}
-// LOOKING FOR OPTIONS: ${lookingForOptions.join(', ')}
+DOCUMENT:
+${truncatedContent}
 
-// Return this EXACT JSON structure (fill EVERY field as best as possible):
-// {
-//   "title": "A compelling 3-8 word title that captures WHAT the company does (not just the company name)",
-//   "companyName": "The exact company/startup/project name as written in the document",
-//   "description": "A powerful 2-4 sentence elevator pitch covering: what the product is, what problem it solves, what makes it unique, who benefits from it",
-//   "detailedDesc": "A thorough 4-8 sentence analysis covering: THE PROBLEM (specific pain point), THE SOLUTION (how this product addresses it), THE APPROACH (technology/methodology/business model), KEY DIFFERENTIATORS (competitive advantages), and TRACTION (any metrics, users, revenue mentioned)",
-//   "whatYouNeed": "3-5 detailed, specific sentences about what this company needs. Examples: 'Seeking $500K seed funding to hire 3 engineers and launch in Q3 2025. Needs a CTO with experience in distributed systems. Looking for strategic partnerships with healthcare providers in the MENA region to accelerate customer acquisition. Would benefit from an advisor with FDA regulatory experience.'",
-//   "stage": "EXACTLY one of: IDEA, MVP, EARLY, GROWTH, SCALE",
-//   "category": "EXACTLY one of: ${validCategories.join(', ')}",
-//   "targetMarket": "Specific target market with details: geography, demographics, industry vertical, estimated market size if mentioned",
-//   "fundingAsk": "Exact amount or range with context (e.g. '$2M Series A for product development and market expansion', '$500K seed round'). If not explicitly mentioned, write empty string.",
-//   "timeline": "Key milestones and dates from the document. If a roadmap exists, summarize it. If not explicit, infer 2-3 logical next milestones based on current stage.",
-//   "lookingFor": ["Select 2-5 MOST relevant from: cofounder, investor, technical_partner, business_partner, advisor, employee, contractor, customer, supplier"],
-//   "sectors": ["List 4-8 specific industry sectors/domains this company operates in. Use descriptive names like 'Healthcare Technology', 'Digital Marketing', 'Supply Chain Management', 'Artificial Intelligence', 'E-commerce', 'Financial Services', etc."],
-//   "skills": ["List 6-12 specific professional skills needed. Use names like 'Machine Learning', 'Product Management', 'Digital Marketing', 'Financial Analysis', 'Software Engineering', 'Sales Management', 'UI/UX Design', 'Data Science', 'Business Development', 'Cloud Computing', etc."],
-//   "matchIntent": ["Select 1-3 MOST relevant from: INVESTOR, ADVISOR, STRATEGIC_PARTNER, COFOUNDER, CUSTOMER_BUYER. Based on what the pitch is actively seeking."],
-//   "supportNeededTags": ["Select ALL applicable from: funding, introductions, advisor, strategic_partner, distribution, technical_integration, pilot_customer, design_partner, buyer_customer, enterprise_access, cofounder, hiring, compliance, market_access, growth_support"],
-//   "fundingAmountRequested": "A NUMBER only (no currency symbol). Extract from any dollar/currency amounts related to fundraising. E.g. 500000 for '$500K'. Return null if not found.",
-//   "fundingCurrency": "EXACTLY one of: USD, EUR, GBP, JOD, SAR, AED. Detect from the document currency context. Default USD if unclear.",
-//   "businessModel": ["Select applicable from: B2B, B2C, B2B2C, Marketplace, SaaS, Subscription, Freemium, Pay-per-use, Licensing, Other"],
-//   "targetCustomerType": ["Select applicable from: Enterprise, SMB, Startup, Consumer, Government, Non-profit"],
-//   "operatingMarkets": ["List geographic markets/regions mentioned, e.g. MENA, North America, Europe, Global"],
-//   "tractionSummary": "Summary of traction metrics: users, revenue, pilots, LOIs, partnerships. If no traction mentioned, write empty string.",
-//   "founderBackgroundSummary": "Summary of founder/team backgrounds, experience, previous exits. If not mentioned, write empty string.",
-//   "problemStatement": "The core problem being solved, 2-3 sentences.",
-//   "confidence": {"title": 0.9, "companyName": 0.8, "stage": 0.7, "category": 0.8, "fundingAmountRequested": 0.6, "matchIntent": 0.7, "supportNeededTags": 0.7, "tractionSummary": 0.5, "founderBackgroundSummary": 0.5}
-// }
+INSTRUCTIONS:
+1. Read the ENTIRE document word by word. Do NOT skim.
+2. Look for the company/startup name in: page headers, footers, "About Us" sections, team bios, legal text, domain names, email addresses (e.g. info@companyname.com), copyright notices (© 2024 CompanyName), slide titles, logo text.
+3. Look for funding asks in: "Investment", "Fundraising", "Use of Funds", "Financial Projections", tables with dollar amounts, "seeking $X", "raising $X", "round size".
+4. Determine the business stage from concrete evidence: revenue numbers → EARLY/GROWTH, user/customer counts → MVP+, "prototype"/"beta" → MVP, "concept"/"idea" → IDEA, "pilot"/"testing" → EARLY, growth metrics/KPIs → GROWTH, multi-market expansion → SCALE.
+5. For sectors and skills, think about what INDUSTRY this company operates in and what EXPERTISE they need. Be specific and relevant.
 
-// CRITICAL RULES:
-// - NEVER leave companyName empty if the document has ANY reference to a company, project, or brand name.
-// - NEVER default stage to IDEA - look for evidence of actual progress first.
-// - whatYouNeed must be SPECIFIC to THIS company, not generic startup advice.
-// - sectors and skills should be FREE-FORM descriptive names (they will be matched to a database later). Write the most accurate, specific names.
-// - fundingAsk: search the entire document for ANY dollar/currency amounts related to fundraising.
-// - Return ONLY valid JSON, no markdown, no explanation.`;
+CATEGORY OPTIONS: ${validCategories.join(', ')}
+LOOKING FOR OPTIONS: ${lookingForOptions.join(', ')}
 
-//     const callAIWithRetry = async (maxRetries = 3): Promise<globalThis.Response> => {
-//       for (let attempt = 1; attempt <= maxRetries; attempt++) {
-//         const response = await fetch(aiEndpoint, {
-//           method: 'POST',
-//           headers: {
-//             'Content-Type': 'application/json',
-//             'Authorization': `Bearer ${aiApiKey}`,
-//           },
-//           body: JSON.stringify({
-//             model: aiModel,
-//             messages: [
-//               { role: 'system', content: 'You are a world-class startup analyst. Extract comprehensive structured pitch information from documents. Be thorough - read the entire document carefully and extract every detail. Output ONLY valid JSON in English.' },
-//               { role: 'user', content: prompt },
-//             ],
-//             temperature: 0.2,
-//             max_tokens: 4000,
-//             ...(useOpenAI ? {} : { response_format: { type: 'json_object' } }),
-//           }),
-//         });
+Return this EXACT JSON structure (fill EVERY field as best as possible):
+{
+  "title": "A compelling 3-8 word title that captures WHAT the company does (not just the company name)",
+  "companyName": "The exact company/startup/project name as written in the document",
+  "description": "A powerful 2-4 sentence elevator pitch covering: what the product is, what problem it solves, what makes it unique, who benefits from it",
+  "detailedDesc": "A thorough 4-8 sentence analysis covering: THE PROBLEM (specific pain point), THE SOLUTION (how this product addresses it), THE APPROACH (technology/methodology/business model), KEY DIFFERENTIATORS (competitive advantages), and TRACTION (any metrics, users, revenue mentioned)",
+  "whatYouNeed": "3-5 detailed, specific sentences about what this company needs. Examples: 'Seeking $500K seed funding to hire 3 engineers and launch in Q3 2025. Needs a CTO with experience in distributed systems. Looking for strategic partnerships with healthcare providers in the MENA region to accelerate customer acquisition. Would benefit from an advisor with FDA regulatory experience.'",
+  "stage": "EXACTLY one of: IDEA, MVP, EARLY, GROWTH, SCALE",
+  "category": "EXACTLY one of: ${validCategories.join(', ')}",
+  "targetMarket": "Specific target market with details: geography, demographics, industry vertical, estimated market size if mentioned",
+  "fundingAsk": "Exact amount or range with context (e.g. '$2M Series A for product development and market expansion', '$500K seed round'). If not explicitly mentioned, write empty string.",
+  "timeline": "Key milestones and dates from the document. If a roadmap exists, summarize it. If not explicit, infer 2-3 logical next milestones based on current stage.",
+  "lookingFor": ["Select 2-5 MOST relevant from: cofounder, investor, technical_partner, business_partner, advisor, employee, contractor, customer, supplier"],
+  "sectors": ["List 4-8 specific industry sectors/domains this company operates in. Use descriptive names like 'Healthcare Technology', 'Digital Marketing', 'Supply Chain Management', 'Artificial Intelligence', 'E-commerce', 'Financial Services', etc."],
+  "skills": ["List 6-12 specific professional skills needed. Use names like 'Machine Learning', 'Product Management', 'Digital Marketing', 'Financial Analysis', 'Software Engineering', 'Sales Management', 'UI/UX Design', 'Data Science', 'Business Development', 'Cloud Computing', etc."],
+  "matchIntent": ["Select 1-3 MOST relevant from: INVESTOR, ADVISOR, STRATEGIC_PARTNER, COFOUNDER, CUSTOMER_BUYER. Based on what the pitch is actively seeking."],
+  "supportNeededTags": ["Select ALL applicable from: funding, introductions, advisor, strategic_partner, distribution, technical_integration, pilot_customer, design_partner, buyer_customer, enterprise_access, cofounder, hiring, compliance, market_access, growth_support"],
+  "fundingAmountRequested": "A NUMBER only (no currency symbol). Extract from any dollar/currency amounts related to fundraising. E.g. 500000 for '$500K'. Return null if not found.",
+  "fundingCurrency": "EXACTLY one of: USD, EUR, GBP, JOD, SAR, AED. Detect from the document currency context. Default USD if unclear.",
+  "businessModel": ["Select applicable from: B2B, B2C, B2B2C, Marketplace, SaaS, Subscription, Freemium, Pay-per-use, Licensing, Other"],
+  "targetCustomerType": ["Select applicable from: Enterprise, SMB, Startup, Consumer, Government, Non-profit"],
+  "operatingMarkets": ["List geographic markets/regions mentioned, e.g. MENA, North America, Europe, Global"],
+  "tractionSummary": "Summary of traction metrics: users, revenue, pilots, LOIs, partnerships. If no traction mentioned, write empty string.",
+  "founderBackgroundSummary": "Summary of founder/team backgrounds, experience, previous exits. If not mentioned, write empty string.",
+  "problemStatement": "The core problem being solved, 2-3 sentences.",
+  "confidence": {"title": 0.9, "companyName": 0.8, "stage": 0.7, "category": 0.8, "fundingAmountRequested": 0.6, "matchIntent": 0.7, "supportNeededTags": 0.7, "tractionSummary": 0.5, "founderBackgroundSummary": 0.5}
+}
 
-//         if (response.ok) return response;
+CRITICAL RULES:
+- NEVER leave companyName empty if the document has ANY reference to a company, project, or brand name.
+- NEVER default stage to IDEA - look for evidence of actual progress first.
+- whatYouNeed must be SPECIFIC to THIS company, not generic startup advice.
+- sectors and skills should be FREE-FORM descriptive names (they will be matched to a database later). Write the most accurate, specific names.
+- fundingAsk: search the entire document for ANY dollar/currency amounts related to fundraising.
+- Return ONLY valid JSON, no markdown, no explanation.`;
 
-//         if (response.status === 429 && attempt < maxRetries) {
-//           const errorText = await response.text();
-//           logger.warn('AI rate limit hit for pitch extraction, retrying...', { attempt, error: errorText });
-//           let waitTime = Math.pow(2, attempt) * 5000;
-//           try {
-//             const errorData = JSON.parse(errorText);
-//             const retryMatch = errorData.error?.message?.match(/try again in ([\d.]+)s/);
-//             if (retryMatch) waitTime = Math.ceil(parseFloat(retryMatch[1]) * 1000) + 1000;
-//           } catch (e) {}
-//           await new Promise(resolve => setTimeout(resolve, waitTime));
-//           continue;
-//         }
-//         return response;
-//       }
-//       throw new Error('Max retries exceeded');
-//     };
+    const callAIWithRetry = async (maxRetries = 3): Promise<globalThis.Response> => {
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        const response = await fetch(aiEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${aiApiKey}`,
+          },
+          body: JSON.stringify({
+            model: aiModel,
+            messages: [
+              { role: 'system', content: 'You are a world-class startup analyst. Extract comprehensive structured pitch information from documents. Be thorough - read the entire document carefully and extract every detail. Output ONLY valid JSON in English.' },
+              { role: 'user', content: prompt },
+            ],
+            temperature: 0.2,
+            max_tokens: 4000,
+            ...(useOpenAI ? {} : { response_format: { type: 'json_object' } }),
+          }),
+        });
 
-//     const aiResponse = await callAIWithRetry();
+        if (response.ok) return response;
 
-//     if (!aiResponse.ok) {
-//       const errorText = await aiResponse.text();
-//       logger.error('AI API error during pitch extraction', { status: aiResponse.status, error: errorText, provider: useOpenAI ? 'OpenAI' : 'Groq' });
-//       if (aiResponse.status === 429 || aiResponse.status === 413) {
-//         res.status(429).json({ success: false, error: { code: 'RATE_LIMIT', message: 'AI service is busy. Please wait a moment and try again.' } });
-//         return;
-//       }
-//       res.status(500).json({ success: false, error: { code: 'AI_ERROR', message: 'AI extraction failed. Please try again.' } });
-//       return;
-//     }
+        if (response.status === 429 && attempt < maxRetries) {
+          const errorText = await response.text();
+          logger.warn('AI rate limit hit for pitch extraction, retrying...', { attempt, error: errorText });
+          let waitTime = Math.pow(2, attempt) * 5000;
+          try {
+            const errorData = JSON.parse(errorText);
+            const retryMatch = errorData.error?.message?.match(/try again in ([\d.]+)s/);
+            if (retryMatch) waitTime = Math.ceil(parseFloat(retryMatch[1]) * 1000) + 1000;
+          } catch (e) {}
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
+        return response;
+      }
+      throw new Error('Max retries exceeded');
+    };
 
-//     const aiData = await aiResponse.json() as { choices?: Array<{ message?: { content?: string } }> };
-//     const content = aiData.choices?.[0]?.message?.content;
+    const aiResponse = await callAIWithRetry();
 
-//     if (!content) {
-//       res.status(500).json({ success: false, error: { code: 'AI_ERROR', message: 'AI extraction returned no content' } });
-//       return;
-//     }
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      logger.error('AI API error during pitch extraction', { status: aiResponse.status, error: errorText, provider: useOpenAI ? 'OpenAI' : 'Groq' });
+      if (aiResponse.status === 429 || aiResponse.status === 413) {
+        res.status(429).json({ success: false, error: { code: 'RATE_LIMIT', message: 'AI service is busy. Please wait a moment and try again.' } });
+        return;
+      }
+      res.status(500).json({ success: false, error: { code: 'AI_ERROR', message: 'AI extraction failed. Please try again.' } });
+      return;
+    }
 
-//     let extractedData: any;
-//     try {
-//       let cleanContent = content.trim();
-//       const jsonCodeBlockMatch = cleanContent.match(/```json\s*([\s\S]*?)```/);
-//       const genericCodeBlockMatch = cleanContent.match(/```\s*([\s\S]*?)```/);
-//       if (jsonCodeBlockMatch && jsonCodeBlockMatch[1]) {
-//         cleanContent = jsonCodeBlockMatch[1].trim();
-//       } else if (genericCodeBlockMatch && genericCodeBlockMatch[1]) {
-//         cleanContent = genericCodeBlockMatch[1].trim();
-//       } else {
-//         const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
-//         if (jsonMatch) cleanContent = jsonMatch[0];
-//       }
-//       extractedData = JSON.parse(cleanContent.trim());
-//     } catch (e) {
-//       logger.error('Failed to parse Groq pitch extraction response', { content, error: e });
-//       res.status(500).json({ success: false, error: { code: 'PARSE_ERROR', message: 'Failed to parse extracted data' } });
-//       return;
-//     }
+    const aiData = await aiResponse.json() as { choices?: Array<{ message?: { content?: string } }> };
+    const content = aiData.choices?.[0]?.message?.content;
 
-//     logger.info('Pitch data extracted from document (raw AI response)', {
-//       userId,
-//       title: extractedData.title,
-//       companyName: extractedData.companyName,
-//       stage: extractedData.stage,
-//       category: extractedData.category,
-//       fundingAsk: extractedData.fundingAsk,
-//       lookingFor: extractedData.lookingFor,
-//       sectors: extractedData.sectors,
-//       skills: extractedData.skills,
-//     });
+    if (!content) {
+      res.status(500).json({ success: false, error: { code: 'AI_ERROR', message: 'AI extraction returned no content' } });
+      return;
+    }
 
-//     // Validate stage
-//     const validStages = ['IDEA', 'MVP', 'EARLY', 'GROWTH', 'SCALE'];
-//     let extractedStage = (extractedData.stage || '').toUpperCase().trim();
-//     if (!validStages.includes(extractedStage)) {
-//       // Try to map common variations
-//       const stageMap: Record<string, string> = {
-//         'EARLY REVENUE': 'EARLY', 'REVENUE': 'EARLY', 'SEED': 'EARLY',
-//         'PRE-SEED': 'IDEA', 'PRESEED': 'IDEA', 'BETA': 'MVP', 'PROTOTYPE': 'MVP',
-//         'ALPHA': 'EARLY', 'CONCEPT': 'IDEA', 'GROWTH STAGE': 'GROWTH',
-//         'VALIDATION': 'EARLY', 'LAUNCHED': 'EARLY', 'SCALING': 'SCALE',
-//         'SERIES A': 'GROWTH', 'SERIES B': 'SCALE',
-//       };
-//       extractedStage = stageMap[extractedStage] || 'IDEA';
-//     }
+    let extractedData: any;
+    try {
+      let cleanContent = content.trim();
+      const jsonCodeBlockMatch = cleanContent.match(/```json\s*([\s\S]*?)```/);
+      const genericCodeBlockMatch = cleanContent.match(/```\s*([\s\S]*?)```/);
+      if (jsonCodeBlockMatch && jsonCodeBlockMatch[1]) {
+        cleanContent = jsonCodeBlockMatch[1].trim();
+      } else if (genericCodeBlockMatch && genericCodeBlockMatch[1]) {
+        cleanContent = genericCodeBlockMatch[1].trim();
+      } else {
+        const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
+        if (jsonMatch) cleanContent = jsonMatch[0];
+      }
+      extractedData = JSON.parse(cleanContent.trim());
+    } catch (e) {
+      logger.error('Failed to parse Groq pitch extraction response', { content, error: e });
+      res.status(500).json({ success: false, error: { code: 'PARSE_ERROR', message: 'Failed to parse extracted data' } });
+      return;
+    }
 
-//     // Validate category
-//     const extractedCategory = validCategories.includes(extractedData.category) ? extractedData.category : 'other';
+    logger.info('Pitch data extracted from document (raw AI response)', {
+      userId,
+      title: extractedData.title,
+      companyName: extractedData.companyName,
+      stage: extractedData.stage,
+      category: extractedData.category,
+      fundingAsk: extractedData.fundingAsk,
+      lookingFor: extractedData.lookingFor,
+      sectors: extractedData.sectors,
+      skills: extractedData.skills,
+    });
 
-//     // Validate lookingFor
-//     const extractedLookingFor = (extractedData.lookingFor || []).filter((l: string) => lookingForOptions.includes(l));
+    // Validate stage
+    const validStages = ['IDEA', 'MVP', 'EARLY', 'GROWTH', 'SCALE'];
+    let extractedStage = (extractedData.stage || '').toUpperCase().trim();
+    if (!validStages.includes(extractedStage)) {
+      // Try to map common variations
+      const stageMap: Record<string, string> = {
+        'EARLY REVENUE': 'EARLY', 'REVENUE': 'EARLY', 'SEED': 'EARLY',
+        'PRE-SEED': 'IDEA', 'PRESEED': 'IDEA', 'BETA': 'MVP', 'PROTOTYPE': 'MVP',
+        'ALPHA': 'EARLY', 'CONCEPT': 'IDEA', 'GROWTH STAGE': 'GROWTH',
+        'VALIDATION': 'EARLY', 'LAUNCHED': 'EARLY', 'SCALING': 'SCALE',
+        'SERIES A': 'GROWTH', 'SERIES B': 'SCALE',
+      };
+      extractedStage = stageMap[extractedStage] || 'IDEA';
+    }
 
-//     // Smart fuzzy match: exact → contains → word overlap scoring
-//     const smartFuzzyMatch = (query: string, items: Array<{ id: string; name: string }>, maxResults: number): Array<{ id: string; name: string; score: number }> => {
-//       const queryLower = query.toLowerCase().trim();
-//       const queryWords = queryLower.split(/[\s/&,\-()]+/).filter(w => w.length > 2);
+    // Validate category
+    const extractedCategory = validCategories.includes(extractedData.category) ? extractedData.category : 'other';
 
-//       const scored = items.map(item => {
-//         const nameLower = item.name.toLowerCase();
-//         const nameWords = nameLower.split(/[\s/&,\-()]+/).filter(w => w.length > 2);
+    // Validate lookingFor
+    const extractedLookingFor = (extractedData.lookingFor || []).filter((l: string) => lookingForOptions.includes(l));
 
-//         // Exact match
-//         if (nameLower === queryLower) return { ...item, score: 100 };
+    // Smart fuzzy match: exact → contains → word overlap scoring
+    const smartFuzzyMatch = (query: string, items: Array<{ id: string; name: string }>, maxResults: number): Array<{ id: string; name: string; score: number }> => {
+      const queryLower = query.toLowerCase().trim();
+      const queryWords = queryLower.split(/[\s/&,\-()]+/).filter(w => w.length > 2);
 
-//         // One contains the other
-//         if (nameLower.includes(queryLower) || queryLower.includes(nameLower)) return { ...item, score: 80 };
+      const scored = items.map(item => {
+        const nameLower = item.name.toLowerCase();
+        const nameWords = nameLower.split(/[\s/&,\-()]+/).filter(w => w.length > 2);
 
-//         // Word overlap scoring
-//         let matchedWords = 0;
-//         for (const qw of queryWords) {
-//           if (nameWords.some(nw => nw.includes(qw) || qw.includes(nw))) {
-//             matchedWords++;
-//           }
-//         }
-//         const overlapScore = queryWords.length > 0 ? (matchedWords / queryWords.length) * 60 : 0;
+        // Exact match
+        if (nameLower === queryLower) return { ...item, score: 100 };
 
-//         return { ...item, score: overlapScore };
-//       });
+        // One contains the other
+        if (nameLower.includes(queryLower) || queryLower.includes(nameLower)) return { ...item, score: 80 };
 
-//       return scored.filter(s => s.score >= 30).sort((a, b) => b.score - a.score).slice(0, maxResults);
-//     };
+        // Word overlap scoring
+        let matchedWords = 0;
+        for (const qw of queryWords) {
+          if (nameWords.some(nw => nw.includes(qw) || qw.includes(nw))) {
+            matchedWords++;
+          }
+        }
+        const overlapScore = queryWords.length > 0 ? (matchedWords / queryWords.length) * 60 : 0;
 
-//     // Match sectors: try fuzzy match first, create new sector if no good match
-//     const sectorIds: string[] = [];
-//     if (extractedData.sectors && Array.isArray(extractedData.sectors)) {
-//       for (const name of extractedData.sectors.slice(0, 8)) {
-//         const trimmedName = name.trim();
-//         if (!trimmedName) continue;
-//         const matches = smartFuzzyMatch(trimmedName, dbSectors, 1);
-//         if (matches.length > 0 && matches[0].score >= 60) {
-//           // Good match found in DB
-//           if (!sectorIds.includes(matches[0].id)) {
-//             sectorIds.push(matches[0].id);
-//           }
-//         } else {
-//           // No good match — create new sector in DB
-//           try {
-//             const newSector = await prisma.sector.create({
-//               data: { name: trimmedName, isActive: true },
-//             });
-//             sectorIds.push(newSector.id);
-//             dbSectors.push({ id: newSector.id, name: trimmedName });
-//             logger.info('Created new sector from AI extraction', { name: trimmedName, id: newSector.id });
-//           } catch (createErr: any) {
-//             // If duplicate name, find existing
-//             const existing = dbSectors.find(s => s.name.toLowerCase() === trimmedName.toLowerCase());
-//             if (existing && !sectorIds.includes(existing.id)) {
-//               sectorIds.push(existing.id);
-//             }
-//           }
-//         }
-//       }
-//     }
+        return { ...item, score: overlapScore };
+      });
 
-//     // Match skills: try fuzzy match first, create new skill if no good match
-//     const skillItems: Array<{ skillId: string; importance: string }> = [];
-//     const addedSkillIds = new Set<string>();
-//     if (extractedData.skills && Array.isArray(extractedData.skills)) {
-//       let idx = 0;
-//       for (const name of extractedData.skills.slice(0, 12)) {
-//         const trimmedName = name.trim();
-//         if (!trimmedName) continue;
-//         const matches = smartFuzzyMatch(trimmedName, dbSkills, 1);
-//         const importance = idx < 3 ? 'REQUIRED' : idx < 6 ? 'PREFERRED' : 'NICE_TO_HAVE';
-//         if (matches.length > 0 && matches[0].score >= 60) {
-//           // Good match found in DB
-//           if (!addedSkillIds.has(matches[0].id)) {
-//             skillItems.push({ skillId: matches[0].id, importance });
-//             addedSkillIds.add(matches[0].id);
-//             idx++;
-//           }
-//         } else {
-//           // No good match — create new skill in DB
-//           try {
-//             const newSkill = await prisma.skill.create({
-//               data: { name: trimmedName, isActive: true },
-//             });
-//             skillItems.push({ skillId: newSkill.id, importance });
-//             addedSkillIds.add(newSkill.id);
-//             dbSkills.push({ id: newSkill.id, name: trimmedName });
-//             idx++;
-//             logger.info('Created new skill from AI extraction', { name: trimmedName, id: newSkill.id });
-//           } catch (createErr: any) {
-//             // If duplicate name, find existing
-//             const existing = dbSkills.find(s => s.name.toLowerCase() === trimmedName.toLowerCase());
-//             if (existing && !addedSkillIds.has(existing.id)) {
-//               skillItems.push({ skillId: existing.id, importance });
-//               addedSkillIds.add(existing.id);
-//               idx++;
-//             }
-//           }
-//         }
-//       }
-//     }
+      return scored.filter(s => s.score >= 30).sort((a, b) => b.score - a.score).slice(0, maxResults);
+    };
 
-//     // Use investmentRange as fallback for fundingAsk
-//     const fundingAsk = extractedData.fundingAsk || extractedData.investmentRange || '';
+    // Match sectors: try fuzzy match first, create new sector if no good match
+    const sectorIds: string[] = [];
+    if (extractedData.sectors && Array.isArray(extractedData.sectors)) {
+      for (const name of extractedData.sectors.slice(0, 8)) {
+        const trimmedName = name.trim();
+        if (!trimmedName) continue;
+        const matches = smartFuzzyMatch(trimmedName, dbSectors, 1);
+        if (matches.length > 0 && matches[0].score >= 60) {
+          // Good match found in DB
+          if (!sectorIds.includes(matches[0].id)) {
+            sectorIds.push(matches[0].id);
+          }
+        } else {
+          // No good match — create new sector in DB
+          try {
+            const newSector = await prisma.sector.create({
+              data: { name: trimmedName, isActive: true },
+            });
+            sectorIds.push(newSector.id);
+            dbSectors.push({ id: newSector.id, name: trimmedName });
+            logger.info('Created new sector from AI extraction', { name: trimmedName, id: newSector.id });
+          } catch (createErr: any) {
+            // If duplicate name, find existing
+            const existing = dbSectors.find(s => s.name.toLowerCase() === trimmedName.toLowerCase());
+            if (existing && !sectorIds.includes(existing.id)) {
+              sectorIds.push(existing.id);
+            }
+          }
+        }
+      }
+    }
 
-//     logger.info('Pitch extraction matching results', {
-//       userId,
-//       aiSectors: extractedData.sectors,
-//       matchedSectorCount: sectorIds.length,
-//       matchedSectorNames: sectorIds.map(id => dbSectors.find(s => s.id === id)?.name),
-//       aiSkills: extractedData.skills,
-//       matchedSkillCount: skillItems.length,
-//       matchedSkillNames: skillItems.map(s => dbSkills.find(sk => sk.id === s.skillId)?.name),
-//       lookingFor: extractedLookingFor,
-//     });
+    // Match skills: try fuzzy match first, create new skill if no good match
+    const skillItems: Array<{ skillId: string; importance: string }> = [];
+    const addedSkillIds = new Set<string>();
+    if (extractedData.skills && Array.isArray(extractedData.skills)) {
+      let idx = 0;
+      for (const name of extractedData.skills.slice(0, 12)) {
+        const trimmedName = name.trim();
+        if (!trimmedName) continue;
+        const matches = smartFuzzyMatch(trimmedName, dbSkills, 1);
+        const importance = idx < 3 ? 'REQUIRED' : idx < 6 ? 'PREFERRED' : 'NICE_TO_HAVE';
+        if (matches.length > 0 && matches[0].score >= 60) {
+          // Good match found in DB
+          if (!addedSkillIds.has(matches[0].id)) {
+            skillItems.push({ skillId: matches[0].id, importance });
+            addedSkillIds.add(matches[0].id);
+            idx++;
+          }
+        } else {
+          // No good match — create new skill in DB
+          try {
+            const newSkill = await prisma.skill.create({
+              data: { name: trimmedName, isActive: true },
+            });
+            skillItems.push({ skillId: newSkill.id, importance });
+            addedSkillIds.add(newSkill.id);
+            dbSkills.push({ id: newSkill.id, name: trimmedName });
+            idx++;
+            logger.info('Created new skill from AI extraction', { name: trimmedName, id: newSkill.id });
+          } catch (createErr: any) {
+            // If duplicate name, find existing
+            const existing = dbSkills.find(s => s.name.toLowerCase() === trimmedName.toLowerCase());
+            if (existing && !addedSkillIds.has(existing.id)) {
+              skillItems.push({ skillId: existing.id, importance });
+              addedSkillIds.add(existing.id);
+              idx++;
+            }
+          }
+        }
+      }
+    }
 
-//     // Validate new structured fields
-//     const VALID_MATCH_INTENTS = ['INVESTOR', 'ADVISOR', 'STRATEGIC_PARTNER', 'COFOUNDER', 'CUSTOMER_BUYER'];
-//     const VALID_SUPPORT_TAGS = ['funding', 'introductions', 'advisor', 'strategic_partner', 'distribution', 'technical_integration', 'pilot_customer', 'design_partner', 'buyer_customer', 'enterprise_access', 'cofounder', 'hiring', 'compliance', 'market_access', 'growth_support'];
-//     const VALID_CURRENCIES = ['USD', 'EUR', 'GBP', 'JOD', 'SAR', 'AED'];
-//     const VALID_BUSINESS_MODELS = ['B2B', 'B2C', 'B2B2C', 'Marketplace', 'SaaS', 'Subscription', 'Freemium', 'Pay-per-use', 'Licensing', 'Other'];
-//     const VALID_CUSTOMER_TYPES = ['Enterprise', 'SMB', 'Startup', 'Consumer', 'Government', 'Non-profit'];
+    // Use investmentRange as fallback for fundingAsk
+    const fundingAsk = extractedData.fundingAsk || extractedData.investmentRange || '';
 
-//     const validatedMatchIntent = (extractedData.matchIntent || []).filter((v: string) => VALID_MATCH_INTENTS.includes(v));
-//     const validatedSupportTags = (extractedData.supportNeededTags || []).filter((v: string) => VALID_SUPPORT_TAGS.includes(v));
-//     const validatedBusinessModel = (extractedData.businessModel || []).filter((v: string) => VALID_BUSINESS_MODELS.includes(v));
-//     const validatedCustomerType = (extractedData.targetCustomerType || []).filter((v: string) => VALID_CUSTOMER_TYPES.includes(v));
-//     const validatedMarkets = Array.isArray(extractedData.operatingMarkets) ? extractedData.operatingMarkets.filter((v: string) => typeof v === 'string' && v.trim()) : [];
+    logger.info('Pitch extraction matching results', {
+      userId,
+      aiSectors: extractedData.sectors,
+      matchedSectorCount: sectorIds.length,
+      matchedSectorNames: sectorIds.map(id => dbSectors.find(s => s.id === id)?.name),
+      aiSkills: extractedData.skills,
+      matchedSkillCount: skillItems.length,
+      matchedSkillNames: skillItems.map(s => dbSkills.find(sk => sk.id === s.skillId)?.name),
+      lookingFor: extractedLookingFor,
+    });
 
-//     // Parse funding amount: strip currency symbols, commas, K/M/B suffixes
-//     let parsedFundingAmount: number | null = null;
-//     const rawFunding = extractedData.fundingAmountRequested;
-//     if (rawFunding != null) {
-//       if (typeof rawFunding === 'number' && !isNaN(rawFunding)) {
-//         parsedFundingAmount = rawFunding;
-//       } else if (typeof rawFunding === 'string') {
-//         const cleaned = rawFunding.replace(/[$€£,\s]/g, '');
-//         const multiplierMatch = cleaned.match(/^([\d.]+)([KkMmBb])?$/);
-//         if (multiplierMatch) {
-//           const num = parseFloat(multiplierMatch[1]);
-//           const suffix = (multiplierMatch[2] || '').toUpperCase();
-//           const multipliers: Record<string, number> = { K: 1_000, M: 1_000_000, B: 1_000_000_000 };
-//           parsedFundingAmount = num * (multipliers[suffix] || 1);
-//         } else {
-//           const num = parseFloat(cleaned);
-//           if (!isNaN(num)) parsedFundingAmount = num;
-//         }
-//       }
-//     }
+    // Validate new structured fields
+    const VALID_MATCH_INTENTS = ['INVESTOR', 'ADVISOR', 'STRATEGIC_PARTNER', 'COFOUNDER', 'CUSTOMER_BUYER'];
+    const VALID_SUPPORT_TAGS = ['funding', 'introductions', 'advisor', 'strategic_partner', 'distribution', 'technical_integration', 'pilot_customer', 'design_partner', 'buyer_customer', 'enterprise_access', 'cofounder', 'hiring', 'compliance', 'market_access', 'growth_support'];
+    const VALID_CURRENCIES = ['USD', 'EUR', 'GBP', 'JOD', 'SAR', 'AED'];
+    const VALID_BUSINESS_MODELS = ['B2B', 'B2C', 'B2B2C', 'Marketplace', 'SaaS', 'Subscription', 'Freemium', 'Pay-per-use', 'Licensing', 'Other'];
+    const VALID_CUSTOMER_TYPES = ['Enterprise', 'SMB', 'Startup', 'Consumer', 'Government', 'Non-profit'];
 
-//     const validatedCurrency = VALID_CURRENCIES.includes(extractedData.fundingCurrency) ? extractedData.fundingCurrency : (parsedFundingAmount ? 'USD' : null);
+    const validatedMatchIntent = (extractedData.matchIntent || []).filter((v: string) => VALID_MATCH_INTENTS.includes(v));
+    const validatedSupportTags = (extractedData.supportNeededTags || []).filter((v: string) => VALID_SUPPORT_TAGS.includes(v));
+    const validatedBusinessModel = (extractedData.businessModel || []).filter((v: string) => VALID_BUSINESS_MODELS.includes(v));
+    const validatedCustomerType = (extractedData.targetCustomerType || []).filter((v: string) => VALID_CUSTOMER_TYPES.includes(v));
+    const validatedMarkets = Array.isArray(extractedData.operatingMarkets) ? extractedData.operatingMarkets.filter((v: string) => typeof v === 'string' && v.trim()) : [];
 
-//     // Validate confidence object
-//     const rawConfidence = extractedData.confidence || {};
-//     const validatedConfidence: Record<string, number> = {};
-//     for (const [key, val] of Object.entries(rawConfidence)) {
-//       if (typeof val === 'number' && val >= 0 && val <= 1) {
-//         validatedConfidence[key] = val;
-//       }
-//     }
+    // Parse funding amount: strip currency symbols, commas, K/M/B suffixes
+    let parsedFundingAmount: number | null = null;
+    const rawFunding = extractedData.fundingAmountRequested;
+    if (rawFunding != null) {
+      if (typeof rawFunding === 'number' && !isNaN(rawFunding)) {
+        parsedFundingAmount = rawFunding;
+      } else if (typeof rawFunding === 'string') {
+        const cleaned = rawFunding.replace(/[$€£,\s]/g, '');
+        const multiplierMatch = cleaned.match(/^([\d.]+)([KkMmBb])?$/);
+        if (multiplierMatch) {
+          const num = parseFloat(multiplierMatch[1]);
+          const suffix = (multiplierMatch[2] || '').toUpperCase();
+          const multipliers: Record<string, number> = { K: 1_000, M: 1_000_000, B: 1_000_000_000 };
+          parsedFundingAmount = num * (multipliers[suffix] || 1);
+        } else {
+          const num = parseFloat(cleaned);
+          if (!isNaN(num)) parsedFundingAmount = num;
+        }
+      }
+    }
 
-//     res.status(200).json({
-//       success: true,
-//       data: {
-//         title: extractedData.title || '',
-//         companyName: extractedData.companyName || '',
-//         industry: extractedData.industry || '',
-//         description: extractedData.description || '',
-//         detailedDesc: extractedData.detailedDesc || '',
-//         whatYouNeed: extractedData.whatYouNeed || '',
-//         stage: extractedStage,
-//         category: extractedCategory,
-//         targetMarket: extractedData.targetMarket || '',
-//         fundingAsk: fundingAsk,
-//         timeline: extractedData.timeline || '',
-//         lookingFor: extractedLookingFor,
-//         sectorIds,
-//         skills: skillItems,
-//         matchIntent: validatedMatchIntent,
-//         supportNeededTags: validatedSupportTags,
-//         fundingAmountRequested: parsedFundingAmount,
-//         fundingCurrency: validatedCurrency,
-//         businessModel: validatedBusinessModel,
-//         targetCustomerType: validatedCustomerType,
-//         operatingMarkets: validatedMarkets,
-//         tractionSummary: extractedData.tractionSummary || '',
-//         founderBackgroundSummary: extractedData.founderBackgroundSummary || '',
-//         problemStatement: extractedData.problemStatement || '',
-//         confidence: validatedConfidence,
-//       },
-//     });
-//   } catch (error) {
-//     next(error);
-//   }
-// }
+    const validatedCurrency = VALID_CURRENCIES.includes(extractedData.fundingCurrency) ? extractedData.fundingCurrency : (parsedFundingAmount ? 'USD' : null);
+
+    // Validate confidence object
+    const rawConfidence = extractedData.confidence || {};
+    const validatedConfidence: Record<string, number> = {};
+    for (const [key, val] of Object.entries(rawConfidence)) {
+      if (typeof val === 'number' && val >= 0 && val <= 1) {
+        validatedConfidence[key] = val;
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        title: extractedData.title || '',
+        companyName: extractedData.companyName || '',
+        industry: extractedData.industry || '',
+        description: extractedData.description || '',
+        detailedDesc: extractedData.detailedDesc || '',
+        whatYouNeed: extractedData.whatYouNeed || '',
+        stage: extractedStage,
+        category: extractedCategory,
+        targetMarket: extractedData.targetMarket || '',
+        fundingAsk: fundingAsk,
+        timeline: extractedData.timeline || '',
+        lookingFor: extractedLookingFor,
+        sectorIds,
+        skills: skillItems,
+        matchIntent: validatedMatchIntent,
+        supportNeededTags: validatedSupportTags,
+        fundingAmountRequested: parsedFundingAmount,
+        fundingCurrency: validatedCurrency,
+        businessModel: validatedBusinessModel,
+        targetCustomerType: validatedCustomerType,
+        operatingMarkets: validatedMarkets,
+        tractionSummary: extractedData.tractionSummary || '',
+        founderBackgroundSummary: extractedData.founderBackgroundSummary || '',
+        problemStatement: extractedData.problemStatement || '',
+        confidence: validatedConfidence,
+        documentUrl: pitchDocumentUrl,
+        documentName: pitchDocumentName,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}

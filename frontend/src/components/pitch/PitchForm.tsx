@@ -180,6 +180,10 @@ export default function PitchForm({ pitch, onSubmit, onCancel, isSubmitting }: P
   const { t } = useI18n();
   const isEditMode = !!pitch;
 
+  // Document state
+  const [documentUrl, setDocumentUrl] = useState<string | null>(pitch?.documentUrl || null);
+  const [documentName, setDocumentName] = useState<string | null>(pitch?.documentName || null);
+
   // Lookup data
   const [sectors, setSectors] = useState<Sector[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
@@ -370,6 +374,9 @@ export default function PitchForm({ pitch, onSubmit, onCancel, isSubmitting }: P
     setVisibility((pitch.visibility as PitchVisibility) || 'PUBLIC');
     setIsActive(pitch.isActive !== false);
 
+    setDocumentUrl(pitch.documentUrl || null);
+    setDocumentName(pitch.documentName || null);
+
     // Metadata fields
     const meta = pitch.metadata || {};
     setBusinessModel(meta.businessModel || []);
@@ -541,6 +548,12 @@ export default function PitchForm({ pitch, onSubmit, onCancel, isSubmitting }: P
       setSuggestedSkillIds(prev => [...new Set([...prev, ...newSkillIds])]);
     }
 
+    // Store document URL if returned from extraction
+    if (extracted.documentUrl) {
+      setDocumentUrl(extracted.documentUrl);
+      setDocumentName(extracted.documentName || 'Pitch Document');
+    }
+
     setHasAnalyzed(true);
     toast({ title: 'AI Extraction Complete', description: 'Fields have been filled from your document. Review and edit as needed.', variant: 'success' });
   };
@@ -697,6 +710,8 @@ export default function PitchForm({ pitch, onSubmit, onCancel, isSubmitting }: P
       skills: selectedSkills.filter(s => !s.skillId.startsWith('custom_') && uuidRegex.test(s.skillId)),
       visibility,
       metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+      ...(documentUrl && { documentUrl }),
+      ...(documentName && { documentName }),
     };
 
     // Edit-mode-only fields
@@ -736,13 +751,16 @@ export default function PitchForm({ pitch, onSubmit, onCancel, isSubmitting }: P
     <form onSubmit={handleSubmit} className={`${p.fw} ${p.fs}`}>
 
       {/* ═══ Upload Banner ═══════════════════════════════════ */}
-      <section className={p.up}>
-        <div className={p.hdr}><div className={p.hl}><div className={p.ibE}>⬆</div><div><h2 className={p.ht}>Upload Pitch Deck</h2><p className={p.hd}>Upload your pitch deck, one-pager, or business plan. AI can extract details and help pre-fill your pitch form.</p></div></div></div>
-        <div className={p.dz} tabIndex={0} role="button" onClick={() => document.getElementById('pf-up')?.click()}>
-          <input id="pf-up" type="file" accept=".pdf,.docx,.doc,.txt" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; try { const d = await extractPitchFromDocument(f); handleDocExtracted(d); } catch (err: any) { toast({ title: 'Error', description: err.message, variant: 'error' }); } }} />
-          <div className={p.dzA}>↑</div><strong>Drop your file here or click to upload</strong><span>Supports PDF, DOCX, TXT — AI will extract pitch details and suggest relevant fields automatically.</span>
-        </div>
-      </section>
+      <DocumentUploadSection
+        extractFn={extractPitchFromDocument}
+        onExtracted={handleDocExtracted}
+        title="Upload Pitch Deck"
+        description="Upload your pitch deck, one-pager, or business plan. AI will extract details and suggest relevant options."
+        accentColor="emerald"
+        existingDocumentUrl={documentUrl}
+        existingDocumentName={documentName}
+        onDocumentRemoved={() => { setDocumentUrl(null); setDocumentName(null); }}
+      />
 
       {/* ═══ Pitch Details ═══════════════════════════════════ */}
       <section className={p.card}>

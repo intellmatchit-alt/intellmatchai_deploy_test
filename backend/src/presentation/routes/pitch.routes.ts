@@ -88,11 +88,11 @@ router.put(
  * @desc Extract pitch data from uploaded document using AI
  * @access Private
  */
-// router.post(
-//   '/extract-document',
-//   documentUpload.single('document'),
-//   PitchController.extractPitchFromDocument,
-// );
+router.post(
+  '/extract-document',
+  documentUpload.single('document'),
+  PitchController.extractPitchFromDocument,
+);
 
 /**
  * @route POST /api/v1/pitches/analyze-text

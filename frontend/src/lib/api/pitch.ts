@@ -153,6 +153,8 @@ export interface Pitch {
   skillsNeeded?: Array<{ id: string; name: string; importance?: SkillImportance }>;
   problemStatement?: string | null;
   whatYouNeed?: string | null;
+  documentUrl?: string | null;
+  documentName?: string | null;
   metadata?: Record<string, any> | null;
   user?: {
     id: string;
@@ -289,6 +291,8 @@ export interface CreatePitchInput {
   problemStatement?: string;
   whatYouNeed?: string;
   metadata?: Record<string, any>;
+  documentUrl?: string;
+  documentName?: string;
 }
 
 /**
@@ -312,6 +316,8 @@ export interface UpdatePitchInput {
   problemStatement?: string;
   whatYouNeed?: string;
   metadata?: Record<string, any>;
+  documentUrl?: string;
+  documentName?: string;
 }
 
 /**
@@ -473,6 +479,8 @@ export interface ExtractedPitchData {
   tractionSummary?: string;
   founderBackgroundSummary?: string;
   confidence?: Record<string, number>;
+  documentUrl?: string | null;
+  documentName?: string | null;
 }
 
 /**

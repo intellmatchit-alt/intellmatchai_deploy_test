@@ -1217,6 +1217,8 @@ model Pitch {
   supportNeededTags Json?      @map("support_needed_tags")
   needEmbedding     Json?      @map("need_embedding")
   rawText        String?       @map("raw_text") @db.LongText
+  documentUrl    String?       @map("document_url") @db.VarChar(500)
+  documentName   String?       @map("document_name") @db.VarChar(255)
   organizationId String?       @map("organization_id")
   isActive       Boolean       @default(true) @map("is_active")
   isTeamShared   Boolean       @default(false) @map("is_team_shared")
