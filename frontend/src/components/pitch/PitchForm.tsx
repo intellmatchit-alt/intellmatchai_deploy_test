@@ -648,6 +648,17 @@ export default function PitchForm({ pitch, onSubmit, onCancel, isSubmitting }: P
       toast({ title: t.common?.error || 'Error', description: 'Please select industry sectors, business model, target customer type, and operating markets', variant: 'error' });
       return;
     }
+    if (!matchIntent.length) {
+      // Per-Match-Target matching requires at least one selected target so
+      // the engine can score every selected target separately.
+      toast({
+        title: t.common?.error || 'Error',
+        description: t.pitch?.matchTargetsRequired
+          || 'Select at least one Match Target before saving.',
+        variant: 'error',
+      });
+      return;
+    }
 
     // Build metadata
     const metadata: Record<string, any> = {

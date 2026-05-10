@@ -7,7 +7,26 @@
  */
 
 import { JobMatchingService, createJobMatchingService } from './job-matching.service';
-import { FindJobMatchesRequest, JobMatchingConfig } from './job-matching.types';
+import {
+  FindJobMatchesRequest,
+  FindHelperMatchesRequest,
+  JobMatchingConfig,
+  MatchMode,
+} from './job-matching.types';
+
+/**
+ * Worker payload — discriminated by matchMode so the same queue can run
+ * both flows. HIRING_TO_CANDIDATES is the legacy default; helper modes
+ * carry a candidateProfileId (and optionally a targetJobId).
+ */
+export type FindMatchesQueuePayload =
+  | { matchMode: MatchMode.HIRING_TO_CANDIDATES; request: FindJobMatchesRequest }
+  | {
+      matchMode:
+        | MatchMode.OPEN_TO_OPPORTUNITY_TO_HELPERS
+        | MatchMode.TARGET_JOB_TO_HELPERS;
+      request: FindHelperMatchesRequest;
+    };
 
 const STATUS_KEY = 'job:match:status:';
 const RESULT_KEY = 'job:match:result:';
@@ -32,13 +51,40 @@ export class JobMatchingWorker {
     this.running = true;
 
     this.queue.process('findJobMatches', this.concurrency, async (job: any) => {
-      const { jobId, payload } = job.data;
+      const { jobId, payload } = job.data as { jobId: string; payload: any };
       await this.setStatus(jobId, { status: 'PROCESSING', progress: 0 });
       try {
-        const result = await this.service.findMatches(payload as FindJobMatchesRequest);
+        // Backward compat: legacy enqueues sent a bare FindJobMatchesRequest
+        // with no matchMode wrapper. Treat those as HIRING_TO_CANDIDATES.
+        const matchMode: MatchMode = payload?.matchMode ?? MatchMode.HIRING_TO_CANDIDATES;
+        const request = payload?.request ?? payload;
+
+        let result: any;
+        if (
+          matchMode === MatchMode.OPEN_TO_OPPORTUNITY_TO_HELPERS ||
+          matchMode === MatchMode.TARGET_JOB_TO_HELPERS
+        ) {
+          result = await this.service.findHelpers(request as FindHelperMatchesRequest);
+        } else {
+          result = await this.service.findMatches(request as FindJobMatchesRequest);
+        }
+
         await job.progress(100);
-        await this.redis.setex(RESULT_KEY + jobId, TTL, JSON.stringify({ matchCount: result.matches.length, stats: { total: result.total } }));
-        await this.setStatus(jobId, { status: 'COMPLETED', progress: 100, matchCount: result.matches.length });
+        await this.redis.setex(
+          RESULT_KEY + jobId,
+          TTL,
+          JSON.stringify({
+            matchMode,
+            matchCount: result.matches.length,
+            stats: { total: result.total },
+          }),
+        );
+        await this.setStatus(jobId, {
+          status: 'COMPLETED',
+          progress: 100,
+          matchMode,
+          matchCount: result.matches.length,
+        });
         return result;
       } catch (e: any) {
         await this.setStatus(jobId, { status: 'FAILED', error: e.message });
@@ -55,15 +101,51 @@ export class JobMatchingWorker {
     await this.queue.close();
   }
 
-  async enqueue(request: FindJobMatchesRequest, priority: 'LOW' | 'NORMAL' | 'HIGH' = 'NORMAL'): Promise<string> {
+  /**
+   * Enqueue a HIRING_TO_CANDIDATES match run.
+   * Backward-compatible: existing callers don't need to pass matchMode.
+   */
+  async enqueue(
+    request: FindJobMatchesRequest,
+    priority: 'LOW' | 'NORMAL' | 'HIGH' = 'NORMAL',
+  ): Promise<string> {
+    return this.enqueuePayload(
+      { matchMode: MatchMode.HIRING_TO_CANDIDATES, request },
+      priority,
+    );
+  }
+
+  /** Enqueue a helper-flow match run (OPEN_TO_OPPORTUNITY or TARGET_JOB). */
+  async enqueueHelperFlow(
+    request: FindHelperMatchesRequest,
+    priority: 'LOW' | 'NORMAL' | 'HIGH' = 'NORMAL',
+  ): Promise<string> {
+    const matchMode = request.targetJobId
+      ? MatchMode.TARGET_JOB_TO_HELPERS
+      : MatchMode.OPEN_TO_OPPORTUNITY_TO_HELPERS;
+    return this.enqueuePayload({ matchMode, request }, priority);
+  }
+
+  private async enqueuePayload(
+    payload: FindMatchesQueuePayload,
+    priority: 'LOW' | 'NORMAL' | 'HIGH',
+  ): Promise<string> {
     const id = `jm_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-    await this.queue.add('findJobMatches', { jobId: id, payload: request }, {
-      jobId: id,
-      priority: { HIGH: 1, NORMAL: 5, LOW: 10 }[priority],
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 2000 },
+    await this.queue.add(
+      'findJobMatches',
+      { jobId: id, payload },
+      {
+        jobId: id,
+        priority: { HIGH: 1, NORMAL: 5, LOW: 10 }[priority],
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 2000 },
+      },
+    );
+    await this.setStatus(id, {
+      status: 'PENDING',
+      progress: 0,
+      matchMode: payload.matchMode,
     });
-    await this.setStatus(id, { status: 'PENDING', progress: 0 });
     return id;
   }
 

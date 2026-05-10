@@ -235,7 +235,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
   // Show loading while checking auth
   if (!mounted || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#060b18]">
+      <div className="min-h-screen flex items-center justify-center bg-th-bg">
         <div className="flex flex-col items-center gap-4">
           <div className="relative">
             <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(0,208,132,0.2)_0%,transparent_70%)] w-32 h-32 -m-4 rounded-full" />
@@ -245,7 +245,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
               className="relative h-16 w-auto animate-pulse"
             />
           </div>
-          <div className="flex items-center gap-2 text-white/70">
+          <div className="flex items-center gap-2 text-th-text-t">
             <div className="w-1.5 h-1.5 rounded-full bg-[#00d084] animate-pulse" />
             <span className="text-sm">Loading...</span>
           </div>
@@ -262,7 +262,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <PaywallGuard>
       <div
-        className="min-h-screen bg-[#060b18] text-white"
+        className="min-h-screen bg-th-bg text-th-text"
         style={{
           paddingBottom: "calc(5rem + env(safe-area-inset-bottom, 0px))",
         }}

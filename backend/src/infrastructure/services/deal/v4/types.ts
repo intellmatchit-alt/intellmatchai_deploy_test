@@ -125,7 +125,9 @@ export interface SellOffering {
 }
 
 // ============================================================================
-// SCORING WEIGHTS (unchanged from v3)
+// SCORING WEIGHTS — v4.1: 12-component policy per IntellMatch spec.
+// Weights normalize against totalWeight in calculateDealMatchScore, so this
+// table can be tuned without touching the math. Sum is intentionally 1.00.
 // ============================================================================
 
 export interface DealScoringWeights {
@@ -133,13 +135,23 @@ export interface DealScoringWeights {
   budgetScore: number; timelineScore: number; requirementsScore: number;
   locationScore: number; deliveryScore: number; semanticScore: number;
   providerTypeScore: number; buyerPersonaScore: number;
+  /** v4.1: network relevance — 1st/2nd-degree, mutuals, org overlap, strength */
+  networkRelevanceScore: number;
 }
 
 export const DEFAULT_DEAL_WEIGHTS: DealScoringWeights = {
-  semanticScore: 0.13, requirementsScore: 0.14, categoryScore: 0.12,
-  industryScore: 0.12, budgetScore: 0.11, providerTypeScore: 0.07,
-  providerSizeScore: 0.07, buyerPersonaScore: 0.06, timelineScore: 0.07,
-  locationScore: 0.06, deliveryScore: 0.05,
+  requirementsScore: 0.15,
+  categoryScore: 0.11,
+  industryScore: 0.10,
+  budgetScore: 0.10,
+  providerTypeScore: 0.08,
+  buyerPersonaScore: 0.08,
+  semanticScore: 0.08,
+  timelineScore: 0.07,
+  providerSizeScore: 0.06,
+  locationScore: 0.06,
+  deliveryScore: 0.06,
+  networkRelevanceScore: 0.05,
 };
 
 // ============================================================================
@@ -151,16 +163,19 @@ export interface DealThresholdConfig {
   minConfidence: number;
   maxResults: number;
   sparseDataThreshold: number;
-  strongMinConfidence: number;
+  /** v4.1: low-confidence cap on EXCELLENT band */
+  excellentMinConfidence: number;
   sparseMaxBand: ScoreBand;
 }
 
 export const DEFAULT_DEAL_THRESHOLDS: DealThresholdConfig = {
-  minScore: 36,               // v4: from 35
-  minConfidence: 0.40,        // v4: from 0.38
+  // v4.1: 40 = floor of PARTIAL band; below this we don't surface
+  minScore: 40,
+  minConfidence: 0.40,
   maxResults: 50,
-  sparseDataThreshold: 32,    // v4: from 30
-  strongMinConfidence: 0.58,  // v4: from 0.55
+  sparseDataThreshold: 32,
+  // 0.62 mirrors pitch v8 strongMinConfidence to keep gating consistent
+  excellentMinConfidence: 0.62,
   sparseMaxBand: ScoreBand.GOOD,
 };
 

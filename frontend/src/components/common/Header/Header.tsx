@@ -35,12 +35,12 @@ function LanguageSwitcher() {
     <button
       type="button"
       onClick={toggleLanguage}
-      className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer font-medium text-sm"
+      className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-th-surface-h transition-colors cursor-pointer font-medium text-sm"
       aria-label="Change language"
     >
-      <span className={lang === 'en' ? 'text-white' : 'text-white/50'}>EN</span>
-      <span className="text-white/50">/</span>
-      <span className={lang === 'ar' ? 'text-white' : 'text-white/50'}>AR</span>
+      <span className={lang === 'en' ? 'text-th-text' : 'text-th-text-m'}>EN</span>
+      <span className="text-th-text-m">/</span>
+      <span className={lang === 'ar' ? 'text-th-text' : 'text-th-text-m'}>AR</span>
     </button>
   );
 }
@@ -71,18 +71,18 @@ export function Header({
   return (
     <header
       className={cn(
-        'sticky top-0 z-40 bg-[#060b18]/90 backdrop-blur-xl border-b border-white/[0.06]',
+        'sticky top-0 z-40 bg-th-nav-header backdrop-blur-xl border-b border-th-border',
         className
       )}
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
-      <div className="flex items-center justify-between h-14 px-4">
+      <div className="page-container flex items-center justify-between h-14">
         {/* Left side */}
         <div className="flex items-center gap-3">
           {showBack ? (
             <Link
               href={backHref || '/dashboard'}
-              className="p-1.5 -ml-1.5 rounded-lg hover:bg-white/5 transition-colors text-white/70 hover:text-white"
+              className="p-1.5 -ml-1.5 rounded-lg hover:bg-th-surface-h transition-colors text-th-text-t hover:text-th-text"
             >
               <ChevronLeft24Regular className="w-6 h-6" />
             </Link>
@@ -95,7 +95,7 @@ export function Header({
           <ContextSwitcher />
 
           {title && (
-            <h1 className="text-lg font-semibold text-white truncate">
+            <h1 className="text-lg font-semibold text-th-text truncate">
               {title}
             </h1>
           )}
@@ -111,7 +111,7 @@ export function Header({
             <>
               <Link
                 href="/wallet"
-                className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-white/70 hover:text-white"
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-th-surface-h transition-colors text-th-text-t hover:text-th-text"
               >
                 <Wallet24Regular className="w-5 h-5" />
                 <span className="text-sm font-medium">{Number.isInteger(balance) ? balance : balance.toFixed(2)}</span>

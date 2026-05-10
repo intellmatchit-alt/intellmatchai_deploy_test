@@ -14,6 +14,7 @@
 export enum MatchLevel {
   POOR = 'POOR',
   WEAK = 'WEAK',
+  PARTIAL = 'PARTIAL',
   GOOD = 'GOOD',
   VERY_GOOD = 'VERY_GOOD',
   EXCELLENT = 'EXCELLENT',

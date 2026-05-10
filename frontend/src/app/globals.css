@@ -67,6 +67,12 @@
     font-family: var(--font-sans);
   }
 
+  /* In light mode, force any hardcoded white text (text-white, text-white/50, etc.)
+     to #000 so labels/headers stay readable. Dark mode keeps the original white. */
+  html:not(.dark) [class*="text-white"] {
+    color: #000 !important;
+  }
+
   /* Dark-themed date and time inputs */
   .dark input[type="date"],
   .dark input[type="time"],

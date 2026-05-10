@@ -65,6 +65,9 @@ export class GetPitchStatusUseCase {
       processedAt: pitch.processedAt?.toISOString() || null,
       sectionsCount: sections.length,
       needsCount: needs.length,
+      // Surface metadata so the frontend can read matchIntent / business
+      // model / support-needed-tags etc. without an extra round-trip.
+      metadata: pitch.metadata ?? null,
       progress,
     };
   }

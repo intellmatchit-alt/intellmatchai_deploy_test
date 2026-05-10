@@ -445,6 +445,18 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
       return;
     }
 
+    // Per-Looking-For matching requires at least one selected option, so the
+    // engine has something to score per type.
+    if ((selectedLookingFor.length + customLookingFor.length) === 0) {
+      toast({
+        title: t.common?.error || 'Error',
+        description: t.projects?.lookingForRequired
+          || 'Select at least one Looking For option.',
+        variant: 'error',
+      });
+      return;
+    }
+
     const validSectorIds = selectedSectorIds.filter(id => !id.startsWith('custom_') && UUID_RE.test(id));
     const validSkills = selectedSkills.filter(s => !s.skillId.startsWith('custom_') && UUID_RE.test(s.skillId));
 

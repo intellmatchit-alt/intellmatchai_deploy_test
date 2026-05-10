@@ -45,20 +45,20 @@
 .dz span { color: var(--textSoft); font-size: 0.94rem; line-height: 1.5; max-width: 620px; }
 
 .pg { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
-.pill { border-radius: 999px; border: 2px solid rgba(146,179,221,0.20); background: rgba(255,255,255,0.04); color: var(--text); min-height: 42px; padding: 10px 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-align: center; font-size: 0.92rem; line-height: 1.2; cursor: pointer; white-space: nowrap; font-family: inherit; font-weight: 700; transition: .18s; }
+.pill { border-radius: 999px; border: 1px solid rgba(146,179,221,0.20); background: rgba(255,255,255,0.04); color: var(--text); padding: 6px 12px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-align: center; font-size: 0.75rem; line-height: 1.2; cursor: pointer; white-space: nowrap; font-family: inherit; font-weight: 500; transition: .18s; }
 .pill:hover { background: rgba(255,255,255,0.07); border-color: rgba(146,179,221,0.34); }
-.pSel { composes: pill; background: linear-gradient(135deg,rgba(24,210,164,0.22),rgba(31,200,201,0.12)); border-color: rgba(24,210,164,0.52); color: #f0fff9; box-shadow: 0 0 0 2px rgba(24,210,164,0.12) inset; }
-.pBlu { composes: pill; background: linear-gradient(135deg,rgba(77,163,255,0.22),rgba(47,125,246,0.12)); border-color: rgba(77,163,255,0.52); color: #eff7ff; }
-.pCya { composes: pill; background: linear-gradient(135deg,rgba(77,216,255,0.18),rgba(77,163,255,0.10)); border-color: rgba(77,216,255,0.45); color: #effcff; }
-.pInd { composes: pill; background: linear-gradient(135deg,rgba(109,140,255,0.18),rgba(77,163,255,0.12)); border-color: rgba(109,140,255,0.42); color: #eff3ff; }
+.pSel { composes: pill; background: #3b82f633; border-color: rgba(59,130,246,0.5); color: #93c5fd; box-shadow: 0 0 0 2px rgba(59,130,246,0.15) inset; }
+.pBlu { composes: pill; background: #3b82f633; border-color: rgba(59,130,246,0.5); color: #93c5fd; }
+.pCya { composes: pill; background: #3b82f633; border-color: rgba(59,130,246,0.5); color: #93c5fd; }
+.pInd { composes: pill; background: #3b82f633; border-color: rgba(59,130,246,0.5); color: #93c5fd; }
 
 .ca { border: 2px solid rgba(146,179,221,0.18); background: rgba(255,255,255,0.025); border-radius: 18px; padding: 12px; display: grid; gap: 12px; }
 .cw { display: flex; flex-wrap: wrap; gap: 10px; }
 .msr { display: flex; flex-wrap: wrap; gap: 10px; }
 .chip { composes: pill; }
-.cC { composes: chip; background: rgba(77,216,255,0.10); border-color: rgba(77,216,255,0.28); color: #effcff; }
-.cI { composes: chip; background: rgba(109,140,255,0.12); border-color: rgba(109,140,255,0.28); color: #eef2ff; }
-.cY { composes: chip; background: rgba(255,216,77,0.10); border-color: rgba(255,216,77,0.24); color: #fffbe7; }
+.cC { composes: chip; background: #3b82f633; border-color: rgba(59,130,246,0.5); color: #93c5fd; }
+.cI { composes: chip; background: #3b82f633; border-color: rgba(59,130,246,0.5); color: #93c5fd; }
+.cY { composes: chip; background: #3b82f633; border-color: rgba(59,130,246,0.5); color: #93c5fd; }
 .dm { width: 18px; height: 18px; border-radius: 999px; display: inline-grid; place-items: center; font-size: 12px; background: rgba(255,255,255,0.12); color: inherit; line-height: 1; flex-shrink: 0; border: none; cursor: pointer; padding: 0; }
 .dm:hover { background: rgba(255,255,255,0.22); }
 .star { color: var(--warning); font-size: 0.9rem; }
@@ -113,7 +113,7 @@
 .bS { composes: btn; color: white; background: linear-gradient(135deg, rgba(24,210,164,0.20), rgba(77,163,255,0.20)); border: 2px solid rgba(77,163,255,0.20); }
 
 /* ─── Market pill (blue selected) ─── */
-.pillBlu { composes: pill; background: linear-gradient(135deg,rgba(77,163,255,0.22),rgba(47,125,246,0.12)); border-color: rgba(77,163,255,0.52); color: #eff7ff; }
+.pillBlu { composes: pill; background: #3b82f633; border-color: rgba(59,130,246,0.5); color: #93c5fd; }
 
 @media (max-width: 860px) { .tc,.pg { grid-template-columns: 1fr; } .hdr,.azBanner { flex-direction: column; align-items: stretch; } }
 @media (max-width: 640px) { .card { padding: 16px; } .te { grid-template-columns: 1fr; } .segRow { width: 100%; } .seg { flex: 1; min-width: 0; } }

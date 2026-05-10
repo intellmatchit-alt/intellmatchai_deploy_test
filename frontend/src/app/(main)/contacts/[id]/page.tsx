@@ -1794,7 +1794,7 @@ export default function ContactDetailPage() {
                                     on what you need
                                   </p>
                                   <Link
-                                    href="/collaboration"
+                                    href="/projects/new"
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors text-sm font-medium"
                                   >
                                     <Add24Regular className="w-4 h-4" />
@@ -2093,7 +2093,7 @@ export default function ContactDetailPage() {
                                       "Set your opportunity intent"}
                                   </p>
                                   <Link
-                                    href="/opportunities"
+                                    href="/opportunities/new"
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-500/30 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors"
                                   >
                                     <Add24Regular className="w-4 h-4" />
@@ -2363,7 +2363,7 @@ export default function ContactDetailPage() {
                                       "Upload a pitch to see matches"}
                                   </p>
                                   <Link
-                                    href="/pitch"
+                                    href="/pitch/new"
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-lg hover:bg-emerald-500/30 transition-colors"
                                   >
                                     <Add24Regular className="w-4 h-4" />
@@ -2610,7 +2610,7 @@ export default function ContactDetailPage() {
                                       "Create a deal to see matches"}
                                   </p>
                                   <Link
-                                    href="/sell-smarter"
+                                    href="/deals/new"
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-sky-500/20 border border-sky-500/30 text-sky-400 rounded-lg hover:bg-sky-500/30 transition-colors"
                                   >
                                     <Add24Regular className="w-4 h-4" />

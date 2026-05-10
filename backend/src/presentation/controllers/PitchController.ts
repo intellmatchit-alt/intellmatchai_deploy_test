@@ -40,6 +40,16 @@ import {
   pitchMatchingService,
   PITCH_MATCHING_DEFAULTS,
 } from "../../infrastructure/services/pitch/PitchMatchingService";
+import {
+  enrichPitchMatchTargets,
+  mergeEnrichedMatchTargetResults,
+  normalizeSelectedMatchTargets,
+  rankByTotalMatchTargetScore,
+  type EnrichedMatchTargetResult,
+  type MatchTargetType,
+} from "../../infrastructure/services/pitch/pitchTargetScorer";
+import { dedupeMatchesByTarget } from "../../infrastructure/external/projects/lookingForEnhancedScorer";
+import { applyPerIntentAIAdjustments } from "../../infrastructure/services/pitch/perIntentAIAdjuster";
 import { prisma } from "../../infrastructure/database/prisma/client.js";
 import {
   AuthenticationError,
@@ -1436,16 +1446,367 @@ export async function findMatches(
       {},
     );
 
+    // Enrich each section's matches with per-Match-Target scores using the
+    // pitch's user-selected matchIntent[]. The same contact often appears in
+    // multiple sections (and sometimes both as user + contact) — merge those
+    // duplicates so each contact is rendered ONCE with merged per-target
+    // scores. Sorting / pagination happen AFTER deduplication.
+    const enrichedResults = await enrichPitchResultsWithMatchTargets(
+      pitch as any,
+      contacts as any[],
+      results,
+    );
+
+    const allEnrichedMatches: any[] =
+      (enrichedResults.payload?.sections ?? []).flatMap(
+        (s: any) => s?.matches ?? [],
+      );
+
+    // Per-LookingFor bounded AI validation. Mutates each match's
+    // matchTargetScores in place: sets aiScore (signed delta), recomputes
+    // finalScore/matchLevel for each intent, then re-picks bestMatchTarget +
+    // totalScore. Hard-filter FAILs are never overridden. Best-effort: LLM
+    // failure leaves deterministic scores in place.
+    await applyPerIntentAIAdjustments(
+      {
+        title: (pitch as any)?.title,
+        summary: (pitch as any)?.elevatorPitch ?? (pitch as any)?.summary ?? null,
+        detailedDesc: (pitch as any)?.detailedDesc ?? null,
+        stage: (pitch as any)?.pitchStage ?? (pitch as any)?.stage ?? null,
+        category: (pitch as any)?.primaryCategory ?? (pitch as any)?.category ?? null,
+        matchIntent: enrichedResults.payload?.selectedMatchTargets ?? [],
+      },
+      allEnrichedMatches,
+    );
+
+    // Persist per-LookingFor data onto the canonical PitchMatch rows so the
+    // GET endpoint and the saved/ignored/contacted flow keep the breakdown
+    // across reloads. Best-effort — failure here doesn't block the response.
+    await persistEnrichedMatchTargetsToDb(allEnrichedMatches);
+
+    addLookingForAliases(enrichedResults.payload);
+
     res.json({
       success: true,
       data: {
-        matchCount: totalMatchCount,
-        ...results,
+        matchCount: enrichedResults.totalDistinctMatches,
+        ...enrichedResults.payload,
       },
     });
   } catch (error) {
     next(error);
   }
+}
+
+/**
+ * Enrich each section's matches with per-Match-Target scores derived from
+ * the pitch's selected matchIntent[]. Then dedupe contacts that appear in
+ * more than one section by merging their per-target scores.
+ *
+ * The function NEVER mutates the input `results`. The returned `payload` is
+ * the same shape as `results` plus the new per-target fields on each match.
+ */
+async function enrichPitchResultsWithMatchTargets(
+  pitch: any,
+  contactRows: any[],
+  results: any,
+): Promise<{ payload: any; totalDistinctMatches: number }> {
+  const selected: MatchTargetType[] = (() => {
+    // matchIntent can land in any of these places depending on the upload
+    // path: form save (metadata.matchIntent), legacy column (matchIntent),
+    // or v8 engine fields (matchIntents). Read whichever has values first.
+    const meta = (pitch?.metadata && typeof pitch.metadata === 'object' ? pitch.metadata : null) as
+      | Record<string, unknown>
+      | null;
+    const candidates: unknown[] = [
+      meta?.matchIntent,
+      meta?.matchIntents,
+      meta?.matchTargets,
+      (pitch as any)?.matchIntent,
+      (pitch as any)?.matchIntents,
+    ];
+    for (const c of candidates) {
+      const norm = normalizeSelectedMatchTargets(c as any);
+      if (norm.length) return norm;
+    }
+    return [];
+  })();
+
+  // Map contactId → identity payload + scoring input + raw enrichment.
+  const contactById = new Map<string, any>();
+  for (const c of contactRows || []) contactById.set(c.id, c);
+
+  // Build the pitch-side scoring input ONCE (skill ids + sector ids).
+  const pitchSectorIds: string[] =
+    Array.isArray(pitch?.sectors) ? pitch.sectors.map((s: any) => s.sectorId).filter(Boolean) :
+    Array.isArray((pitch as any)?.sectorIds) ? (pitch as any).sectorIds : [];
+  const pitchSkillIds: string[] =
+    Array.isArray(pitch?.skillsNeeded) ? pitch.skillsNeeded.map((s: any) => s.skillId).filter(Boolean) :
+    Array.isArray((pitch as any)?.skillIds) ? (pitch as any).skillIds : [];
+  const pitchScoringInput = {
+    skillIds: pitchSkillIds,
+    sectorIds: pitchSectorIds,
+  };
+
+  // ── Pass 1: enrich every section match with its per-target details ──────
+  type MatchEnvelope = {
+    sectionId: string;
+    sectionType: string;
+    sectionTitle: string;
+    sectionOrder: number;
+    match: any; // the original PitchMatchDTO
+    enrichment: EnrichedMatchTargetResult | null;
+  };
+  const flat: MatchEnvelope[] = [];
+
+  for (const section of results?.sections ?? []) {
+    for (const match of section?.matches ?? []) {
+      const contactRow = contactById.get(match.contact?.id) || null;
+      const skillIds: string[] =
+        contactRow?.contactSkills?.map((cs: any) => cs.skillId).filter(Boolean) ?? [];
+      const skillNames: string[] =
+        contactRow?.contactSkills?.map((cs: any) => cs?.skill?.name).filter(Boolean) ?? [];
+      const sectorIds: string[] =
+        contactRow?.contactSectors?.map((cs: any) => cs.sectorId).filter(Boolean) ?? [];
+
+      const contactScoringInput = {
+        fullName: match.contact?.fullName,
+        jobTitle: match.contact?.jobTitle,
+        company: match.contact?.company,
+        bio: contactRow?.bioSummary || contactRow?.bio || null,
+        headline: contactRow?.headline,
+        skillIds,
+        skillNames,
+        sectorIds,
+      };
+
+      const enrichment = selected.length
+        ? enrichPitchMatchTargets({
+            selected,
+            contact: contactScoringInput,
+            pitch: pitchScoringInput,
+            flags: {
+              blocked: Boolean(contactRow?.blocked),
+              optedOut: Boolean(contactRow?.optedOut),
+            },
+          })
+        : null;
+
+      flat.push({
+        sectionId: section.id,
+        sectionType: section.type,
+        sectionTitle: section.title,
+        sectionOrder: section.order,
+        match,
+        enrichment,
+      });
+    }
+  }
+
+  // ── Pass 2: dedupe by canonical contact identity (across sections) ──────
+  // Use the same multi-key union-find dedupe as the project engine so that
+  // the same person cannot appear twice (whether duplicated across sections
+  // or stored as both User and Contact records with diverging emails).
+  const grouped = dedupeMatchesByTarget<MatchEnvelope, EnrichedMatchTargetResult>(flat, {
+    getIdentity: (env) => ({
+      userId: null,
+      contactId: env.match.contact?.id ?? null,
+      email: env.match.contact?.email ?? null,
+      linkedinUrl: env.match.contact?.linkedinUrl ?? null,
+      fullName: env.match.contact?.fullName ?? null,
+      company: env.match.contact?.company ?? null,
+    }),
+    getEnrichment: (env) => env.enrichment ?? null,
+    // Prefer the section-match with the higher legacy score as the carrier.
+    pickCanonical: (a, b) =>
+      (a.match?.score ?? 0) >= (b.match?.score ?? 0) ? a : b,
+    mergeEnrichments: mergeEnrichedMatchTargetResults,
+  });
+
+  // ── Pass 3: re-stamp each canonical match with the merged enrichment ────
+  const dedupedMatches = grouped.map(({ canonical, merged }) => {
+    const m = canonical.match;
+    const totalScore = merged?.totalScore ?? 0;
+    const bestDetail = merged?.matchTargetScores.find((d) => d.isBestMatchTarget) ?? null;
+    return {
+      ...m,
+      // Backward-compatible fields point at the SAME totalScore so the card,
+      // detail view, and explanation never drift apart.
+      score: selected.length && totalScore > 0 ? totalScore : m.score,
+      finalScore: selected.length && totalScore > 0 ? totalScore : m.score,
+      matchLevel: bestDetail?.matchLevel ?? null,
+      selectedIntent: merged?.bestMatchTarget ?? null,
+
+      // New per-target fields.
+      totalScore: selected.length ? totalScore : m.score,
+      bestMatchTarget: merged?.bestMatchTarget ?? null,
+      selectedMatchTargets: merged?.selectedMatchTargets ?? selected,
+      matchTargetScores: merged?.matchTargetScores ?? [],
+      overallExplanation: merged?.overallExplanation ?? null,
+
+      // Section provenance (where the contact was first matched).
+      sourceSectionId: canonical.sectionId,
+      sourceSectionTitle: canonical.sectionTitle,
+      sourceSectionType: canonical.sectionType,
+    };
+  });
+
+  // ── Pass 4: stable rank by totalScore desc; tie-break by confidence ─────
+  dedupedMatches.sort((a, b) =>
+    rankByTotalMatchTargetScore(
+      {
+        totalScore: a.totalScore,
+        bestConfidence:
+          a.matchTargetScores?.find((d: any) => d.isBestMatchTarget)?.confidence ?? 0,
+        deterministicScore: a.score,
+      },
+      {
+        totalScore: b.totalScore,
+        bestConfidence:
+          b.matchTargetScores?.find((d: any) => d.isBestMatchTarget)?.confidence ?? 0,
+        deterministicScore: b.score,
+      },
+    ),
+  );
+
+  // Group deduped matches back under their source section so the existing
+  // section-grouped UI keeps rendering. Each contact is in exactly ONE
+  // section (the one it scored highest in).
+  const matchesBySection = new Map<string, any[]>();
+  for (const m of dedupedMatches) {
+    const arr = matchesBySection.get(m.sourceSectionId) ?? [];
+    arr.push(m);
+    matchesBySection.set(m.sourceSectionId, arr);
+  }
+
+  const sectionsOut = (results?.sections ?? []).map((s: any) => ({
+    ...s,
+    matches: matchesBySection.get(s.id) ?? [],
+  }));
+
+  // Recompute summary from the deduped set so totals match what the UI shows.
+  const totalMatches = dedupedMatches.length;
+  const avgScore = totalMatches
+    ? Math.round(
+        dedupedMatches.reduce(
+          (sum, m) => sum + (m.totalScore ?? m.score ?? 0),
+          0,
+        ) / totalMatches,
+      )
+    : 0;
+
+  return {
+    payload: {
+      ...results,
+      sections: sectionsOut,
+      summary: {
+        ...(results?.summary ?? {}),
+        totalMatches,
+        avgScore,
+      },
+      selectedMatchTargets: selected,
+    },
+    totalDistinctMatches: totalMatches,
+  };
+}
+
+// `mergeEnrichedMatchTargetResults` is exported for callers that need a
+// section-merge in tests; the controller's pass uses the union-find dedupe
+// helper instead, so the import stays addressable here for type-checks.
+void mergeEnrichedMatchTargetResults;
+
+/**
+ * Persist per-LookingFor / matchIntent fields onto each canonical PitchMatch
+ * row so GET /pitches/:id/results can return the same shape as POST
+ * /pitches/:id/find-matches without recomputing enrichment in memory on every
+ * request, and so the saved/ignored/contacted flow keeps the per-target
+ * breakdown across reloads.
+ *
+ * This writes ONLY to canonical rows (the ones the deduper kept). Duplicate
+ * rows (same contact across other sections) keep their legacy data; the
+ * GET-side enrichment will dedupe them away, matching what the user sees.
+ */
+async function persistEnrichedMatchTargetsToDb(
+  enrichedMatches: any[],
+): Promise<void> {
+  if (!enrichedMatches?.length) return;
+
+  // Best-effort: a failure here must not break the user's matching run.
+  // Per-row updates keep the failure surface small (one bad row doesn't
+  // poison the others).
+  await Promise.all(
+    enrichedMatches.map(async (m) => {
+      if (!m?.id) return;
+      try {
+        const targetScores: any[] = Array.isArray(m.matchTargetScores)
+          ? m.matchTargetScores
+          : [];
+        const best = targetScores.find((d) => d?.isBestMatchTarget) ?? null;
+        const totalScore =
+          typeof m.totalScore === "number"
+            ? Math.round(m.totalScore)
+            : typeof m.score === "number"
+              ? Math.round(m.score)
+              : null;
+        const deterministicScore =
+          typeof best?.deterministicScore === "number"
+            ? Math.round(best.deterministicScore)
+            : totalScore;
+        const aiScore =
+          typeof best?.aiScore === "number" ? Math.round(best.aiScore) : null;
+
+        await prisma.pitchMatch.update({
+          where: { id: String(m.id) },
+          data: {
+            // Backward-compat: keep `score` aligned with the displayed total
+            // so legacy queries that read `score` see the same number the UI
+            // shows.
+            score: totalScore ?? undefined,
+            totalScore: totalScore ?? null,
+            deterministicScore: deterministicScore ?? null,
+            aiScore: aiScore ?? null,
+            bestMatchTarget: m.bestMatchTarget ?? null,
+            selectedIntent: m.selectedIntent ?? m.bestMatchTarget ?? null,
+            matchLevel: m.matchLevel ?? best?.matchLevel ?? null,
+            confidence:
+              typeof best?.confidence === "number" ? best.confidence : null,
+            hardFilterStatus: best?.hardFilterStatus ?? null,
+            matchTargetScoresJson: targetScores as any,
+            overallExplanationJson: (m.overallExplanation ?? null) as any,
+          },
+        });
+      } catch (err) {
+        logger.warn("Failed to persist matchTargetScores for pitch match", {
+          matchId: m.id,
+          error: err instanceof Error ? err.message : err,
+        });
+      }
+    }),
+  );
+}
+
+/**
+ * Add the spec-mandated `lookingForScores` / `bestLookingFor` /
+ * `selectedLookingFor` aliases onto each match. They point at the same data
+ * as the existing `matchTargetScores` / `bestMatchTarget` /
+ * `selectedMatchTargets` fields, so spec consumers and the existing UI both
+ * work without a breaking change. Mutates the payload in place for speed.
+ */
+function addLookingForAliases(payload: any): any {
+  if (!payload) return payload;
+  for (const section of payload.sections ?? []) {
+    for (const m of section.matches ?? []) {
+      if (m && typeof m === "object") {
+        m.lookingForScores = m.matchTargetScores ?? [];
+        m.bestLookingFor = m.bestMatchTarget ?? null;
+        m.selectedLookingFor =
+          m.selectedMatchTargets ?? payload.selectedMatchTargets ?? [];
+      }
+    }
+  }
+  payload.selectedLookingFor =
+    payload.selectedLookingFor ?? payload.selectedMatchTargets ?? [];
+  return payload;
 }
 
 /**

@@ -38,12 +38,14 @@ import {
   JOB_HIRING_URGENCY_OPTIONS,
   LANGUAGE_PROFICIENCY_OPTIONS,
   extractHiringFromText,
+  extractHiringFromDocument,
 } from '@/lib/api/job-matching';
 import { getSectors, getSkills } from '@/lib/api/profile';
 import { PillSelector } from '@/components/ui/PillSelector';
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection';
 import { AutocompleteTagInput } from '@/components/ui/AutocompleteTagInput';
 import { FormSection } from '@/components/ui/FormSection';
+import { DocumentUploadSection } from '@/components/ui/DocumentUploadSection';
 
 // ============================================================================
 // Suggestion lists for autocomplete fields
@@ -284,6 +286,35 @@ export default function HiringProfileForm({
   };
 
   // ── AI extraction ──
+  // Populate hiring fields from a hiring extraction (same shape from both
+  // /jobs/extract-hiring and /jobs/extract-hiring-document — skills come back
+  // as names, ready for AutocompleteTagInput).
+  const applyExtractedHiringFields = (data: Awaited<ReturnType<typeof extractHiringFromText>>) => {
+    if (data.title) setTitle(data.title);
+    if (data.roleArea) setRoleArea(data.roleArea);
+    if (data.seniority) setSeniority(data.seniority);
+    if (data.location) setLocation(data.location);
+    if (data.workMode) setWorkMode(data.workMode);
+    if (data.employmentType) setEmploymentType(data.employmentType);
+    if (data.hiringUrgency) setHiringUrgency(data.hiringUrgency);
+    if (data.minimumYearsExperience != null) setMinimumYearsExperience(String(data.minimumYearsExperience));
+    if (data.mustHaveSkills?.length) setMustHaveSkills(data.mustHaveSkills);
+    if (data.preferredSkills?.length) setPreferredSkills(data.preferredSkills);
+    if (data.jobSummaryRequirements) setJobSummary(data.jobSummaryRequirements);
+    if (data.industries?.length) setIndustries(data.industries);
+    if (data.requiredLanguages?.length) setRequiredLanguages(data.requiredLanguages);
+    if (data.requiredCertifications?.length) setCertifications(data.requiredCertifications);
+    if (data.requiredEducationLevels?.length) setEducationLevels(data.requiredEducationLevels);
+    if (data.salaryRange?.min != null) setSalaryMin(String(data.salaryRange.min));
+    if (data.salaryRange?.max != null) setSalaryMax(String(data.salaryRange.max));
+    if (data.salaryRange?.currency) setSalaryCurrency(data.salaryRange.currency);
+  };
+
+  const handleDocumentExtracted = (data: Awaited<ReturnType<typeof extractHiringFromText>>) => {
+    applyExtractedHiringFields(data);
+    setAiSuccess(true);
+  };
+
   const handleAiExtract = async () => {
     if (!aiText.trim()) return;
     setAiExtracting(true);
@@ -346,7 +377,7 @@ export default function HiringProfileForm({
         {tags.map((tag) => (
           <span
             key={tag}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/25"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[#3b82f633] text-[#93c5fd] border border-blue-500/50"
           >
             {tag}
             <button
@@ -363,6 +394,68 @@ export default function HiringProfileForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {/* ================================================================ */}
+      {/* AI Auto-Fill via document upload (always at the top, expanded)  */}
+      {/* ================================================================ */}
+      <DocumentUploadSection
+        extractFn={extractHiringFromDocument}
+        onExtracted={handleDocumentExtracted}
+        title="Upload Job Description"
+        description="Upload a PDF, DOCX, DOC, or TXT job description. AI will extract details and pre-fill the form."
+        accentColor="emerald"
+      />
+
+      {/* ── Or paste text below ───────────────────────────────────────── */}
+      <FormSection
+        title="Or paste a job description"
+        description="No file? Paste the description text and let AI fill in the form."
+        icon={<Sparkle24Regular className="w-5 h-5" />}
+        iconVariant="cyan"
+      >
+        <div className="space-y-3">
+          <textarea
+            value={aiText}
+            onChange={(e) => {
+              setAiText(e.target.value);
+              setAiError(null);
+              setAiSuccess(false);
+            }}
+            placeholder="Paste the full job description text here..."
+            rows={6}
+            className={textareaClass}
+          />
+
+          {aiError && (
+            <p className="text-red-400 text-sm font-medium">{aiError}</p>
+          )}
+
+          {aiSuccess && (
+            <p className="text-emerald-400 text-sm font-medium">
+              Form fields have been pre-filled. Review and adjust as needed.
+            </p>
+          )}
+
+          <button
+            type="button"
+            onClick={handleAiExtract}
+            disabled={aiExtracting || !aiText.trim()}
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-yellow-500/80 to-amber-500/80 text-white hover:from-yellow-500 hover:to-amber-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            {aiExtracting ? (
+              <>
+                <ArrowSync24Regular className="w-5 h-5 animate-spin" />
+                Extracting...
+              </>
+            ) : (
+              <>
+                <Sparkle24Regular className="w-5 h-5" />
+                Extract from Text
+              </>
+            )}
+          </button>
+        </div>
+      </FormSection>
+
       {/* ================================================================ */}
       {/* Section 1 — Basic Info                                          */}
       {/* ================================================================ */}
@@ -731,59 +824,6 @@ export default function HiringProfileForm({
               className={`${inputClass} w-24 text-center`}
             />
           </div>
-        </div>
-      </CollapsibleSection>
-
-      {/* ================================================================ */}
-      {/* Section 6 — AI Upload (Collapsible)                             */}
-      {/* ================================================================ */}
-      <CollapsibleSection
-        title="AI Auto-Fill"
-        description="Paste a job description and let AI fill in the form"
-        icon={<Sparkle24Regular className="w-5 h-5 text-yellow-400" />}
-        defaultOpen={false}
-      >
-        <div className="space-y-3">
-          <textarea
-            value={aiText}
-            onChange={(e) => {
-              setAiText(e.target.value);
-              setAiError(null);
-              setAiSuccess(false);
-            }}
-            placeholder="Paste the full job description text here..."
-            rows={8}
-            className={textareaClass}
-          />
-
-          {aiError && (
-            <p className="text-red-400 text-sm font-medium">{aiError}</p>
-          )}
-
-          {aiSuccess && (
-            <p className="text-emerald-400 text-sm font-medium">
-              Form fields have been pre-filled from the job description. Review and adjust as needed.
-            </p>
-          )}
-
-          <button
-            type="button"
-            onClick={handleAiExtract}
-            disabled={aiExtracting || !aiText.trim()}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-yellow-500/80 to-amber-500/80 text-white hover:from-yellow-500 hover:to-amber-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-          >
-            {aiExtracting ? (
-              <>
-                <ArrowSync24Regular className="w-5 h-5 animate-spin" />
-                Extracting...
-              </>
-            ) : (
-              <>
-                <Sparkle24Regular className="w-5 h-5" />
-                Extract & Fill Form
-              </>
-            )}
-          </button>
         </div>
       </CollapsibleSection>
 

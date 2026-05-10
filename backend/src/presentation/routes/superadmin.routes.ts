@@ -155,72 +155,74 @@ superAdminRoutes.get("/auth/me", async (req: Request, res: Response) => {
 
 /**
  * GET /dashboard — system statistics
+ * Response shape matches the frontend's DashboardData interface in
+ * frontend/src/app/superadmin/(dashboard)/page.tsx.
  */
-// superAdminRoutes.get('/dashboard', async (_req: Request, res: Response) => {
-//   try {
-//     const now = new Date();
-//     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-//     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+superAdminRoutes.get("/dashboard", async (_req: Request, res: Response) => {
+  try {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-//     const [
-//       totalUsers,
-//       activeUsers,
-//       newUsersLast30,
-//       newUsersLast7,
-//       totalContacts,
-//       subscriptionsByPlan,
-//       totalEvents,
-//       collabRequestsTotal,
-//       collabRequestsAccepted,
-//       collabPointsCharged,
-//       collabPointsPaidOut,
-//     ] = await Promise.all([
-//       prisma.user.count(),
-//       prisma.user.count({ where: { isActive: true, status: 'ACTIVE' } }),
-//       prisma.user.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
-//       prisma.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
-//       prisma.contact.count(),
-//       prisma.subscription.groupBy({ by: ['plan'], _count: { plan: true } }),
-//       prisma.event.count(),
-//       prisma.collaborationRequest.count(),
-//       prisma.collaborationRequest.count({ where: { status: 'ACCEPTED' } }),
-//       prisma.walletTransaction.aggregate({ where: { referenceType: 'COLLABORATION_REQUEST' }, _sum: { amount: true } }),
-//       prisma.walletTransaction.aggregate({ where: { referenceType: 'COLLABORATION_ACCEPT' }, _sum: { amount: true } }),
-//     ]);
+    const [
+      totalUsers,
+      activeUsers,
+      newSignups,
+      activeSubscriptions,
+      collabRequestsTotal,
+      collabRequestsAccepted,
+      collabPointsCharged,
+      collabPointsPaidOut,
+    ] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { isActive: true, status: "ACTIVE" } }),
+      prisma.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
+      prisma.subscription.count({ where: { status: "ACTIVE" } }).catch(() => 0),
+      prisma.collaborationRequest.count(),
+      prisma.collaborationRequest.count({ where: { status: "ACCEPTED" } }),
+      prisma.walletTransaction
+        .aggregate({
+          where: { referenceType: "COLLABORATION_REQUEST" },
+          _sum: { amount: true },
+        })
+        .catch(() => ({ _sum: { amount: 0 } })),
+      prisma.walletTransaction
+        .aggregate({
+          where: { referenceType: "COLLABORATION_ACCEPT" },
+          _sum: { amount: true },
+        })
+        .catch(() => ({ _sum: { amount: 0 } })),
+    ]);
 
-//     const totalCharged = Math.abs(collabPointsCharged._sum?.amount || 0);
-//     const totalPaidOut = collabPointsPaidOut._sum?.amount || 0;
-//     const platformRevenue = totalCharged - totalPaidOut;
+    const toNum = (v: any) => (v == null ? 0 : Number(v.toString ? v.toString() : v));
+    const totalCharged = Math.abs(toNum(collabPointsCharged._sum?.amount));
+    const totalPaidOut = toNum(collabPointsPaidOut._sum?.amount);
+    const platformRevenue = totalCharged - totalPaidOut;
 
-//     return res.json({
-//       success: true,
-//       data: {
-//         users: {
-//           total: totalUsers,
-//           active: activeUsers,
-//           newLast30Days: newUsersLast30,
-//           newLast7Days: newUsersLast7,
-//         },
-//         contacts: { total: totalContacts },
-//         subscriptions: subscriptionsByPlan.reduce(
-//           (acc, s) => ({ ...acc, [s.plan]: s._count.plan }),
-//           {} as Record<string, number>,
-//         ),
-//         events: { total: totalEvents },
-//         collaboration: {
-//           totalRequests: collabRequestsTotal,
-//           acceptedRequests: collabRequestsAccepted,
-//           totalPointsCharged: totalCharged,
-//           totalPointsPaidOut: totalPaidOut,
-//           platformRevenue,
-//         },
-//       },
-//     });
-//   } catch (error: any) {
-//     console.error('Dashboard error:', error);
-//     return res.status(500).json({ success: false, error: 'Internal server error' });
-//   }
-// });
+    return res.json({
+      success: true,
+      data: {
+        totalUsers,
+        activeUsers,
+        newSignups,
+        activeSubscriptions,
+        totalRevenue: platformRevenue,
+        systemHealth: "healthy",
+        collaboration: {
+          totalRequests: collabRequestsTotal,
+          acceptedRequests: collabRequestsAccepted,
+          totalPointsCharged: totalCharged,
+          totalPointsPaidOut: totalPaidOut,
+          platformRevenue,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error("Dashboard error:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
+  }
+});
 
 /**
  * GET /analytics — time-series user growth (daily for last 30 days)

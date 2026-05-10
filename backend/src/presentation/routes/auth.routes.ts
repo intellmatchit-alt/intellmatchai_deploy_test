@@ -212,7 +212,7 @@ authRoutes.post("/linkedin", authRateLimiter, async (req, res, next) => {
           code,
           redirect_uri:
             redirectUri ||
-            `${process.env.FRONTEND_URL}/api/auth/linkedin/callback`,
+            `${process.env.FRONTEND_URL}/auth/linkedin/callback`,
           client_id: clientId,
           client_secret: clientSecret,
         }),

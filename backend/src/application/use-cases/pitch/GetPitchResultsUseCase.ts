@@ -133,15 +133,41 @@ export class GetPitchResultsUseCase {
             }))
           : [];
 
+        // Hydrate per-LookingFor persistence so reloads show the same
+        // breakdown POST returns. Older matches hydrate with nulls and the
+        // frontend falls back to `score` via the existing chain.
+        const persisted = match as any;
+        const matchTargetScores =
+          persisted.matchTargetScoresJson ?? null;
+        const overallExplanation =
+          persisted.overallExplanationJson ?? null;
+        const persistedTotalScore: number | null =
+          persisted.totalScore ?? null;
+        const displayScore = persistedTotalScore ?? match.score;
+
         matchDTOs.push({
           id: match.id,
           contact: contactSummary,
-          score: match.score,
+          score: displayScore,
           breakdown,
           reasons,
           angleCategory: match.angleCategory,
           outreachDraft: match.outreachDraft,
           status: match.status,
+          totalScore: persistedTotalScore,
+          finalScore: persistedTotalScore,
+          deterministicScore: persisted.deterministicScore ?? null,
+          aiScore: persisted.aiScore ?? null,
+          bestMatchTarget: persisted.bestMatchTarget ?? null,
+          selectedIntent: persisted.selectedIntent ?? null,
+          matchLevel: persisted.matchLevel ?? null,
+          confidence: persisted.confidence ?? null,
+          hardFilterStatus: persisted.hardFilterStatus ?? null,
+          matchTargetScores,
+          overallExplanation,
+          // Spec-mandated aliases.
+          lookingForScores: matchTargetScores,
+          bestLookingFor: persisted.bestMatchTarget ?? null,
         });
 
         // Track for summary

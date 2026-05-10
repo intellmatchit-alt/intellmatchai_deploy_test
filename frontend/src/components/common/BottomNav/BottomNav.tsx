@@ -65,11 +65,11 @@ function NavItem({
             'w-[22px] h-[22px] transition-colors duration-200',
             isActive
               ? 'text-[#00d084]'
-              : 'text-white/50 group-hover:text-white/70'
+              : 'text-th-text-m group-hover:text-th-text-t'
           )}
         />
         {badge !== undefined && badge > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold leading-none ring-2 ring-[#060b18]">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold leading-none ring-2 ring-th-bg">
             {badge > 99 ? '99+' : badge}
           </span>
         )}
@@ -79,7 +79,7 @@ function NavItem({
           'text-[10px] font-medium whitespace-nowrap transition-colors duration-200 mt-0.5',
           isActive
             ? 'text-[#00d084]'
-            : 'text-white/50 group-hover:text-white/70'
+            : 'text-th-text-m group-hover:text-th-text-t'
         )}
       >
         {label}
@@ -124,7 +124,7 @@ export function BottomNav() {
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       {/* Background */}
-      <div className="absolute inset-0 bg-[#060b18]/95 backdrop-blur-xl border-t border-white/[0.06]" />
+      <div className="absolute inset-0 bg-th-nav-bottom backdrop-blur-xl border-t border-th-border" />
 
       <div className="relative flex items-end h-[68px] max-w-md mx-auto px-1">
         {/* Home */}

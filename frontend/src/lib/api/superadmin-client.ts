@@ -45,14 +45,31 @@ async function saRequest<T>(endpoint: string, method: string, body?: unknown): P
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  const data = await res.json();
+  // Try to parse JSON; if the body isn't JSON (e.g. nginx 502, plain-text 404)
+  // fall back to a synthetic error envelope so we don't throw a misleading
+  // SyntaxError that masks the real status code.
+  let data: any;
+  try {
+    data = await res.json();
+  } catch {
+    data = { success: false, error: `HTTP ${res.status}` };
+  }
 
   if (!res.ok || !data.success) {
-    if (res.status === 401) {
+    // Auto-clear session ONLY when an authenticated call is rejected mid-session.
+    // Skip this for the login endpoint itself — a 401 there is a wrong-password
+    // attempt, not an expired session, and triggering a full-page redirect
+    // wipes the React error state so the user sees the page silently reload
+    // with no feedback. Also skip the redirect if we're already on the login
+    // page so a failed login doesn't cause a confusing reload-loop.
+    const isLoginRequest = endpoint === '/auth/login';
+    if (res.status === 401 && !isLoginRequest) {
       clearSASession();
-      if (typeof window !== 'undefined') window.location.href = '/superadmin/login';
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/superadmin/login')) {
+        window.location.href = '/superadmin/login';
+      }
     }
-    throw new Error(data.error?.message || data.error || 'Request failed');
+    throw new Error(data.error?.message || data.error || `Request failed (${res.status})`);
   }
 
   return data.data as T;

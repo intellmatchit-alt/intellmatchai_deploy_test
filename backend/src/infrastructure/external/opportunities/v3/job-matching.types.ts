@@ -89,6 +89,14 @@ export enum HardFilterReason {
   MISSING_REQUIRED_CERTIFICATION = 'MISSING_REQUIRED_CERTIFICATION',
   MISSING_REQUIRED_EDUCATION = 'MISSING_REQUIRED_EDUCATION',
   SALARY_MISMATCH = 'SALARY_MISMATCH',
+  // Helper-flow specific reasons (Phase 3)
+  /** Helper is the candidate themselves — never useful as their own helper. */
+  SELF_MATCH = 'SELF_MATCH',
+  /** Helper is too far in the network to be reachable / introducable. */
+  UNREACHABLE = 'UNREACHABLE',
+  /** Helper profile has insufficient signal to score (no title, no skills,
+   *  no bio). Soft warning — caller may still surface them. */
+  INSUFFICIENT_DATA = 'INSUFFICIENT_DATA',
 }
 
 /** LLM provider type. */
@@ -587,6 +595,31 @@ export interface JobMatchResult {
   rank: number;
   createdAt: Date;
   expiresAt: Date;
+
+  /** Cohere semantic rerank score (0..1). Rank-only signal — does NOT
+   *  affect finalScore. Null when Cohere is unavailable or skipped. */
+  rerankScore?: number | null;
+  /** Sort key used for ordering: blend of finalScore and rerankScore.
+   *  Display the finalScore to users, not this. */
+  effectiveRankScore?: number | null;
+  /** Hybrid retrieval score (0..100). Cheap signal computed BEFORE the
+   *  full deterministic scorer runs. Diagnostic only — not displayed. */
+  retrievalScore?: number | null;
+  /** Per-component retrieval breakdown (structured/lexical/semantic/
+   *  network). Useful for debugging why a candidate was kept or dropped
+   *  by the prefilter. Optional — only populated when retrieval ran. */
+  retrievalBreakdown?: {
+    components: Array<{
+      name: 'structured' | 'lexical' | 'semantic' | 'network';
+      score: number;
+      weight: number;
+      available: boolean;
+      evidence: string[];
+    }>;
+    weightedSum: number;
+    availableWeight: number;
+    normalizedScore: number;
+  } | null;
 }
 
 // ============================================================================
@@ -623,6 +656,192 @@ export interface JobMatchResponse {
   hasMore: boolean;
   candidatesEvaluated: number;
   candidatesFiltered: number;
+  processingTimeMs: number;
+  generatedAt: Date;
+}
+
+// ============================================================================
+// MATCH MODE — flow discriminator (added Phase 1)
+// ============================================================================
+
+/**
+ * The Job Matching Engine is flow-based, not LookingFor-based.
+ *
+ * - HIRING_TO_CANDIDATES: a hiring post → candidates in requester's network
+ *   ("Why is this person suitable for this job?")
+ *
+ * - OPEN_TO_OPPORTUNITY_TO_HELPERS: a candidate's open-to-opportunity
+ *   profile → people in requester's network who can help the candidate
+ *   reach relevant opportunities ("Why might this person help you get a
+ *   job?"). No specific target job required.
+ *
+ * - TARGET_JOB_TO_HELPERS: same shape as the helper flow but scoped to a
+ *   specific target job. Optional advanced flow.
+ */
+export enum MatchMode {
+  HIRING_TO_CANDIDATES = 'HIRING_TO_CANDIDATES',
+  OPEN_TO_OPPORTUNITY_TO_HELPERS = 'OPEN_TO_OPPORTUNITY_TO_HELPERS',
+  TARGET_JOB_TO_HELPERS = 'TARGET_JOB_TO_HELPERS',
+}
+
+// ============================================================================
+// HELPER FLOW (OPEN_TO_OPPORTUNITY_TO_HELPERS / TARGET_JOB_TO_HELPERS)
+// ============================================================================
+
+/**
+ * What kind of help a contact can plausibly provide. Drives the labelling
+ * and tie-break behaviour in the helper-flow ranking layer.
+ */
+export enum HelperType {
+  /** Recruiter / talent acquisition / sourcer / HR / people partner. */
+  RECRUITER_CONTACT = 'RECRUITER_CONTACT',
+  /** Hiring manager, decision-maker, founder, director, VP, C-level. */
+  HIRING_PATH_CONTACT = 'HIRING_PATH_CONTACT',
+  /** Direct referral relationship — likely to refer the candidate inside
+   *  their company. */
+  DIRECT_REFERRAL_CONTACT = 'DIRECT_REFERRAL_CONTACT',
+  /** Warm intro contact — can connect the candidate to relevant people
+   *  even if they can't refer directly. */
+  WARM_INTRO_CONTACT = 'WARM_INTRO_CONTACT',
+  /** Advisor / mentor — can guide the candidate's job search but isn't
+   *  positioned to refer or introduce. */
+  ADVISORY_CONTACT = 'ADVISORY_CONTACT',
+  /** Weak path — limited but not zero potential. Surfaced for completeness
+   *  but ranked low. */
+  WEAK_PATH = 'WEAK_PATH',
+}
+
+export const HELPER_TYPE_LABELS: Record<HelperType, string> = {
+  [HelperType.RECRUITER_CONTACT]: 'Recruiter / Talent',
+  [HelperType.HIRING_PATH_CONTACT]: 'Hiring Decision-Maker',
+  [HelperType.DIRECT_REFERRAL_CONTACT]: 'Direct Referral',
+  [HelperType.WARM_INTRO_CONTACT]: 'Warm Introducer',
+  [HelperType.ADVISORY_CONTACT]: 'Advisor / Mentor',
+  [HelperType.WEAK_PATH]: 'Weak Path',
+};
+
+/**
+ * Likely action a helper would actually take to help the candidate.
+ * Surfaces in the helper-flow explanation card on the frontend.
+ */
+export type LikelyHelpType =
+  | 'refer'
+  | 'introduce'
+  | 'advise'
+  | 'connect'
+  | 'review'
+  | 'guide';
+
+export interface HelperMatchResult {
+  matchId: string;
+  matchMode: MatchMode;
+  candidateProfileId: string;
+  /** When matchMode is TARGET_JOB_TO_HELPERS this is the target hiring
+   *  profile id; null for OPEN_TO_OPPORTUNITY_TO_HELPERS. */
+  targetJobId: string | null;
+
+  helperUserId: string | null;
+  helperContactId: string | null;
+  helperName: string;
+  helperTitle: string | null;
+  helperRoleArea: string | null;
+  helperOrganization: string | null;
+
+  helperType: HelperType;
+  helperTypeLabel: string;
+  likelyHelpType: LikelyHelpType;
+
+  // Scores
+  deterministicScore: number;
+  aiScore: number | null;
+  finalScore: number;
+  confidence: number;
+
+  // Sort key (rank-only). Display finalScore, not this.
+  effectiveRankScore: number | null;
+
+  // Level
+  matchLevel: MatchLevel;
+  levelCappedReason: string | null;
+
+  // Filtering
+  hardFilterStatus: HardFilterStatus;
+  hardFilterReason: HardFilterReason;
+
+  // Breakdown / explanation
+  scoreBreakdown: DeterministicScoreBreakdown;
+  explanation: MatchExplanation;
+  /** Helper-framed natural-language summary: "Why might this person help
+   *  you get a job?" */
+  helperExplanation: string;
+
+  // Highlights
+  strengths: string[];
+  gaps: string[];
+  matchedSignals: string[];
+  missingOrUncertainFields: string[];
+  cautionFlags: string[];
+
+  // Network
+  networkRelationship: string | null;
+
+  /** Hybrid retrieval score (0..100). Diagnostic — not displayed. */
+  retrievalScore?: number | null;
+  retrievalBreakdown?: {
+    components: Array<{
+      name: 'structured' | 'lexical' | 'semantic' | 'network';
+      score: number;
+      weight: number;
+      available: boolean;
+      evidence: string[];
+    }>;
+    weightedSum: number;
+    availableWeight: number;
+    normalizedScore: number;
+  } | null;
+
+  // Metadata
+  rank: number;
+  createdAt: Date;
+  expiresAt: Date;
+}
+
+export interface FindHelperMatchesRequest {
+  /** Source candidate Open-to-Opportunity profile id. */
+  candidateProfileId: string;
+  /** User running the search (drives the network/scope of helpers).
+   *  Defaults to candidate.userId when not supplied — that's the common
+   *  case: the candidate searching for helpers for themselves. */
+  requesterUserId?: string;
+  /** Optional: when supplied, switches to TARGET_JOB_TO_HELPERS mode and
+   *  scopes scoring to that specific job. */
+  targetJobId?: string | null;
+  limit?: number;
+  offset?: number;
+  includeAI?: boolean;
+  includeExplanations?: boolean;
+  filters?: HelperMatchFilters;
+}
+
+export interface HelperMatchFilters {
+  helperTypes?: HelperType[];
+  minNetworkDegree?: 1 | 2 | 3;
+  excludeUserIds?: string[];
+}
+
+export interface HelperMatchResponse {
+  success: boolean;
+  matchMode: MatchMode;
+  matches: HelperMatchResult[];
+  candidateProfileId: string;
+  candidateTitle: string;
+  targetJobId: string | null;
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+  helpersEvaluated: number;
+  helpersFiltered: number;
   processingTimeMs: number;
   generatedAt: Date;
 }
@@ -701,6 +920,52 @@ export interface JobAIValidationItem {
 export interface JobAIValidationRequest {
   job: HiringProfile;
   candidates: CandidateProfile[];
+  deterministicScores: number[];
+}
+
+/**
+ * Helper-flow AI validation. Frames the question around HELP, not job fit:
+ *   "Can this person realistically help the candidate reach relevant
+ *    job opportunities?"
+ *
+ * Bounded by the same AI_MAX_SCORE_ADJUSTMENT clamp as the candidate flow.
+ * Hard-filter FAIL is never overridden.
+ */
+export interface HelperAIValidationItem {
+  /** Stable helper identifier — userId or contactId. */
+  helperId: string;
+  originalScore: number;
+  adjustedScore: number;
+  confidence: number;
+  reasoning: string;
+  redFlags: string[];
+  greenFlags: string[];
+  /** Optional: AI-refined help-type suggestion. The deterministic engine
+   *  produces an initial helperType; the LLM may suggest a different one
+   *  if it sees evidence to override. Caller is free to ignore. */
+  likelyHelpType?: string | null;
+}
+
+/**
+ * `helpers` here is the lightweight projection the LLM needs (id +
+ * profile snippet), not the full HelperRecord, so the prompt stays small.
+ */
+export interface HelperAIValidationCandidate {
+  id: string;
+  fullName: string;
+  jobTitle: string | null;
+  company: string | null;
+  bio: string | null;
+  skills: string[];
+  sectors: string[];
+  helperType: string;
+  network: { degree: number; sameOrganization: boolean };
+}
+
+export interface HelperAIValidationRequest {
+  /** The candidate the helpers are being matched FOR (the job-seeker). */
+  candidate: CandidateProfile;
+  helpers: HelperAIValidationCandidate[];
   deterministicScores: number[];
 }
 

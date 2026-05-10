@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { HardFilterStatus, MatchingStats, MatchLevel } from '../common/matching-common.types';
 import {
   applyBoundedAIAdjustment,

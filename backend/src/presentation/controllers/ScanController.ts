@@ -177,42 +177,85 @@ export class ScanController {
     try {
       logger.info('Enriching with ScrapIn', { linkedInUrl });
 
-      const apiUrl = `https://api.scrapin.io/v1/enrichment/profile?apikey=${scrapInApiKey}`;
-      const response = await fetch(apiUrl, {
+      // ScrapIn v2 API — POST /v2/fetch/persons (cached/Datalake, Trial-OK)
+      const v2Response = await fetch('https://api.scrapin.io/v2/fetch/persons', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          linkedInUrl,
-          includes: {
-            includeCompany: true,
-            includeSummary: true,
-            includeSkills: true,
-            includeExperience: true,
-            includeEducation: true,
-          },
-          cacheDuration: '7d',
-        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${scrapInApiKey}`,
+        },
+        body: JSON.stringify({ url: linkedInUrl }),
       });
 
-      const data = await response.json() as {
+      const v2Body = await v2Response.json() as {
         success: boolean;
-        msg?: string;
-        credits_left?: number;
-        metadata?: { source?: string };
-        person?: any;
-        company?: any;
+        data: any | null;
+        error: { message?: string } | null;
+        quotas?: { creditsConsumed?: number; workspace?: { credits?: { left?: number } } };
+        metadata?: { requestId?: string };
       };
 
-      if (!data.success || !data.person) {
-        logger.warn('ScrapIn returned no data', { msg: data.msg });
+      if (!v2Body.success || !v2Body.data) {
+        logger.warn('ScrapIn returned no data', { msg: v2Body.error?.message });
         return null;
       }
 
       logger.info('ScrapIn enrichment successful', {
-        creditsLeft: data.credits_left,
-        cacheSource: data.metadata?.source,
+        creditsLeft: v2Body.quotas?.workspace?.credits?.left,
+        cacheSource: 'v2',
       });
 
+      // Adapt v2 person → v1 shape so the existing extraction code below works unchanged.
+      // v2 dates are ISO strings; v1 used { month, year } objects.
+      const isoToMonthYear = (iso?: string | null) => {
+        if (!iso) return undefined;
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return undefined;
+        return { month: d.getUTCMonth() + 1, year: d.getUTCFullYear() };
+      };
+      const v2Person = v2Body.data;
+      const adaptPosition = (pos: any) => ({
+        title: pos?.title,
+        companyName: pos?.companyName,
+        description: pos?.description,
+        contractType: pos?.contractType,
+        startEndDate: pos?.startEndDate
+          ? {
+              start: isoToMonthYear(pos.startEndDate.start),
+              end: pos.startEndDate.end ? isoToMonthYear(pos.startEndDate.end) : null,
+            }
+          : undefined,
+      });
+      const adaptedPositionHistory = Array.isArray(v2Person.experience) ? v2Person.experience.map(adaptPosition) : [];
+      const adaptedEducationHistory = Array.isArray(v2Person.education)
+        ? v2Person.education.map((edu: any) => ({
+            schoolName: edu?.schoolName,
+            degreeName: edu?.degreeName,
+            fieldOfStudy: edu?.fieldOfStudy,
+            startEndDate: edu?.startEndDate
+              ? {
+                  start: isoToMonthYear(edu.startEndDate.start),
+                  end: edu.startEndDate.end ? isoToMonthYear(edu.startEndDate.end) : undefined,
+                }
+              : undefined,
+          }))
+        : [];
+
+      const data = {
+        success: true,
+        person: {
+          firstName: v2Person.firstName,
+          lastName: v2Person.lastName,
+          headline: v2Person.headline,
+          summary: v2Person.summary,
+          photoUrl: v2Person.photoUrl,
+          location: v2Person.location,
+          skills: Array.isArray(v2Person.skills) ? v2Person.skills : [],
+          positions: { positionHistory: adaptedPositionHistory },
+          schools: { educationHistory: adaptedEducationHistory },
+        },
+        company: undefined as any,
+      };
       const person = data.person;
       const positionHistory = person.positions?.positionHistory || [];
       const currentPosition = positionHistory[0];

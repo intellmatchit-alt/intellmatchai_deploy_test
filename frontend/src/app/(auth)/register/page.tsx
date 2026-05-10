@@ -130,7 +130,7 @@ export default function RegisterPage() {
               type="button"
               onClick={() => {
                 const clientId = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID;
-                const redirectUri = `${window.location.origin}/api/auth/linkedin/callback`;
+                const redirectUri = `${window.location.origin}/auth/linkedin/callback`;
                 const scope = 'openid profile email';
                 const state = Math.random().toString(36).substring(7);
                 sessionStorage.setItem('linkedin_oauth_state', state);

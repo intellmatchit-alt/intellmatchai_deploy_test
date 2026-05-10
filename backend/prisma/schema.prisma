@@ -365,7 +365,7 @@ model Contact {
   rawContactJson         Json?               @map("raw_contact_json")
   rawSources             Json                @map("raw_sources")
   bioFull                String?             @map("bio_full") @db.Text
-  bioSummary             String?             @map("bio_summary") @db.VarChar(500)
+  bioSummary             String?             @map("bio_summary") @db.VarChar(1000)
   collaborationMissionId String?             @map("collaboration_mission_id")
   introducedByUserId     String?             @map("introduced_by_user_id")
   introductionId         String?             @map("introduction_id")
@@ -1350,6 +1350,15 @@ model PitchMatch {
   hardFilterStatus   String?            @map("hard_filter_status") @db.VarChar(20)
   confidence         Float?
   rank               Int?
+  // Per-LookingFor / matchIntent persistence (totalScore = max across selected
+  // intents; matchTargetScoresJson is the array of per-intent score objects;
+  // overallExplanationJson is the cross-intent rollup explanation).
+  totalScore         Int?               @map("total_score") @db.SmallInt
+  deterministicScore Int?               @map("deterministic_score") @db.SmallInt
+  aiScore            Int?               @map("ai_score") @db.SmallInt
+  bestMatchTarget    String?            @map("best_match_target") @db.VarChar(50)
+  matchTargetScoresJson Json?           @map("match_target_scores_json")
+  overallExplanationJson Json?          @map("overall_explanation_json")
   status            PitchMatchStatus    @default(PENDING)
   savedAt           DateTime?           @map("saved_at")
   ignoredAt         DateTime?           @map("ignored_at")
@@ -1478,6 +1487,7 @@ model DealRequest {
   updatedAt         DateTime              @updatedAt @map("updated_at")
   user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   matchResults      DealMatchResult[]
+  helperMatchResults DealHelperMatchResult[]
   dealJobs          DealJob[]
   dealMembers       DealMember[]
   collaborationRequests CollaborationRequest[]
@@ -1490,7 +1500,7 @@ model DealRequest {
 }
 
 /// Deal Match Result model
-/// Stores computed matches for a deal request
+/// Stores computed matches for a deal request (direct buy↔sell flows)
 model DealMatchResult {
   id            String            @id @default(uuid())
   dealRequestId String            @map("deal_request_id")
@@ -1509,6 +1519,21 @@ model DealMatchResult {
   explanationV4    Json?            @map("explanation_v4")
   confidence       Float?
   rank             Int?
+  // v4.1 production-grade fields
+  finalScore           Int?         @map("final_score") @db.SmallInt
+  deterministicScore   Int?         @map("deterministic_score") @db.SmallInt
+  aiScore              Int?         @map("ai_score") @db.SmallInt
+  effectiveRankScore   Float?       @map("effective_rank_score")
+  matchLevel           String?      @map("match_level") @db.VarChar(20)
+  retrievalScore       Float?       @map("retrieval_score")
+  retrievalBreakdown   Json?        @map("retrieval_breakdown")
+  rankingFactors       Json?        @map("ranking_factors")
+  aiReasoning          String?      @map("ai_reasoning") @db.Text
+  aiGreenFlags         Json?        @map("ai_green_flags")
+  aiRedFlags           Json?        @map("ai_red_flags")
+  networkRelationship  Json?        @map("network_relationship")
+  matchMode            String?      @map("match_mode") @db.VarChar(40)
+
   status        DealMatchStatus   @default(NEW)
   savedAt       DateTime?         @map("saved_at")
   ignoredAt     DateTime?         @map("ignored_at")
@@ -1523,7 +1548,65 @@ model DealMatchResult {
   @@index([dealRequestId])
   @@index([contactId])
   @@index([dealRequestId, score])
+  @@index([dealRequestId, effectiveRankScore])
   @@map("deal_match_results")
+}
+
+/// Deal Helper Match Result model (v4.1)
+/// Stores helper / introducer matches for BUY_TO_SELLER_HELPERS and SELL_TO_BUYER_HELPERS
+model DealHelperMatchResult {
+  id                 String   @id @default(uuid())
+  dealRequestId      String   @map("deal_request_id")
+  helperContactId    String?  @map("helper_contact_id")
+  helperUserId       String?  @map("helper_user_id")
+  matchMode          String   @map("match_mode") @db.VarChar(40)
+  helperType         String   @map("helper_type") @db.VarChar(40)
+  helperTypeLabel    String?  @map("helper_type_label") @db.VarChar(80)
+  likelyHelpType     String?  @map("likely_help_type") @db.Text
+  helperName         String   @map("helper_name") @db.VarChar(200)
+  helperTitle        String?  @map("helper_title") @db.VarChar(200)
+  helperRoleArea     String?  @map("helper_role_area") @db.VarChar(120)
+  helperOrganization String?  @map("helper_organization") @db.VarChar(200)
+
+  finalScore           Int      @map("final_score") @db.SmallInt
+  deterministicScore   Int      @map("deterministic_score") @db.SmallInt
+  aiScore              Int?     @map("ai_score") @db.SmallInt
+  effectiveRankScore   Float    @map("effective_rank_score")
+  confidence           Float
+  matchLevel           String   @map("match_level") @db.VarChar(20)
+  surfacedStatus       String?  @map("surfaced_status") @db.VarChar(20)
+  hardFilterStatus     String?  @map("hard_filter_status") @db.VarChar(20)
+  hardFilterReason     String?  @map("hard_filter_reason") @db.VarChar(100)
+  retrievalScore       Float?   @map("retrieval_score")
+  retrievalBreakdown   Json?    @map("retrieval_breakdown")
+  rankingFactors       Json?    @map("ranking_factors")
+  scoreBreakdown       Json     @map("score_breakdown")
+  explanation          Json     @map("explanation")
+  helperExplanation    String?  @map("helper_explanation") @db.Text
+  strengths            Json?
+  gaps                 Json?
+  matchedSignals       Json?    @map("matched_signals")
+  missingFields        Json?    @map("missing_fields")
+  networkRelationship  Json?    @map("network_relationship")
+  aiReasoning          String?  @map("ai_reasoning") @db.Text
+  aiGreenFlags         Json?    @map("ai_green_flags")
+  aiRedFlags           Json?    @map("ai_red_flags")
+
+  rank        Int?
+  status      DealMatchStatus  @default(NEW)
+  savedAt     DateTime?        @map("saved_at")
+  ignoredAt   DateTime?        @map("ignored_at")
+  contactedAt DateTime?        @map("contacted_at")
+  archivedAt  DateTime?        @map("archived_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  dealRequest DealRequest      @relation(fields: [dealRequestId], references: [id], onDelete: Cascade)
+
+  @@index([dealRequestId])
+  @@index([dealRequestId, effectiveRankScore])
+  @@index([helperUserId])
+  @@map("deal_helper_match_results")
 }
 
 /// Deal Job model for async processing
@@ -3888,8 +3971,12 @@ enum JobAvailability {
 }
 
 enum JobMatchLevel {
+  // POOR is retained for backward-compatible hydration of pre-Phase-5 rows.
+  // New code must not emit it — applyGating() / getMatchLevelFromScore()
+  // emit only the spec bands: WEAK / PARTIAL / GOOD / VERY_GOOD / EXCELLENT.
   POOR
   WEAK
+  PARTIAL
   GOOD
   VERY_GOOD
   EXCELLENT
@@ -3992,8 +4079,35 @@ model CandidateProfile {
 /// Match result from the Job Matching Engine v3.
 model JobMatch {
   id                 String              @id @default(uuid())
-  jobId              String              @map("job_id")
-  candidateId        String              @map("candidate_id")
+  // Phase 8: jobId + candidateId are now nullable so helper-flow rows
+  // (matchMode = OPEN_TO_OPPORTUNITY_TO_HELPERS / TARGET_JOB_TO_HELPERS)
+  // can omit them. Hiring-flow rows still set both.
+  jobId              String?             @map("job_id")
+  candidateId        String?             @map("candidate_id")
+
+  // Phase 8: discriminator. HIRING_TO_CANDIDATES is the default so legacy
+  // rows hydrate without a backfill.
+  matchMode          String              @default("HIRING_TO_CANDIDATES") @map("match_mode") @db.VarChar(50)
+
+  // Helper-flow identity columns (nullable for hiring-flow rows).
+  candidateProfileId String?             @map("candidate_profile_id")
+  targetJobId        String?             @map("target_job_id")
+  helperUserId       String?             @map("helper_user_id")
+  helperContactId    String?             @map("helper_contact_id")
+
+  // Helper-flow display columns.
+  helperType         String?             @map("helper_type") @db.VarChar(50)
+  helperTypeLabel    String?             @map("helper_type_label") @db.VarChar(100)
+  likelyHelpType     String?             @map("likely_help_type") @db.VarChar(20)
+  helperExplanation  String?             @map("helper_explanation") @db.Text
+  networkRelationship String?            @map("network_relationship") @db.VarChar(100)
+
+  // Diagnostic / rank columns (Phase 0/6/7 — already in API responses,
+  // now persisted so GET hydrates the same shape).
+  effectiveRankScore Float?              @map("effective_rank_score")
+  rerankScore        Float?              @map("rerank_score")
+  retrievalScore     Int?                @map("retrieval_score") @db.SmallInt
+
   deterministicScore Float               @map("deterministic_score")
   aiScore            Float?              @map("ai_score")
   finalScore         Float               @map("final_score")
@@ -4011,12 +4125,16 @@ model JobMatch {
   createdAt          DateTime            @default(now()) @map("created_at")
   expiresAt          DateTime            @map("expires_at")
 
-  hiringProfile    HiringProfile    @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  candidateProfile CandidateProfile @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  hiringProfile    HiringProfile?    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  candidateProfile CandidateProfile? @relation(fields: [candidateId], references: [id], onDelete: Cascade)
 
   @@index([jobId, archived])
   @@index([candidateId])
   @@index([finalScore(sort: Desc)])
   @@index([rank])
+  @@index([matchMode])
+  @@index([candidateProfileId, archived])
+  @@index([helperUserId])
+  @@index([helperContactId])
   @@map("job_matches")
 }

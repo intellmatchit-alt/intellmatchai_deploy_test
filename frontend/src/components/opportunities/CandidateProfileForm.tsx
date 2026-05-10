@@ -43,6 +43,7 @@ import {
   JOB_AVAILABILITY_OPTIONS,
   LANGUAGE_PROFICIENCY_OPTIONS,
   extractCandidateFromText,
+  extractCandidateFromDocument,
 } from '@/lib/api/job-matching';
 import { getSectors, getSkills } from '@/lib/api/profile';
 import { PillSelector } from '@/components/ui/PillSelector';
@@ -50,6 +51,7 @@ import { MultiPillSelector } from '@/components/ui/MultiPillSelector';
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection';
 import { AutocompleteTagInput } from '@/components/ui/AutocompleteTagInput';
 import { FormSection } from '@/components/ui/FormSection';
+import { DocumentUploadSection } from '@/components/ui/DocumentUploadSection';
 
 // ============================================================================
 // CONSTANTS
@@ -254,6 +256,36 @@ export default function CandidateProfileForm({
     await onSubmit(data);
   };
 
+  // ── Document-extracted handler ──
+  // /jobs/extract-candidate-document returns the same ExtractedCandidateFields
+  // shape as the text-paste path, so reuse the existing population logic.
+  const applyExtractedCandidateFields = (data: Awaited<ReturnType<typeof extractCandidateFromText>>) => {
+    if (data.title) setTitle(data.title);
+    if (data.roleArea) setRoleArea(data.roleArea);
+    if (data.seniority) setSeniority(data.seniority);
+    if (data.location) setLocation(data.location);
+    if (data.desiredWorkMode?.length) setDesiredWorkMode(data.desiredWorkMode);
+    if (data.desiredEmploymentType?.length) setDesiredEmploymentType(data.desiredEmploymentType);
+    if (data.skills?.length) setSkills(data.skills);
+    if (data.profileSummaryPreferences) setProfileSummary(data.profileSummaryPreferences);
+    if (data.yearsOfExperience != null) setYearsOfExperience(String(data.yearsOfExperience));
+    if (data.availability) setAvailability(data.availability);
+    if (data.languages?.length) setLanguages(data.languages);
+    if (data.certifications?.length) setCertifications(data.certifications);
+    if (data.industries?.length) setIndustries(data.industries);
+    if (data.education?.length) setEducation(data.education);
+    if (data.expectedSalary) {
+      if (data.expectedSalary.min != null) setSalaryMin(String(data.expectedSalary.min));
+      if (data.expectedSalary.max != null) setSalaryMax(String(data.expectedSalary.max));
+      if (data.expectedSalary.currency) setSalaryCurrency(data.expectedSalary.currency);
+    }
+    if (data.noticePeriod != null) setNoticePeriod(String(data.noticePeriod));
+  };
+
+  const handleDocumentExtracted = (data: Awaited<ReturnType<typeof extractCandidateFromText>>) => {
+    applyExtractedCandidateFields(data);
+  };
+
   // ── AI Extract handler ────────────────────────────────────────────
   const handleAiExtract = async () => {
     if (!aiText.trim()) return;
@@ -382,12 +414,19 @@ export default function CandidateProfileForm({
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 6: AI Upload (placed first for convenience)
          ═══════════════════════════════════════════════════════════════ */}
-      <CollapsibleSection
-        title="AI Auto-Fill from CV"
-        description="Paste your CV or resume text and let AI pre-fill the form"
-        icon={<Sparkle24Regular className="w-5 h-5 text-emerald-400" />}
-        headerColor="from-emerald-500 to-teal-400"
-        borderColor="border-emerald-500/20"
+      <DocumentUploadSection
+        extractFn={extractCandidateFromDocument}
+        onExtracted={handleDocumentExtracted}
+        title="Upload Your CV / Resume"
+        description="Upload a PDF, DOCX, DOC, or TXT CV. AI will extract details and pre-fill the form."
+        accentColor="emerald"
+      />
+
+      <FormSection
+        title="Or paste your CV text"
+        description="No file? Paste your CV or resume text and let AI pre-fill the form."
+        icon={<Sparkle24Regular className="w-5 h-5" />}
+        iconVariant="cyan"
       >
         <div className="space-y-3">
           <textarea
@@ -419,7 +458,7 @@ export default function CandidateProfileForm({
             )}
           </button>
         </div>
-      </CollapsibleSection>
+      </FormSection>
 
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 1: Basic Info
@@ -595,7 +634,7 @@ export default function CandidateProfileForm({
               {skills.map((skill) => (
                 <span
                   key={skill}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/25"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[#3b82f633] text-[#93c5fd] border border-blue-500/50"
                 >
                   {skill}
                   <button
@@ -728,7 +767,7 @@ export default function CandidateProfileForm({
               {certifications.map((cert) => (
                 <span
                   key={cert}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/25"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[#3b82f633] text-[#93c5fd] border border-blue-500/50"
                 >
                   {cert}
                   <button
@@ -763,7 +802,7 @@ export default function CandidateProfileForm({
               {industries.map((ind) => (
                 <span
                   key={ind}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-blue-500/15 text-blue-300 border border-blue-500/25"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[#3b82f633] text-[#93c5fd] border border-blue-500/50"
                 >
                   {ind}
                   <button

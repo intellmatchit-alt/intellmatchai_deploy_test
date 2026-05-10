@@ -817,35 +817,43 @@ export async function extractDealFromDocument(
 DOCUMENT:
 ${truncatedContent}
 
-Return JSON with these fields:
+Return JSON with EVERY field below. Leave a field empty ("" or []) only when the document offers no signal at all — otherwise infer the closest match.
+
 {
-  "mode": "SELL or BUY - SELL if the document is about selling a product/service/solution, BUY if looking to purchase/procure something",
-  "title": "Short deal title (English)",
+  "mode": "SELL or BUY (SELL = the document offers something; BUY = the document seeks something)",
+  "title": "Short deal title (≤ 60 chars, English)",
   "solutionType": "Type of solution/service (e.g., CRM Software, Marketing Services, Cloud Infrastructure)",
-  "domain": "Industry or domain (e.g., Technology, Healthcare, Finance, Education)",
-  "companySize": "SMALL or MEDIUM or ENTERPRISE - target company size if mentioned",
-  "productName": "Product or service name if selling",
-  "targetDescription": "Description of ideal customer/target if selling",
-  "problemStatement": "Problem being solved if buying",
-  "targetEntityType": "COMPANY or INDIVIDUAL or CONSULTANT or PARTNER - what type of entity is needed if buying",
-  "priceRange": "Budget or price range if mentioned (e.g., '< $1K', '$1K - $10K', '$10K - $50K', '$50K - $100K', '$100K+')",
-  "timeline": "Timeline or urgency if mentioned (e.g., 'Urgent (this week)', 'Soon (this month)', 'Planning (this quarter)', 'Exploring (no rush)', 'Actively selling now', 'Exploring the market')",
-  "requirements": "Comma-separated list of key requirements if mentioned (e.g., 'ISO Certified, API Integration, 24/7 Support')",
-  "buyerRole": "If BUY mode only: EXACTLY one of DECISION_MAKER, TECHNICAL_EVALUATOR, END_USER, PROCUREMENT, BUDGET_HOLDER, CONSULTANT. The buyer's role in the decision. Empty string if SELL mode.",
-  "providerType": "If SELL mode only: EXACTLY one of COMPANY, INDIVIDUAL, CONSULTANT, PARTNER. The type of entity selling. Empty string if BUY mode.",
-  "capabilities": ["If SELL mode: list key capabilities offered, e.g., 'Custom Development', 'API Integration', '24/7 Support', 'Training & Onboarding', 'SLA Guarantee', 'Compliance (SOC2/ISO)', 'Managed Services'. Empty array if BUY mode."],
-  "deliveryModeCapability": ["If SELL mode: list ALL supported delivery modes from: On-premise, Cloud/SaaS, Hybrid, Managed Service, Self-service. Empty array if BUY mode."]
+  "domain": "Primary industry/sector — single phrase",
+  "relevantIndustry": ["BUY mode: 1–4 industry tags relevant to the requested solution (e.g. ['FinTech','Banking']). Empty if SELL."],
+  "industryFocus": ["SELL mode: 1–6 industries the offering targets (e.g. ['FinTech','Insurance']). Empty if BUY."],
+  "companySize": "SMALL (1–50) | MEDIUM (51–500) | ENTERPRISE (500+); for BUY = preferred provider size, for SELL = target customer size",
+  "productName": "SELL only: product/service name",
+  "targetDescription": "SELL only: short offering summary / ICP narrative",
+  "problemStatement": "BUY only: the problem to solve, in the buyer's voice",
+  "targetEntityType": "BUY only: COMPANY | INDIVIDUAL | CONSULTANT | PARTNER",
+  "providerType": "SELL only: COMPANY | INDIVIDUAL | CONSULTANT | PARTNER",
+  "buyerRole": "BUY only: EXACTLY one of DECISION_MAKER | TECHNICAL_EVALUATOR | END_USER | PROCUREMENT | BUDGET_HOLDER | CONSULTANT",
+  "idealBuyerType": ["SELL only: 1–4 buyer personas the offering targets, EACH from: 'Budget Holder', 'Technical Evaluator', 'C-Level', 'SMB Owner', 'Enterprise Buyer', 'Government / Public Sector', 'Startup Founder', 'Procurement Manager'"],
+  "idealCustomerProfile": "SELL only: 1–2 sentence ICP description",
+  "idealProviderProfile": "BUY only: 1–2 sentence description of the ideal provider",
+  "priceRange": "Budget / price band — EXACTLY one of: '< $1K' | '$1K - $10K' | '$10K - $50K' | '$50K - $100K' | '$100K+'",
+  "timeline": "BUY: 'Urgent (this week)' | 'Soon (this month)' | 'Next quarter' | 'This year' | 'No rush'. SELL: 'Actively selling now' | 'Exploring the market' | 'Future pipeline'",
+  "buyingStage": "BUY only: EXACTLY one of 'Just exploring' | 'Comparing providers' | 'Ready to buy' | 'Already in discussions'",
+  "requirements": ["BUY only: ARRAY of must-have requirements as short tag strings. Prefer the canned tags when applicable: ['ISO Certified','Local Office','24/7 Support','API Integration','Custom Development','Scalable Solution','Data Security','Mobile Support','Multilingual','Free Trial']. You may add up to 3 free-text tags for things the canned list doesn't cover."],
+  "deliveryMode": "BUY only: 'On-premise' | 'Cloud/SaaS' | 'Hybrid' | 'Managed Service' | 'Self-service'",
+  "deliveryModel": "SELL only: 'On-premise' | 'Cloud/SaaS' | 'Hybrid' | 'Managed Service' | 'Self-service'",
+  "deliveryModeCapability": ["SELL only: ALL supported delivery modes the offering can satisfy, from the same list as deliveryModel"],
+  "targetMarketLocation": "Geography (city / country / region) if mentioned; otherwise empty",
+  "capabilities": ["SELL only: 3–10 capability tags. Prefer canned: ['Custom Development','API Integration','Data Migration','Training & Onboarding','24/7 Support','SLA Guarantee','White-label','Multi-tenant','Compliance (SOC2/ISO)','Localization','Mobile Support','Analytics & Reporting','Consulting','Implementation','Managed Services']. May add free-text."]
 }
 
 Rules:
-- Determine mode based on document intent (offering = SELL, seeking = BUY)
-- solutionType should be concise (2-5 words)
-- domain should be a single industry/sector
-- companySize: SMALL (1-50), MEDIUM (51-500), ENTERPRISE (500+)
-- priceRange: use closest match from the options listed above
-- timeline: use closest match from the options listed above
-- Fill ALL fields that can be reasonably inferred from the document
-- Return ONLY valid JSON, no markdown`;
+- Determine mode based on document intent (offering = SELL, seeking = BUY).
+- For enum fields, use the EXACT string. For arrays, return strings (not objects).
+- "requirements" MUST be an array (not a comma-separated string).
+- Infer rather than skip: if budget is "around 30k", choose '$10K - $50K'.
+- buyingStage cues: "evaluating vendors" → 'Comparing providers'; "RFP issued" → 'Ready to buy'; "preliminary research" → 'Just exploring'; "shortlisted" → 'Already in discussions'.
+- Return ONLY valid JSON, no markdown.`;
 
     // AI API call with retry (OpenAI primary, Groq fallback)
     const callAIWithRetry = async (
@@ -996,12 +1004,103 @@ Rules:
     // Extract additional context fields
     const priceRange = extractedData.priceRange || "";
     const timeline = extractedData.timeline || "";
-    const requirements = extractedData.requirements || "";
+
+    // requirements: prompt now asks for an array; tolerate legacy string output
+    const rawRequirements = extractedData.requirements;
+    const requirementsArr: string[] = Array.isArray(rawRequirements)
+      ? rawRequirements
+          .filter((r: unknown) => typeof r === "string" && r.trim())
+          .map((r: string) => r.trim())
+      : typeof rawRequirements === "string"
+        ? rawRequirements
+            .split(",")
+            .map((r: string) => r.trim())
+            .filter(Boolean)
+        : [];
+    // Backwards-compat: also expose the legacy comma-joined string so the
+    // existing FE handler (which split on ',') keeps working until it switches
+    // to consuming the new array. Both fields are populated with the same data.
+    const requirements = requirementsArr.join(", ");
+
+    // v4.1 NEW required-by-form fields
+    const VALID_BUYING_STAGES = [
+      "Just exploring",
+      "Comparing providers",
+      "Ready to buy",
+      "Already in discussions",
+    ];
+    const VALID_BUYER_TYPES = [
+      "Budget Holder",
+      "Technical Evaluator",
+      "C-Level",
+      "SMB Owner",
+      "Enterprise Buyer",
+      "Government / Public Sector",
+      "Startup Founder",
+      "Procurement Manager",
+    ];
+
+    const buyingStage = VALID_BUYING_STAGES.includes(
+      (extractedData.buyingStage || "").trim(),
+    )
+      ? (extractedData.buyingStage || "").trim()
+      : "";
+
+    const stringArrayOrEmpty = (v: unknown, max: number): string[] =>
+      Array.isArray(v)
+        ? v
+            .filter((x): x is string => typeof x === "string" && !!x.trim())
+            .map((x) => x.trim())
+            .slice(0, max)
+        : [];
+
+    const relevantIndustry = stringArrayOrEmpty(
+      extractedData.relevantIndustry,
+      6,
+    );
+    const industryFocus = stringArrayOrEmpty(extractedData.industryFocus, 6);
+    const idealBuyerType = stringArrayOrEmpty(extractedData.idealBuyerType, 4)
+      .filter((v) => VALID_BUYER_TYPES.includes(v));
+
+    const idealCustomerProfile =
+      typeof extractedData.idealCustomerProfile === "string"
+        ? extractedData.idealCustomerProfile.trim()
+        : "";
+    const idealProviderProfile =
+      typeof extractedData.idealProviderProfile === "string"
+        ? extractedData.idealProviderProfile.trim()
+        : "";
+    const targetMarketLocation =
+      typeof extractedData.targetMarketLocation === "string"
+        ? extractedData.targetMarketLocation.trim()
+        : "";
+
+    const VALID_DELIVERY_MODES = [
+      "On-premise",
+      "Cloud/SaaS",
+      "Hybrid",
+      "Managed Service",
+      "Self-service",
+    ];
+    const deliveryMode = VALID_DELIVERY_MODES.includes(
+      (extractedData.deliveryMode || "").trim(),
+    )
+      ? (extractedData.deliveryMode || "").trim()
+      : "";
+    const deliveryModel = VALID_DELIVERY_MODES.includes(
+      (extractedData.deliveryModel || "").trim(),
+    )
+      ? (extractedData.deliveryModel || "").trim()
+      : "";
 
     logger.info("Deal data extracted from document", {
       userId,
       mode: validMode,
       title: extractedData.title,
+      buyingStage: buyingStage || undefined,
+      relevantIndustryCount: relevantIndustry.length,
+      industryFocusCount: industryFocus.length,
+      idealBuyerTypeCount: idealBuyerType.length,
     });
 
     // Validate new fields
@@ -1044,7 +1143,9 @@ Rules:
         )
       : [];
 
-    // Build metadata from extracted fields
+    // Build metadata from extracted fields. Anything that the form
+    // consumes via `data.metadata.*` belongs here. Top-level fields stay
+    // backward-compatible.
     const extractedMetadata: Record<string, any> = {};
     if (buyerRole) extractedMetadata.buyerRole = buyerRole;
     if (providerType) extractedMetadata.providerType = providerType;
@@ -1052,6 +1153,16 @@ Rules:
       extractedMetadata.capabilities = extractedCapabilities;
     if (extractedDeliveryCaps.length)
       extractedMetadata.deliveryModeCapability = extractedDeliveryCaps;
+    if (deliveryMode) extractedMetadata.deliveryMode = deliveryMode;
+    if (deliveryModel) extractedMetadata.deliveryModel = deliveryModel;
+    if (idealCustomerProfile) extractedMetadata.idealCustomerProfile = idealCustomerProfile;
+    if (idealProviderProfile) extractedMetadata.idealProviderProfile = idealProviderProfile;
+    if (targetMarketLocation) extractedMetadata.targetMarketLocation = targetMarketLocation;
+    if (relevantIndustry.length) extractedMetadata.relevantIndustryTags = relevantIndustry;
+    if (industryFocus.length) extractedMetadata.industryFocusTags = industryFocus;
+    if (idealBuyerType.length) extractedMetadata.idealBuyerType = idealBuyerType;
+    if (requirementsArr.length) extractedMetadata.mustHaveRequirements = requirementsArr;
+    if (buyingStage) extractedMetadata.buyingStage = buyingStage;
 
     res.status(200).json({
       success: true,
@@ -1067,7 +1178,21 @@ Rules:
         targetEntityType,
         priceRange,
         timeline,
+        // legacy comma-joined string for old FE consumers; new FE reads
+        // `requirementTags` array below.
         requirements,
+        // v4.1 top-level passthroughs (mirroring metadata, so either FE
+        // contract works without a bridge release)
+        buyingStage,
+        relevantIndustry,
+        industryFocus,
+        idealBuyerType,
+        requirementTags: requirementsArr,
+        idealCustomerProfile,
+        idealProviderProfile,
+        targetMarketLocation,
+        deliveryMode,
+        deliveryModel,
         metadata:
           Object.keys(extractedMetadata).length > 0
             ? extractedMetadata

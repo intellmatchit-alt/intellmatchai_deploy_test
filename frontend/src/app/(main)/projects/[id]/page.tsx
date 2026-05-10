@@ -79,11 +79,35 @@ function saveLocalStatuses(statuses: Record<string, string>) {
 function projectMatchToCardData(match: ProjectMatch, projectTitle: string): MatchCardData | null {
   const person = match.matchedUser || match.matchedContact;
   if (!person) return null;
+  const lookingForScores = match.lookingForScores ?? null;
+  const lookingForLabels = match.lookingForLabels ?? null;
+  const lookingForScoreDetails = match.lookingForScoreDetails ?? null;
+  const lookingForTotalScore = typeof match.lookingForTotalScore === 'number'
+    ? match.lookingForTotalScore
+    : (typeof match.totalScore === 'number' ? match.totalScore : undefined);
+  // Headline score: prefer the max-of-lookingFor (matches the new "biggest
+  // score of the selected looking for terms" rule). Fall back to legacy
+  // matchScore when the project has no lookingFor configured.
+  const headlineScore = (typeof lookingForTotalScore === 'number')
+    ? lookingForTotalScore
+    : match.matchScore;
+  // Best Looking For — prefer the detail object's id/label; otherwise
+  // derive from the canonical bestLookingFor (UPPER_SNAKE → lowercase id).
+  const bestDetail = lookingForScoreDetails?.find((d) => d.isBestMatchType) ?? null;
+  let bestLookingForId: string | null = null;
+  let bestLookingForLabel: string | null = null;
+  if (bestDetail) {
+    bestLookingForId = bestDetail.id;
+    bestLookingForLabel = bestDetail.label;
+  } else if (match.bestLookingFor) {
+    bestLookingForId = match.bestLookingFor.toLowerCase();
+    bestLookingForLabel = LOOKING_FOR_OPTIONS.find((o) => o.id === bestLookingForId)?.label ?? match.bestLookingFor;
+  }
   return {
     id: match.id,
     source: 'project',
     sourceTitle: projectTitle,
-    score: match.matchScore,
+    score: headlineScore,
     contactId: match.matchedContact?.id || '',
     name: person.fullName,
     company: person.company || undefined,
@@ -97,6 +121,12 @@ function projectMatchToCardData(match: ProjectMatch, projectTitle: string): Matc
       email: (person as any).email || null,
       linkedinUrl: (person as any).linkedinUrl || null,
     },
+    lookingForScores,
+    lookingForLabels,
+    lookingForScoreDetails,
+    bestLookingForId,
+    bestLookingForLabel,
+    overallExplanationSummary: match.overallExplanation?.summary ?? null,
   };
 }
 
@@ -195,7 +225,42 @@ function MatchDetailModal({
 
   const iceBreakers = (match.suggestedMessage || '').split('\n').filter(Boolean);
 
-  const scoreColor = match.matchScore >= 90 ? 'text-[#22C55E]' : match.matchScore >= 75 ? 'text-[#84CC16]' : match.matchScore >= 60 ? 'text-[#FACC15]' : match.matchScore >= 40 ? 'text-[#FB923C]' : 'text-[#EF4444]';
+  // Unified display score — comes from the same backend field as the card so
+  // the detail view never shows a different number than the list. Falls back
+  // through every backward-compat alias to the legacy matchScore.
+  const displayScore = Math.round(
+    typeof match.totalScore === 'number' ? match.totalScore
+      : typeof match.lookingForTotalScore === 'number' ? match.lookingForTotalScore
+      : typeof match.finalScore === 'number' ? match.finalScore
+      : typeof match.score === 'number' ? match.score
+      : match.matchScore || 0,
+  );
+
+  // Best-fit Looking For — prefer the detail object; otherwise derive from
+  // the canonical bestLookingFor (UPPER_SNAKE → lowercase id).
+  const bestDetailLookup = match.lookingForScoreDetails?.find((d) => d.isBestMatchType) ?? null;
+  const bestLookingForLabel = bestDetailLookup?.label
+    ?? (match.bestLookingFor
+      ? LOOKING_FOR_OPTIONS.find((o) => o.id === match.bestLookingFor!.toLowerCase())?.label ?? match.bestLookingFor
+      : null);
+
+  // Display match level — uses the detail-object band when present so the
+  // chip reflects the SAME score as the headline number, not the legacy band.
+  const displayMatchLevel = bestDetailLookup?.matchLevel
+    ?? (typeof match.totalScore === 'number'
+      ? (match.totalScore >= 85 ? 'EXCELLENT'
+        : match.totalScore >= 70 ? 'VERY_GOOD'
+        : match.totalScore >= 55 ? 'GOOD'
+        : match.totalScore >= 40 ? 'PARTIAL'
+        : 'WEAK')
+      : (match.matchLevel || null));
+
+  // Overall explanation summary — the new field that DESCRIBES totalScore.
+  // Falls back to the legacy explanation.summary only when not provided
+  // (older persisted matches).
+  const displaySummary = match.overallExplanation?.summary ?? match.explanation?.summary ?? null;
+
+  const scoreColor = displayScore >= 90 ? 'text-[#22C55E]' : displayScore >= 75 ? 'text-[#84CC16]' : displayScore >= 60 ? 'text-[#FACC15]' : displayScore >= 40 ? 'text-[#FB923C]' : 'text-[#EF4444]';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onClose}>
@@ -224,15 +289,15 @@ function MatchDetailModal({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {/* Score Badge */}
+              {/* Score Badge — uses unified displayScore so it always matches the card. */}
               <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm border-2 ${
-                match.matchScore >= 90 ? 'bg-[#22C55E]/20 border-[#22C55E]/50 text-[#22C55E]' :
-                match.matchScore >= 75 ? 'bg-[#84CC16]/20 border-[#84CC16]/50 text-[#84CC16]' :
-                match.matchScore >= 60 ? 'bg-[#FACC15]/20 border-[#FACC15]/50 text-[#FACC15]' :
-                match.matchScore >= 40 ? 'bg-[#FB923C]/20 border-[#FB923C]/50 text-[#FB923C]' :
+                displayScore >= 90 ? 'bg-[#22C55E]/20 border-[#22C55E]/50 text-[#22C55E]' :
+                displayScore >= 75 ? 'bg-[#84CC16]/20 border-[#84CC16]/50 text-[#84CC16]' :
+                displayScore >= 60 ? 'bg-[#FACC15]/20 border-[#FACC15]/50 text-[#FACC15]' :
+                displayScore >= 40 ? 'bg-[#FB923C]/20 border-[#FB923C]/50 text-[#FB923C]' :
                 'bg-[#EF4444]/20 border-[#EF4444]/50 text-[#EF4444]'
               }`}>
-                {match.matchScore}%
+                {displayScore}%
               </div>
               <button onClick={onClose} className="p-2 rounded-lg hover:bg-th-surface-h text-th-text-t hover:text-th-text transition-colors">
                 <Dismiss24Regular className="w-5 h-5" />
@@ -244,34 +309,81 @@ function MatchDetailModal({
         {/* Content — mirrors opportunity pattern */}
         <div className="p-4 space-y-4">
 
-          {/* Match Summary — emerald accent (like Intent Alignment in opportunity) */}
+          {/* Match Summary — emerald accent (like Intent Alignment in opportunity).
+              Uses the new overallExplanation.summary so the text DESCRIBES the
+              same totalScore being displayed. Falls back to the legacy
+              explanation.summary for older persisted matches. */}
           <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <Sparkle24Regular className="w-5 h-5 text-emerald-400" />
               <h3 className="text-sm font-medium text-emerald-400">Match Summary</h3>
             </div>
-            {match.explanation?.summary ? (
-              <p className="text-sm text-white">{match.explanation.summary}</p>
+            {displaySummary ? (
+              <p className="text-sm text-white">{displaySummary}</p>
             ) : (
               <p className="text-sm text-white">
-                {person.fullName} has a <span className={`font-bold ${scoreColor}`}>{match.matchScore}%</span> match score for this project.
+                {person.fullName} has a <span className={`font-bold ${scoreColor}`}>{displayScore}%</span> match score for this project.
+              </p>
+            )}
+            {bestLookingForLabel && (
+              <p className="text-xs text-emerald-300 mt-2">
+                Best Fit: <span className="font-semibold">{bestLookingForLabel}</span>
               </p>
             )}
             <div className="flex items-center gap-3 mt-3">
-              <span className={`text-2xl font-bold ${scoreColor}`}>{match.matchScore}%</span>
-              {match.matchLevel && (
+              <span className={`text-2xl font-bold ${scoreColor}`}>{displayScore}%</span>
+              {displayMatchLevel && (
                 <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                  match.matchLevel === 'EXCELLENT' ? 'bg-[#22C55E] text-black border-[#22C55E]' :
-                  match.matchLevel === 'VERY_GOOD' ? 'bg-[#84CC16] text-black border-[#84CC16]' :
-                  match.matchLevel === 'GOOD' ? 'bg-[#FACC15] text-black border-[#FACC15]' :
-                  'bg-[#FB923C] text-black border-[#FB923C]'
-                }`}>{match.matchLevel.replace(/_/g, ' ')}</span>
+                  displayMatchLevel === 'EXCELLENT' ? 'bg-[#22C55E] text-black border-[#22C55E]' :
+                  displayMatchLevel === 'VERY_GOOD' ? 'bg-[#84CC16] text-black border-[#84CC16]' :
+                  displayMatchLevel === 'GOOD' ? 'bg-[#FACC15] text-black border-[#FACC15]' :
+                  displayMatchLevel === 'PARTIAL' ? 'bg-[#FB923C] text-black border-[#FB923C]' :
+                  'bg-[#EF4444] text-white border-[#EF4444]'
+                }`}>{displayMatchLevel.replace(/_/g, ' ')}</span>
               )}
               {match.confidence != null && (
                 <span className="text-xs text-white font-bold">{Math.round(match.confidence * 100)}% confidence</span>
               )}
             </div>
           </div>
+
+          {/* Looking For Scores — one row per selected Looking For type, so
+              the user can see ALL evaluations of this contact in the same
+              place as the headline. Best fit is highlighted with the same
+              ring style used on the card. Same chip style as elsewhere. */}
+          {match.lookingForScoreDetails && match.lookingForScoreDetails.length > 0 && (
+            <div className="bg-th-surface rounded-xl p-4">
+              <h3 className="text-sm font-medium text-white mb-3">Looking For Scores</h3>
+              <div className="flex flex-wrap gap-2">
+                {[...match.lookingForScoreDetails]
+                  .sort((a, b) => b.finalScore - a.finalScore)
+                  .map((detail) => {
+                    const tier = detail.finalScore >= 85
+                      ? 'bg-[#22C55E] border-[#22C55E]/80 text-[#042820]'
+                      : detail.finalScore >= 70
+                      ? 'bg-[#84CC16] border-[#84CC16]/80 text-[#042820]'
+                      : detail.finalScore >= 55
+                      ? 'bg-[#FACC15] border-[#FACC15]/80 text-[#042820]'
+                      : detail.finalScore >= 40
+                      ? 'bg-[#FB923C] border-[#FB923C]/80 text-[#042820]'
+                      : 'bg-[#EF4444]/80 border-[#EF4444]/80 text-white';
+                    const bestRing = detail.isBestMatchType ? ' ring-2 ring-emerald-300' : '';
+                    const band = detail.matchLevel.replace('_', ' ').toLowerCase()
+                      .replace(/\b\w/g, (c) => c.toUpperCase());
+                    return (
+                      <span
+                        key={detail.id}
+                        className={`px-3 py-1 rounded-full text-xs border font-bold ${tier}${bestRing}`}
+                        title={detail.explanation || `${detail.label}: ${detail.finalScore}/100 (${band})`}
+                      >
+                        {detail.label} {Math.round(detail.finalScore)}% · {band}
+                        {detail.isBestMatchType ? ' · Best' : ''}
+                      </span>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
 
           {/* Contact Info (like opportunity) */}
           {(person.email || person.phone || person.linkedinUrl) && (
@@ -315,20 +427,48 @@ function MatchDetailModal({
             </div>
           )}
 
-          {/* Why This Match (same as opportunity) */}
-          {((match.explanation?.rankingDrivers?.length) || (Array.isArray(match.reasons) && match.reasons.length > 0)) && (
-            <div className="bg-th-surface rounded-xl p-4">
-              <h3 className="text-sm font-medium text-white mb-3">Why This Match</h3>
-              <div className="space-y-2">
-                {(match.explanation?.rankingDrivers || match.reasons || []).map((reason, i) => (
-                  <div key={i} className="flex items-start gap-2 text-sm">
-                    <Checkmark24Regular className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
-                    <span className="text-white">{reason}</span>
-                  </div>
-                ))}
+          {/* Why This Match — single business-prose paragraph composed by the
+              backend (bestDetail.whyParagraph). Falls back to the legacy
+              bulleted strengths / rankingDrivers when the new field is
+              missing. */}
+          {(() => {
+            const whyPara = (bestDetailLookup as any)?.whyParagraph as string | undefined;
+            if (whyPara && whyPara.trim().length > 0) {
+              return (
+                <div className="bg-th-surface rounded-xl p-4">
+                  <h3 className="text-sm font-medium text-white mb-3">
+                    Why This Match{bestLookingForLabel ? ` — ${bestLookingForLabel}` : ''}
+                  </h3>
+                  <p className="text-sm text-white leading-relaxed">{whyPara}</p>
+                </div>
+              );
+            }
+            const bestStrengths = bestDetailLookup?.strengths ?? [];
+            const bestSignals = bestDetailLookup?.matchedSignals ?? [];
+            const reasonsFromBest = [
+              ...bestStrengths,
+              ...bestSignals.filter((sig) => !bestStrengths.some((s) => s.toLowerCase().includes(sig.toLowerCase()))),
+            ].slice(0, 4);
+            const reasons = reasonsFromBest.length
+              ? reasonsFromBest
+              : (match.explanation?.rankingDrivers || match.reasons || []);
+            if (!reasons.length) return null;
+            return (
+              <div className="bg-th-surface rounded-xl p-4">
+                <h3 className="text-sm font-medium text-white mb-3">
+                  Why This Match{bestLookingForLabel ? ` — ${bestLookingForLabel}` : ''}
+                </h3>
+                <div className="space-y-2">
+                  {reasons.map((reason, i) => (
+                    <div key={i} className="flex items-start gap-2 text-sm">
+                      <Checkmark24Regular className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-white">{reason}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Suggested Action (same as opportunity) */}
           {match.suggestedAction && (
@@ -338,20 +478,47 @@ function MatchDetailModal({
             </div>
           )}
 
-          {/* Gaps & Concerns (same as opportunity risks) */}
-          {match.explanation?.missingCriticalSignals?.length ? (
-            <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4">
-              <h3 className="text-sm font-medium text-orange-400 mb-3">Gaps & Concerns</h3>
-              <div className="space-y-2">
-                {match.explanation.missingCriticalSignals.slice(0, 5).map((gap, i) => (
-                  <div key={i} className="flex items-start gap-2 text-sm">
-                    <span className="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0 mt-1.5" />
-                    <span className="text-white">{gap}</span>
-                  </div>
-                ))}
+          {/* Gaps & Concerns — single business-prose paragraph composed by
+              the backend (bestDetail.gapsParagraph). Falls back to the legacy
+              bulleted gaps / missingCriticalSignals when missing. */}
+          {(() => {
+            const gapsPara = (bestDetailLookup as any)?.gapsParagraph as string | undefined;
+            if (gapsPara && gapsPara.trim().length > 0) {
+              return (
+                <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4">
+                  <h3 className="text-sm font-medium text-orange-400 mb-3">
+                    Gaps & Concerns{bestLookingForLabel ? ` — ${bestLookingForLabel}` : ''}
+                  </h3>
+                  <p className="text-sm text-white leading-relaxed">{gapsPara}</p>
+                </div>
+              );
+            }
+            const bestGaps = bestDetailLookup?.gaps ?? [];
+            const bestMissing = bestDetailLookup?.missingSignals ?? [];
+            const merged = [
+              ...bestGaps,
+              ...bestMissing.filter((m) => !bestGaps.some((g) => g.toLowerCase().includes(m.toLowerCase()))),
+            ].slice(0, 5);
+            const gaps = merged.length
+              ? merged
+              : (match.explanation?.missingCriticalSignals?.slice(0, 5) ?? []);
+            if (!gaps.length) return null;
+            return (
+              <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4">
+                <h3 className="text-sm font-medium text-orange-400 mb-3">
+                  Gaps & Concerns{bestLookingForLabel ? ` — ${bestLookingForLabel}` : ''}
+                </h3>
+                <div className="space-y-2">
+                  {gaps.map((gap, i) => (
+                    <div key={i} className="flex items-start gap-2 text-sm">
+                      <span className="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0 mt-1.5" />
+                      <span className="text-white">{gap}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          ) : null}
+            );
+          })()}
 
           {/* Score Breakdown — collapsible (same pattern as opportunity) */}
           {match.scoreBreakdown && (Array.isArray(match.scoreBreakdown) ? match.scoreBreakdown.length > 0 : Object.keys(match.scoreBreakdown).length > 0) && (
@@ -395,15 +562,17 @@ function MatchDetailModal({
           />
 
           {/* Actions */}
-          <MatchActionBar
-            currentStatus={match.status}
-            contactName={person.fullName}
-            channels={{ intellmatchUserId: match.matchedUser?.id, phone: person.phone, email: person.email, linkedinUrl: person.linkedinUrl }}
-            onStatusChange={(status) => handleStatusChange(status as MatchStatus)}
-            isUpdating={isUpdating}
-            dismissStatus="DISMISSED"
-            t={t}
-          />
+          <div className="ms-[60px]">
+            <MatchActionBar
+              currentStatus={match.status}
+              contactName={person.fullName}
+              channels={{ intellmatchUserId: match.matchedUser?.id, phone: person.phone, email: person.email, linkedinUrl: person.linkedinUrl }}
+              onStatusChange={(status) => handleStatusChange(status as MatchStatus)}
+              isUpdating={isUpdating}
+              dismissStatus="DISMISSED"
+              t={t}
+            />
+          </div>
         </div>
 
         {/* Action Buttons — same as opportunity footer */}
@@ -545,9 +714,27 @@ export default function ProjectDetailPage() {
   };
 
   const handleFindMatches = async () => {
+    // Require at least one Looking For before running matching, so that the
+    // engine has something to score per type. Uses the existing toast style.
+    if (!project?.lookingFor?.length) {
+      toast({
+        title: t.common?.error || 'Error',
+        description: t.projects?.lookingForRequired
+          || 'Select at least one Looking For option before running matching.',
+        variant: 'error',
+      });
+      return;
+    }
     setIsFindingMatches(true);
     try {
-      const result = await findProjectMatches(projectId);
+      // Send the project's persisted Looking For chips through with the call.
+      // Lets the backend persist the same selection back to the project and
+      // run matching against it without an extra save round-trip.
+      const result = await findProjectMatches(
+        projectId,
+        undefined,
+        project.lookingFor,
+      );
       // Check if result is async job response or sync match result
       if ('jobId' in result) {
         // Async mode - show queued message

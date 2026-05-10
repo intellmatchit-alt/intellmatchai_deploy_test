@@ -23,6 +23,213 @@ import {
   hashPassword,
   validatePassword,
 } from "../../infrastructure/auth/password";
+import { ProfileEnrichmentService } from "../../infrastructure/external/enrichment/ProfileEnrichmentService";
+
+/**
+ * Find the most likely LinkedIn vanity URL for a person via Google CSE.
+ * Returns null if not configured or no matches.
+ */
+async function discoverLinkedInUrlByName(name: string): Promise<string | null> {
+  const apiKey = process.env.GOOGLE_CSE_KEY;
+  const cx = process.env.GOOGLE_CSE_CX;
+  if (!apiKey || !cx || !name?.trim()) return null;
+  try {
+    const query = `"${name}" site:linkedin.com/in`;
+    const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(query)}&num=3`;
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const data = (await resp.json()) as { items?: Array<{ link?: string }> };
+    const hit = data.items?.find((i) => i.link?.includes("linkedin.com/in/"));
+    return hit?.link || null;
+  } catch (err) {
+    logger.warn("LinkedIn URL discovery failed", { err });
+    return null;
+  }
+}
+
+/**
+ * Discover + scrape + persist enrichment data for a freshly registered LinkedIn user.
+ * Uses the shared ProfileEnrichmentService orchestrator, which chains
+ * ScrapIn → Coresignal → RapidAPI → ScrapingBee → direct scrape, and normalizes
+ * country-prefixed URLs (e.g. jo.linkedin.com → www.linkedin.com).
+ * Best-effort: no-ops on any failure (no URL match, no provider hit, name mismatch).
+ */
+async function enrichUserFromLinkedIn(
+  userId: string,
+  fullName: string,
+  fallbackAvatarUrl?: string,
+): Promise<void> {
+  const linkedInUrl = await discoverLinkedInUrlByName(fullName);
+  if (!linkedInUrl) {
+    logger.info("LinkedIn enrichment: no URL discovered via Google CSE", { userId, fullName });
+    return;
+  }
+
+  const enrichmentService = new ProfileEnrichmentService();
+  const result = await enrichmentService.enrichProfile({ linkedInUrl });
+  const profile = result?.profile;
+
+  if (!result?.success || !profile || (!profile.fullName && !profile.jobTitle && !profile.company)) {
+    logger.info("LinkedIn enrichment: enrichment service returned no useful data", {
+      userId,
+      linkedInUrl,
+      success: result?.success,
+      error: result?.error,
+    });
+    return;
+  }
+
+  // Defensive name match: the CSE result is a guess. Skip update if scraped names diverge.
+  // Use substring containment in EITHER direction to absorb common Arabic
+  // transliteration variants (Sara/Sarah, Mohamed/Mohammed, Yousef/Yusuf, etc.).
+  const parts = fullName.trim().split(/\s+/);
+  const expectedFirst = parts[0]?.toLowerCase() || "";
+  const expectedLast = parts[parts.length - 1]?.toLowerCase() || "";
+  const scrapedFirst = (profile.firstName || "").toLowerCase().trim();
+  const scrapedLast = (profile.lastName || "").toLowerCase().trim();
+  const scrapedFull = (profile.fullName || "").toLowerCase();
+  const fuzzyMatch = (a: string, b: string) =>
+    !!a && !!b && a.length >= 3 && b.length >= 3 && (a.includes(b) || b.includes(a));
+  const namesMatch =
+    (fuzzyMatch(scrapedFirst, expectedFirst) && fuzzyMatch(scrapedLast, expectedLast)) ||
+    (expectedFirst.length >= 3 &&
+      expectedLast.length >= 3 &&
+      scrapedFull.includes(expectedFirst) &&
+      scrapedFull.includes(expectedLast));
+
+  if (!namesMatch) {
+    logger.info("LinkedIn enrichment: scraped name does not match — skipping update", {
+      userId,
+      expected: fullName,
+      scraped: profile.fullName || `${profile.firstName} ${profile.lastName}`,
+      linkedInUrl,
+    });
+    return;
+  }
+
+  const locationStr =
+    profile.location ||
+    [profile.city, profile.country].filter(Boolean).join(", ") ||
+    undefined;
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      linkedinUrl: profile.linkedInUrl || linkedInUrl,
+      jobTitle: profile.jobTitle || undefined,
+      company: profile.company || undefined,
+      bio: result.generatedBioSummary || result.generatedBio || undefined,
+      location: locationStr,
+      avatarUrl: fallbackAvatarUrl || undefined, // ProfileEnrichmentResult doesn't expose photoUrl
+    },
+  });
+
+  // Auto-attach suggested sectors/skills/interests/hobbies/goals from the enrichment.
+  // Confidence >= 0.5 and existing DB rows only (skip isCustom=true so we don't proliferate
+  // duplicate user-typed entries that should have matched canonical taxonomy items).
+  const CONF = 0.5;
+  const sectorIds = (result.suggestedSectors || [])
+    .filter((s) => !s.isCustom && s.id && s.confidence >= CONF)
+    .map((s) => s.id);
+  const skillIds = (result.suggestedSkills || [])
+    .filter((s) => !s.isCustom && s.id && s.confidence >= CONF)
+    .map((s) => s.id);
+  const interestIds = (result.suggestedInterests || [])
+    .filter((s) => !s.isCustom && s.id && s.confidence >= CONF)
+    .map((s) => s.id);
+  const hobbyIds = (result.suggestedHobbies || [])
+    .filter((s) => !s.isCustom && s.id && s.confidence >= CONF)
+    .map((s) => s.id);
+
+  if (sectorIds.length) {
+    await prisma.userSector.createMany({
+      data: sectorIds.map((sectorId) => ({ userId, sectorId })),
+      skipDuplicates: true,
+    });
+  }
+  if (skillIds.length) {
+    await prisma.userSkill.createMany({
+      data: skillIds.map((skillId) => ({ userId, skillId })),
+      skipDuplicates: true,
+    });
+  }
+  if (interestIds.length) {
+    await prisma.userInterest.createMany({
+      data: interestIds.map((interestId) => ({ userId, interestId })),
+      skipDuplicates: true,
+    });
+  }
+  if (hobbyIds.length) {
+    await prisma.userHobby.createMany({
+      data: hobbyIds.map((hobbyId) => ({ userId, hobbyId })),
+      skipDuplicates: true,
+    });
+  }
+
+  // Goals: UserGoal has no unique constraint, so dedupe manually and only seed
+  // when the user has none yet (new account, or existing account that was never
+  // onboarded). Avoids overwriting goals the user has already configured.
+  const validGoalTypes = new Set([
+    "MENTORSHIP",
+    "INVESTMENT",
+    "PARTNERSHIP",
+    "HIRING",
+    "JOB_SEEKING",
+    "COLLABORATION",
+    "LEARNING",
+    "SALES",
+    "OTHER",
+  ]);
+  const existingGoalCount = await prisma.userGoal.count({ where: { userId } });
+  if (existingGoalCount === 0) {
+    const goals = (result.suggestedGoals || [])
+      .filter((g) => g.id && g.confidence >= CONF && validGoalTypes.has(g.id))
+      .map((g, idx) => ({
+        userId,
+        goalType: g.id as any,
+        description: g.description || g.name || undefined,
+        priority: idx + 1,
+      }));
+    if (goals.length) {
+      await prisma.userGoal.createMany({ data: goals });
+    }
+  }
+
+  logger.info("LinkedIn enrichment: user record updated", {
+    userId,
+    populated: {
+      linkedinUrl: !!(profile.linkedInUrl || linkedInUrl),
+      jobTitle: !!profile.jobTitle,
+      company: !!profile.company,
+      bio: !!(result.generatedBioSummary || result.generatedBio),
+      location: !!locationStr,
+      sectors: sectorIds.length,
+      skills: skillIds.length,
+      interests: interestIds.length,
+      hobbies: hobbyIds.length,
+      goals: existingGoalCount === 0 ? (result.suggestedGoals || []).length : 0,
+    },
+  });
+}
+
+/**
+ * Run enrichment with a hard timeout so a slow ScrapIn call never blocks login.
+ */
+async function enrichUserFromLinkedInWithTimeout(
+  userId: string,
+  fullName: string,
+  fallbackAvatarUrl?: string,
+  timeoutMs = 12000,
+): Promise<void> {
+  try {
+    await Promise.race([
+      enrichUserFromLinkedIn(userId, fullName, fallbackAvatarUrl),
+      new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
+    ]);
+  } catch (err) {
+    logger.warn("LinkedIn enrichment errored — proceeding with login", { userId, err });
+  }
+}
 
 // Initialize repositories
 const userRepository = new PrismaUserRepository();
@@ -483,16 +690,30 @@ export class AuthController {
     });
 
     if (existingUser) {
-      // User exists, update LinkedIn info if not set
-      if (!existingUser.linkedinUrl) {
+      // User exists. Update avatar if missing (don't fabricate linkedinUrl from OIDC sub
+      // — it's opaque, not a vanity slug. We'll only set linkedinUrl after enrichment.)
+      if (!existingUser.avatarUrl && avatarUrl) {
         await prisma.user.update({
           where: { id: existingUser.id },
-          data: {
-            linkedinUrl: `https://linkedin.com/in/${linkedinId}`,
-            avatarUrl: avatarUrl || existingUser.avatarUrl,
-          },
+          data: { avatarUrl },
         });
       }
+
+      // Best-effort enrichment for users that were never enriched before.
+      if (!existingUser.linkedinUrl) {
+        await enrichUserFromLinkedInWithTimeout(existingUser.id, name, avatarUrl);
+      }
+
+      // Re-read so the returned user object reflects any enrichment updates.
+      const refreshed = await prisma.user.findUnique({
+        where: { id: existingUser.id },
+        include: {
+          userSectors: true,
+          userSkills: true,
+          userInterests: true,
+        },
+      });
+      const userForResponse = refreshed ?? existingUser;
 
       // Generate tokens for existing user
       const { generateTokenPair } =
@@ -508,19 +729,19 @@ export class AuthController {
         },
       });
 
-      // Calculate onboarding status
+      // Calculate onboarding status from refreshed (post-enrichment) record
       const hasCompletedOnboarding =
-        existingUser.userSectors.length > 0 &&
-        existingUser.userSkills.length > 0 &&
-        existingUser.userInterests.length > 0;
+        (userForResponse as any).userSectors?.length > 0 &&
+        (userForResponse as any).userSkills?.length > 0 &&
+        (userForResponse as any).userInterests?.length > 0;
 
       return {
         user: {
-          id: existingUser.id,
-          email: existingUser.email,
-          name: existingUser.fullName,
-          avatarUrl: existingUser.avatarUrl,
-          isEmailVerified: existingUser.emailVerified,
+          id: userForResponse.id,
+          email: userForResponse.email,
+          name: userForResponse.fullName,
+          avatarUrl: userForResponse.avatarUrl,
+          isEmailVerified: userForResponse.emailVerified,
           hasCompletedOnboarding,
         },
         accessToken: tokenPair.accessToken,
@@ -542,12 +763,20 @@ export class AuthController {
           email: email.toLowerCase(),
           fullName: name,
           passwordHash: hashedPassword,
-          linkedinUrl: `https://linkedin.com/in/${linkedinId}`,
+          // linkedinUrl intentionally not set: OIDC `sub` is opaque, not a vanity slug.
+          // Enrichment below will populate the real URL if it can be discovered.
           avatarUrl: avatarUrl || null,
           emailVerified: true, // LinkedIn emails are verified
           isActive: true,
         },
       });
+
+      // Best-effort enrichment: discover real LinkedIn URL → ScrapIn → populate fields
+      await enrichUserFromLinkedInWithTimeout(newUser.id, name, avatarUrl);
+
+      // Re-read so the response and downstream onboarding see the enriched record
+      const refreshed = await prisma.user.findUnique({ where: { id: newUser.id } });
+      const userForResponse = refreshed ?? newUser;
 
       // Generate tokens
       const { generateTokenPair } =
@@ -567,11 +796,11 @@ export class AuthController {
 
       return {
         user: {
-          id: newUser.id,
-          email: newUser.email,
-          name: newUser.fullName,
-          avatarUrl: newUser.avatarUrl,
-          isEmailVerified: newUser.emailVerified,
+          id: userForResponse.id,
+          email: userForResponse.email,
+          name: userForResponse.fullName,
+          avatarUrl: userForResponse.avatarUrl,
+          isEmailVerified: userForResponse.emailVerified,
           hasCompletedOnboarding: false, // New users haven't completed onboarding
         },
         accessToken: tokenPair.accessToken,

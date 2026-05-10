@@ -7,7 +7,7 @@
  * @module lib/api/job-matching
  */
 
-import { api } from './client';
+import { api, getAuthHeaders } from './client';
 
 // ============================================================================
 // ENUMS & TYPES
@@ -18,7 +18,9 @@ export type JobWorkMode = 'ONSITE' | 'HYBRID' | 'REMOTE';
 export type JobEmploymentType = 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'FREELANCE' | 'INTERNSHIP';
 export type JobHiringUrgency = 'LOW' | 'NORMAL' | 'URGENT' | 'CRITICAL';
 export type JobAvailability = 'IMMEDIATELY' | 'WITHIN_2_WEEKS' | 'WITHIN_1_MONTH' | 'WITHIN_3_MONTHS' | 'NOT_ACTIVELY_LOOKING';
-export type JobMatchLevel = 'POOR' | 'WEAK' | 'GOOD' | 'VERY_GOOD' | 'EXCELLENT';
+// PARTIAL was added in the Phase 5 band migration (spec §10). POOR is
+// retained on the persistence enum for legacy hydration only.
+export type JobMatchLevel = 'POOR' | 'WEAK' | 'PARTIAL' | 'GOOD' | 'VERY_GOOD' | 'EXCELLENT';
 export type JobHardFilterStatus = 'PASS' | 'FAIL' | 'WARN';
 export type LanguageProficiency = 'BASIC' | 'CONVERSATIONAL' | 'FLUENT' | 'NATIVE';
 
@@ -334,19 +336,144 @@ export const LANGUAGE_PROFICIENCY_OPTIONS = [
 
 export const MATCH_LEVEL_COLORS: Record<JobMatchLevel, string> = {
   POOR: 'text-red-400 bg-red-500/10',
-  WEAK: 'text-orange-400 bg-orange-500/10',
+  WEAK: 'text-red-400 bg-red-500/10',
+  PARTIAL: 'text-orange-400 bg-orange-500/10',
   GOOD: 'text-yellow-400 bg-yellow-500/10',
   VERY_GOOD: 'text-blue-400 bg-blue-500/10',
   EXCELLENT: 'text-green-400 bg-green-500/10',
 };
 
 export const MATCH_LEVEL_LABELS: Record<JobMatchLevel, string> = {
-  POOR: 'Poor',
+  POOR: 'Weak',
   WEAK: 'Weak',
+  PARTIAL: 'Partial',
   GOOD: 'Good',
   VERY_GOOD: 'Very Good',
   EXCELLENT: 'Excellent',
 };
+
+// ============================================================================
+// HELPER FLOW (OPEN_TO_OPPORTUNITY_TO_HELPERS / TARGET_JOB_TO_HELPERS)
+// ============================================================================
+
+export type MatchMode =
+  | 'HIRING_TO_CANDIDATES'
+  | 'OPEN_TO_OPPORTUNITY_TO_HELPERS'
+  | 'TARGET_JOB_TO_HELPERS';
+
+export type HelperType =
+  | 'RECRUITER_CONTACT'
+  | 'HIRING_PATH_CONTACT'
+  | 'DIRECT_REFERRAL_CONTACT'
+  | 'WARM_INTRO_CONTACT'
+  | 'ADVISORY_CONTACT'
+  | 'WEAK_PATH';
+
+export type LikelyHelpType =
+  | 'refer'
+  | 'introduce'
+  | 'advise'
+  | 'connect'
+  | 'review'
+  | 'guide';
+
+export const HELPER_TYPE_LABELS: Record<HelperType, string> = {
+  RECRUITER_CONTACT: 'Recruiter / Talent',
+  HIRING_PATH_CONTACT: 'Hiring Decision-Maker',
+  DIRECT_REFERRAL_CONTACT: 'Direct Referrer',
+  WARM_INTRO_CONTACT: 'Warm Intro Path',
+  ADVISORY_CONTACT: 'Advisor',
+  WEAK_PATH: 'Weak Path',
+};
+
+export const HELPER_TYPE_COLORS: Record<HelperType, string> = {
+  RECRUITER_CONTACT: 'text-purple-300 bg-purple-500/15 border-purple-500/30',
+  HIRING_PATH_CONTACT: 'text-emerald-300 bg-emerald-500/15 border-emerald-500/30',
+  DIRECT_REFERRAL_CONTACT: 'text-blue-300 bg-blue-500/15 border-blue-500/30',
+  WARM_INTRO_CONTACT: 'text-cyan-300 bg-cyan-500/15 border-cyan-500/30',
+  ADVISORY_CONTACT: 'text-yellow-300 bg-yellow-500/15 border-yellow-500/30',
+  WEAK_PATH: 'text-th-text-t bg-th-surface-h border-th-border',
+};
+
+export const LIKELY_HELP_TYPE_LABELS: Record<LikelyHelpType, string> = {
+  refer: 'Can refer',
+  introduce: 'Can introduce',
+  advise: 'Can advise',
+  connect: 'Can connect',
+  review: 'Can review',
+  guide: 'Can guide',
+};
+
+export interface RetrievalBreakdownComponent {
+  name: string;
+  score: number;
+  weight: number;
+  available: boolean;
+  evidence?: string[];
+}
+
+export interface RetrievalBreakdown {
+  components: RetrievalBreakdownComponent[];
+  weightedSum: number;
+  availableWeight: number;
+  normalizedScore: number;
+}
+
+export interface HelperMatchResult {
+  matchId: string;
+  matchMode: MatchMode;
+  candidateProfileId: string;
+  targetJobId: string | null;
+  helperUserId: string | null;
+  helperContactId: string | null;
+  helperName: string;
+  helperTitle: string | null;
+  helperRoleArea: string | null;
+  helperOrganization: string | null;
+  helperType: HelperType;
+  helperTypeLabel: string;
+  likelyHelpType: LikelyHelpType;
+  deterministicScore: number;
+  aiScore: number | null;
+  finalScore: number;
+  confidence: number;
+  effectiveRankScore: number | null;
+  matchLevel: JobMatchLevel;
+  levelCappedReason: string | null;
+  hardFilterStatus: JobHardFilterStatus;
+  hardFilterReason: string | null;
+  scoreBreakdown: ScoreBreakdown;
+  explanation: MatchExplanation | null;
+  helperExplanation: string;
+  strengths: string[];
+  gaps: string[];
+  matchedSignals: string[];
+  missingOrUncertainFields: string[];
+  cautionFlags: string[];
+  networkRelationship: string | null;
+  retrievalScore: number | null;
+  retrievalBreakdown: RetrievalBreakdown | null;
+  rank: number;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface HelperMatchResponse {
+  success: boolean;
+  matchMode: MatchMode;
+  matches: HelperMatchResult[];
+  candidateProfileId: string;
+  candidateTitle: string;
+  targetJobId: string | null;
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+  helpersEvaluated: number;
+  helpersFiltered: number;
+  processingTimeMs: number;
+  generatedAt: string;
+}
 
 // ============================================================================
 // API FUNCTIONS — Hiring Profiles
@@ -430,6 +557,50 @@ export async function getJobMatches(jobId: string, limit = 50): Promise<JobMatch
 }
 
 // ============================================================================
+// API FUNCTIONS — Helper Flow
+// ============================================================================
+
+export interface FindHelperMatchesOptions {
+  /** When set, switches mode to TARGET_JOB_TO_HELPERS. */
+  targetJobId?: string | null;
+  limit?: number;
+  offset?: number;
+  includeAI?: boolean;
+  includeExplanations?: boolean;
+  filters?: {
+    helperTypes?: HelperType[];
+    excludeUserIds?: string[];
+    excludeContactIds?: string[];
+    minRelationshipStrength?: number;
+  };
+}
+
+export async function findHelperMatches(
+  candidateProfileId: string,
+  options?: FindHelperMatchesOptions,
+): Promise<HelperMatchResponse> {
+  const res = await api.post<{ data: HelperMatchResponse }>(
+    `${BASE}/jobs/candidates/${candidateProfileId}/helpers`,
+    options || {},
+  );
+  return (res as any).data || res;
+}
+
+export async function getHelperMatches(
+  candidateProfileId: string,
+  options?: { targetJobId?: string | null; limit?: number },
+): Promise<HelperMatchResult[]> {
+  const params = new URLSearchParams();
+  if (options?.targetJobId) params.set('targetJobId', options.targetJobId);
+  if (options?.limit) params.set('limit', String(options.limit));
+  const qs = params.toString() ? `?${params.toString()}` : '';
+  const res = await api.get<{ matches: HelperMatchResult[] }>(
+    `${BASE}/jobs/candidates/${candidateProfileId}/helpers${qs}`,
+  );
+  return (res as any).matches || [];
+}
+
+// ============================================================================
 // API FUNCTIONS — AI Extraction
 // ============================================================================
 
@@ -439,4 +610,28 @@ export async function extractHiringFromText(text: string): Promise<ExtractedHiri
 
 export async function extractCandidateFromText(text: string): Promise<ExtractedCandidateFields> {
   return api.post<ExtractedCandidateFields>(`${BASE}/jobs/extract-candidate`, { text });
+}
+
+async function postDocumentExtract<T>(path: string, file: File): Promise<T> {
+  const formData = new FormData();
+  formData.append('document', file);
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${path}`, {
+    method: 'POST',
+    headers: { ...getAuthHeaders() },
+    body: formData,
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error?.error?.message || 'Failed to extract data from document');
+  }
+  const result = await response.json();
+  return result.data as T;
+}
+
+export async function extractHiringFromDocument(file: File): Promise<ExtractedHiringFields> {
+  return postDocumentExtract<ExtractedHiringFields>(`${BASE}/jobs/extract-hiring-document`, file);
+}
+
+export async function extractCandidateFromDocument(file: File): Promise<ExtractedCandidateFields> {
+  return postDocumentExtract<ExtractedCandidateFields>(`${BASE}/jobs/extract-candidate-document`, file);
 }

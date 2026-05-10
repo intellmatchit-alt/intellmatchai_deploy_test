@@ -11,7 +11,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/hooks/useAuth";
@@ -303,7 +303,7 @@ function BioPreviewDialog({
                   "Brief summary about this contact..."
                 }
                 rows={6}
-                maxLength={500}
+                maxLength={1000}
                 className="w-full px-4 py-3 bg-th-surface border border-th-border rounded-xl text-th-text placeholder-th-text-m focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none text-base leading-relaxed"
                 autoFocus
               />
@@ -313,9 +313,9 @@ function BioPreviewDialog({
                     "Key highlights about this person"}
                 </p>
                 <p
-                  className={`text-xs ${localSummary.length > 450 ? "text-yellow-400" : "text-th-text-m"}`}
+                  className={`text-xs ${localSummary.length > 900 ? "text-yellow-400" : "text-th-text-m"}`}
                 >
-                  {localSummary.length}/500
+                  {localSummary.length}/1000
                 </p>
               </div>
             </>
@@ -329,7 +329,7 @@ function BioPreviewDialog({
                   "Detailed background, experience, and achievements..."
                 }
                 rows={12}
-                maxLength={2000}
+                maxLength={5000}
                 className="w-full px-4 py-3 bg-th-surface border border-th-border rounded-xl text-th-text placeholder-th-text-m focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none text-base leading-relaxed"
                 autoFocus
               />
@@ -339,9 +339,9 @@ function BioPreviewDialog({
                     "Include detailed experience, education, and career highlights"}
                 </p>
                 <p
-                  className={`text-xs ${localFull.length > 1800 ? "text-yellow-400" : "text-th-text-m"}`}
+                  className={`text-xs ${localFull.length > 4500 ? "text-yellow-400" : "text-th-text-m"}`}
                 >
-                  {localFull.length}/2000
+                  {localFull.length}/5000
                 </p>
               </div>
             </>
@@ -378,6 +378,21 @@ export default function AddContactPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [isFromScan, setIsFromScan] = useState(false);
+  const [phoneLookupLoading, setPhoneLookupLoading] = useState(false);
+  const [phoneLookupHit, setPhoneLookupHit] = useState<
+    { name: string; country?: string; carrier?: string } | null
+  >(null);
+  const [phoneEnrichLoading, setPhoneEnrichLoading] = useState(false);
+  const [phoneEnrichHit, setPhoneEnrichHit] = useState<{
+    populatedFields: string[];
+  } | null>(null);
+  const [linkedInLookupLoading, setLinkedInLookupLoading] = useState(false);
+  const [linkedInLookupHit, setLinkedInLookupHit] = useState<{
+    populatedFields: string[];
+  } | null>(null);
+  // Tracks form fields that were auto-populated by the Fetch buttons so we
+  // can clear them before re-filling when the user clicks Fetch again.
+  const autoFilledFieldsRef = useRef<Set<string>>(new Set());
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -702,7 +717,7 @@ export default function AddContactPage() {
               setFormData((prev) => ({
                 ...prev,
                 bio: deepBioFull || prev.bio,
-                bioSummary: prev.bioSummary || deepBioSummary.slice(0, 500),
+                bioSummary: prev.bioSummary || deepBioSummary.slice(0, 1000),
                 bioFull: prev.bioFull || deepBioFull,
                 linkedInUrl: deepSearch.linkedInUrl || prev.linkedInUrl,
                 location: deepSearch.location || prev.location,
@@ -768,7 +783,7 @@ export default function AddContactPage() {
                 ],
                 bio: prev.bio || aiBioFull,
                 // Auto-populate bioSummary (short) and bioFull (detailed) from AI
-                bioSummary: prev.bioSummary || aiBioSummary.slice(0, 500),
+                bioSummary: prev.bioSummary || aiBioSummary.slice(0, 1000),
                 bioFull: prev.bioFull || aiBioFull,
                 linkedInUrl: prev.linkedInUrl || aiData.linkedInUrl || "",
                 location: prev.location || aiData.location || "",
@@ -818,7 +833,7 @@ export default function AddContactPage() {
                   ]),
                 ],
                 bio: prev.bio || explorerBioFull,
-                bioSummary: prev.bioSummary || explorerBioSummary.slice(0, 500),
+                bioSummary: prev.bioSummary || explorerBioSummary.slice(0, 1000),
                 bioFull: prev.bioFull || explorerBioFull,
               }));
 
@@ -877,7 +892,7 @@ export default function AddContactPage() {
                   ]),
                 ],
                 bio: prev.bio || matchBioFull,
-                bioSummary: prev.bioSummary || matchBioSummary.slice(0, 500),
+                bioSummary: prev.bioSummary || matchBioSummary.slice(0, 1000),
                 bioFull: prev.bioFull || matchBioFull,
               }));
 
@@ -906,6 +921,287 @@ export default function AddContactPage() {
       sessionStorage.removeItem("contactSource");
     }
   }, []);
+
+  // Shared helper: clear auto-filled form fields (scalar strings → "", arrays → []).
+  // `except` lets a caller skip a field — used by the LinkedIn-URL effect so it
+  // doesn't wipe the URL the user just typed.
+  const clearAutoFilled = (except: string[] = []) => {
+    const fields = Array.from(autoFilledFieldsRef.current).filter(
+      (f) => !except.includes(f),
+    );
+    if (fields.length === 0) return;
+    for (const f of fields) autoFilledFieldsRef.current.delete(f);
+    setFormData((prev) => {
+      const next: any = { ...prev };
+      for (const f of fields) {
+        if (Array.isArray(next[f])) next[f] = [];
+        else next[f] = "";
+      }
+      return next;
+    });
+  };
+
+  // Shared helper: apply an enrichment response to the form. Fills only empty
+  // scalar fields (so user-typed values aren't clobbered) and merges taxonomy
+  // suggestions into the *Ids / custom* arrays. Returns the human-readable
+  // names of fields that received data, for the "Auto-filled: ..." indicator.
+  const applyEnrichmentResult = (
+    enriched: {
+      profile?: {
+        fullName?: string;
+        company?: string;
+        jobTitle?: string;
+        location?: string;
+        linkedInUrl?: string;
+      };
+      bio?: string;
+      bioSummary?: string;
+      bioFull?: string;
+      suggestedSectors?: Array<{ id: string; name: string; isCustom: boolean; confidence: number }>;
+      suggestedSkills?: Array<{ id: string; name: string; isCustom: boolean; confidence: number }>;
+      suggestedInterests?: Array<{ id: string; name: string; isCustom: boolean; confidence: number }>;
+      suggestedHobbies?: Array<{ id: string; name: string; isCustom: boolean; confidence: number }>;
+    },
+    options: { fillFullName?: boolean; fillLinkedInUrl?: boolean } = {},
+  ): string[] => {
+    const populated: string[] = [];
+    const CONF = 0.5;
+    const p = enriched.profile || {};
+
+    setFormData((prev) => {
+      const next: any = { ...prev };
+      const fillIfEmpty = (key: string, value: unknown) => {
+        if (typeof value === "string" && value.trim() && !next[key]) {
+          next[key] = value;
+          populated.push(key);
+          autoFilledFieldsRef.current.add(key);
+        }
+      };
+
+      if (options.fillFullName) fillIfEmpty("fullName", p.fullName);
+      fillIfEmpty("company", p.company);
+      fillIfEmpty("jobTitle", p.jobTitle);
+      fillIfEmpty("location", p.location);
+      if (options.fillLinkedInUrl) fillIfEmpty("linkedInUrl", p.linkedInUrl);
+      fillIfEmpty("bio", enriched.bio);
+      fillIfEmpty("bioSummary", enriched.bioSummary);
+      fillIfEmpty("bioFull", enriched.bioFull);
+
+      const mergeIds = (
+        current: string[],
+        suggestions: Array<{ id: string; name: string; isCustom: boolean; confidence: number }> | undefined,
+      ) => {
+        const ids = (suggestions || [])
+          .filter((s) => !s.isCustom && s.id && s.confidence >= CONF)
+          .map((s) => s.id)
+          .filter((id) => !current.includes(id));
+        return ids.length ? [...current, ...ids] : current;
+      };
+      const mergeCustom = (
+        current: string[],
+        suggestions: Array<{ id: string; name: string; isCustom: boolean; confidence: number }> | undefined,
+      ) => {
+        const names = (suggestions || [])
+          .filter((s) => s.isCustom && s.name && s.confidence >= CONF)
+          .map((s) => s.name)
+          .filter((n) => !current.includes(n));
+        return names.length ? [...current, ...names] : current;
+      };
+
+      const before = {
+        sectorIds: next.sectorIds.length,
+        customSectors: next.customSectors.length,
+        skillIds: next.skillIds.length,
+        customSkills: next.customSkills.length,
+        interestIds: next.interestIds.length,
+        customInterests: next.customInterests.length,
+        hobbyIds: next.hobbyIds.length,
+        customHobbies: next.customHobbies.length,
+      };
+
+      next.sectorIds = mergeIds(next.sectorIds, enriched.suggestedSectors);
+      next.customSectors = mergeCustom(next.customSectors, enriched.suggestedSectors);
+      next.skillIds = mergeIds(next.skillIds, enriched.suggestedSkills);
+      next.customSkills = mergeCustom(next.customSkills, enriched.suggestedSkills);
+      next.interestIds = mergeIds(next.interestIds, enriched.suggestedInterests);
+      next.customInterests = mergeCustom(next.customInterests, enriched.suggestedInterests);
+      next.hobbyIds = mergeIds(next.hobbyIds, enriched.suggestedHobbies);
+      next.customHobbies = mergeCustom(next.customHobbies, enriched.suggestedHobbies);
+
+      if (next.sectorIds.length > before.sectorIds) {
+        autoFilledFieldsRef.current.add("sectorIds");
+        populated.push("sectors");
+      }
+      if (next.customSectors.length > before.customSectors) {
+        autoFilledFieldsRef.current.add("customSectors");
+        if (!populated.includes("sectors")) populated.push("sectors");
+      }
+      if (next.skillIds.length > before.skillIds) {
+        autoFilledFieldsRef.current.add("skillIds");
+        populated.push("skills");
+      }
+      if (next.customSkills.length > before.customSkills) {
+        autoFilledFieldsRef.current.add("customSkills");
+        if (!populated.includes("skills")) populated.push("skills");
+      }
+      if (next.interestIds.length > before.interestIds) {
+        autoFilledFieldsRef.current.add("interestIds");
+        populated.push("interests");
+      }
+      if (next.customInterests.length > before.customInterests) {
+        autoFilledFieldsRef.current.add("customInterests");
+        if (!populated.includes("interests")) populated.push("interests");
+      }
+      if (next.hobbyIds.length > before.hobbyIds) {
+        autoFilledFieldsRef.current.add("hobbyIds");
+        populated.push("hobbies");
+      }
+      if (next.customHobbies.length > before.customHobbies) {
+        autoFilledFieldsRef.current.add("customHobbies");
+        if (!populated.includes("hobbies")) populated.push("hobbies");
+      }
+
+      return next;
+    });
+
+    return populated;
+  };
+
+  // Manual fetch from phone — clicked from the "Fetch data" button next to the
+  // phone field. Calls CallerKit, then if a name is returned, calls /enrich-by-name
+  // (which runs the multi-provider chain). Re-clicking clears stale auto-fills first.
+  const fetchFromPhone = async () => {
+    const phone = formData.phone?.trim();
+    if (!phone) {
+      toast({ title: "Enter a phone number first", variant: "info" });
+      return;
+    }
+    if (phone.replace(/\D/g, "").length < 8) {
+      toast({ title: "Phone number too short", variant: "info" });
+      return;
+    }
+
+    clearAutoFilled();
+    setPhoneLookupHit(null);
+    setPhoneEnrichHit(null);
+    setLinkedInLookupHit(null);
+    setPhoneLookupLoading(true);
+
+    try {
+      const lookup = await api.post<{
+        name?: string;
+        latinName?: string;
+        aliases?: string[];
+        location?: { city: string; region: string; countryCode: string };
+        carrier?: { name: string; lineType: string };
+        quotaExhausted?: boolean;
+        message?: string;
+      } | null>("/contacts/lookup-phone", { phone });
+
+      if (lookup?.quotaExhausted) {
+        toast({
+          title: "Phone lookup unavailable",
+          description: "CallerKit credits exhausted — top up at caller-kit.com to re-enable auto-fill.",
+          variant: "warning",
+        });
+        return;
+      }
+
+      if (!lookup?.name) {
+        toast({ title: "No match found for this number", variant: "info" });
+        return;
+      }
+
+      const displayName = lookup.latinName || lookup.name;
+      setPhoneLookupHit({
+        name: displayName,
+        country: lookup.location?.countryCode,
+        carrier: lookup.carrier?.name,
+      });
+      setFormData((prev) => {
+        if (prev.fullName) return prev;
+        autoFilledFieldsRef.current.add("fullName");
+        return { ...prev, fullName: displayName };
+      });
+
+      // Phase 2: enrich via name
+      setPhoneEnrichLoading(true);
+      try {
+        const enriched = await api.post<any>("/contacts/enrich-by-name", {
+          name: displayName,
+          country: lookup.location?.countryCode,
+        });
+
+        if (!enriched?.profile) {
+          setPhoneEnrichHit(null);
+          return;
+        }
+
+        const populated = applyEnrichmentResult(enriched, { fillLinkedInUrl: true });
+        setPhoneEnrichHit(populated.length ? { populatedFields: populated } : null);
+      } catch {
+        setPhoneEnrichHit(null);
+      } finally {
+        setPhoneEnrichLoading(false);
+      }
+    } catch (err: any) {
+      toast({
+        title: "Phone lookup failed",
+        description: err?.message || "Please try again",
+        variant: "error",
+      });
+    } finally {
+      setPhoneLookupLoading(false);
+    }
+  };
+
+  // Manual fetch from LinkedIn URL — clicked from the "Fetch data" button next
+  // to the LinkedIn field. Runs ScrapIn enrichment directly (no CallerKit step).
+  const fetchFromLinkedIn = async () => {
+    const url = (formData.linkedInUrl || "").trim();
+    if (!/linkedin\.com\/in\/[^/?#\s]+/i.test(url)) {
+      toast({
+        title: "Enter a valid LinkedIn URL first",
+        description: "Format: linkedin.com/in/username",
+        variant: "info",
+      });
+      return;
+    }
+
+    // Clear stale auto-fills (but keep the URL the user just typed)
+    clearAutoFilled(["linkedInUrl"]);
+    setPhoneLookupHit(null);
+    setPhoneEnrichHit(null);
+    setLinkedInLookupHit(null);
+    setLinkedInLookupLoading(true);
+
+    try {
+      const enriched = await api.post<any>("/contacts/enrich-by-linkedin", { linkedInUrl: url });
+
+      if (!enriched?.profile) {
+        toast({
+          title: "Couldn't fetch profile",
+          description: "ScrapIn returned no data for this LinkedIn URL.",
+          variant: "info",
+        });
+        setLinkedInLookupHit(null);
+        return;
+      }
+
+      const populated = applyEnrichmentResult(enriched, { fillFullName: true });
+      setLinkedInLookupHit(populated.length ? { populatedFields: populated } : null);
+    } catch (err: any) {
+      toast({
+        title: "LinkedIn enrichment failed",
+        description: err?.message || "Please try again",
+        variant: "error",
+      });
+      setLinkedInLookupHit(null);
+    } finally {
+      setLinkedInLookupLoading(false);
+    }
+  };
+
 
   // Fetch lookup data
   useEffect(() => {
@@ -1152,7 +1448,7 @@ export default function AddContactPage() {
         ...new Set([...prev.customInterests, ...aiSuggestions.interests]),
       ],
       bio: suggestedBio || prev.bio,
-      bioSummary: prev.bioSummary || suggestedBio.slice(0, 500),
+      bioSummary: prev.bioSummary || suggestedBio.slice(0, 1000),
       bioFull: prev.bioFull || suggestedBio,
     }));
 
@@ -2938,25 +3234,111 @@ export default function AddContactPage() {
       </div>
 
       <div className="bg-th-surface backdrop-blur-sm border border-th-border rounded-2xl p-6 space-y-5">
-        {/* Basic Info */}
-        <div>
-          <label className="block text-sm font-medium text-th-text-s mb-2">
-            {t.contacts?.form?.name || "Full Name"} *
-          </label>
-          <div className="relative">
-            <Person24Regular className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-th-text-m" />
-            <input
-              type="text"
-              name="fullName"
-              value={formData.fullName}
-              onChange={handleInputChange}
-              placeholder="John Doe"
-              className={inputClass}
+        {/* Lookup row: Phone (CallerKit + chained LinkedIn enrichment) and LinkedIn URL (direct enrichment) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-th-text-s mb-2">
+              {t.contacts?.form?.phone || "Phone"}
+            </label>
+            <PhoneInput
+              value={formData.phone}
+              onChange={(phone) => setFormData((prev) => ({ ...prev, phone }))}
+              placeholder="50 123 4567"
+              defaultCountry={detectedCountry}
             />
+            <button
+              type="button"
+              onClick={fetchFromPhone}
+              disabled={!formData.phone || phoneLookupLoading || phoneEnrichLoading}
+              className="mt-2 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-[#00d084]/10 hover:bg-[#00d084]/20 text-[#00d084] border border-[#00d084]/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Sparkle24Regular className="w-4 h-4" />
+              {phoneLookupLoading || phoneEnrichLoading ? "Fetching…" : "Fetch data"}
+            </button>
+            {phoneLookupLoading && (
+              <p className="mt-2 text-xs text-th-text-m flex items-center gap-2">
+                <span className="inline-block w-3 h-3 rounded-full border-2 border-th-text-m border-t-transparent animate-spin" />
+                Looking up phone number…
+              </p>
+            )}
+            {!phoneLookupLoading && phoneLookupHit && (
+              <p className="mt-2 text-xs text-green-500 flex items-center gap-2">
+                <Checkmark24Regular className="w-3.5 h-3.5" />
+                Identified as {phoneLookupHit.name}
+                {phoneLookupHit.carrier ? ` · ${phoneLookupHit.carrier}` : ""}
+                {phoneLookupHit.country ? ` · ${phoneLookupHit.country}` : ""}
+              </p>
+            )}
+            {phoneEnrichLoading && (
+              <p className="mt-1 text-xs text-th-text-m flex items-center gap-2">
+                <span className="inline-block w-3 h-3 rounded-full border-2 border-th-text-m border-t-transparent animate-spin" />
+                Enriching profile from LinkedIn…
+              </p>
+            )}
+            {!phoneEnrichLoading && phoneEnrichHit && phoneEnrichHit.populatedFields.length > 0 && (
+              <p className="mt-1 text-xs text-green-500 flex items-center gap-2">
+                <Sparkle24Regular className="w-3.5 h-3.5" />
+                Auto-filled: {phoneEnrichHit.populatedFields.join(", ")}
+              </p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-th-text-s mb-2">
+              LinkedIn
+            </label>
+            <div className="relative">
+              <Link24Regular className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-th-text-m" />
+              <input
+                type="url"
+                name="linkedInUrl"
+                value={formData.linkedInUrl}
+                onChange={handleInputChange}
+                placeholder="linkedin.com/in/..."
+                className={inputClass}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={fetchFromLinkedIn}
+              disabled={!formData.linkedInUrl || linkedInLookupLoading}
+              className="mt-2 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-[#00d084]/10 hover:bg-[#00d084]/20 text-[#00d084] border border-[#00d084]/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Sparkle24Regular className="w-4 h-4" />
+              {linkedInLookupLoading ? "Fetching…" : "Fetch data"}
+            </button>
+            {linkedInLookupLoading && (
+              <p className="mt-2 text-xs text-th-text-m flex items-center gap-2">
+                <span className="inline-block w-3 h-3 rounded-full border-2 border-th-text-m border-t-transparent animate-spin" />
+                Enriching profile from LinkedIn…
+              </p>
+            )}
+            {!linkedInLookupLoading && linkedInLookupHit && linkedInLookupHit.populatedFields.length > 0 && (
+              <p className="mt-2 text-xs text-green-500 flex items-center gap-2">
+                <Sparkle24Regular className="w-3.5 h-3.5" />
+                Auto-filled: {linkedInLookupHit.populatedFields.join(", ")}
+              </p>
+            )}
           </div>
         </div>
 
+        {/* Basic Info */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-th-text-s mb-2">
+              {t.contacts?.form?.name || "Full Name"} *
+            </label>
+            <div className="relative">
+              <Person24Regular className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-th-text-m" />
+              <input
+                type="text"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleInputChange}
+                placeholder="John Doe"
+                className={inputClass}
+              />
+            </div>
+          </div>
           <div>
             <label className="block text-sm font-medium text-th-text-s mb-2">
               {t.contacts?.form?.email || "Email"}
@@ -2972,17 +3354,6 @@ export default function AddContactPage() {
                 className={inputClass}
               />
             </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-th-text-s mb-2">
-              {t.contacts?.form?.phone || "Phone"}
-            </label>
-            <PhoneInput
-              value={formData.phone}
-              onChange={(phone) => setFormData((prev) => ({ ...prev, phone }))}
-              placeholder="50 123 4567"
-              defaultCountry={detectedCountry}
-            />
           </div>
         </div>
 
@@ -3038,38 +3409,20 @@ export default function AddContactPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-th-text-s mb-2">
-              {t.contacts?.form?.website || "Website"}
-            </label>
-            <div className="relative">
-              <Globe24Regular className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-th-text-m" />
-              <input
-                type="url"
-                name="website"
-                value={formData.website}
-                onChange={handleInputChange}
-                placeholder="example.com"
-                className={inputClass}
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-th-text-s mb-2">
-              LinkedIn
-            </label>
-            <div className="relative">
-              <Link24Regular className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-th-text-m" />
-              <input
-                type="url"
-                name="linkedInUrl"
-                value={formData.linkedInUrl}
-                onChange={handleInputChange}
-                placeholder="linkedin.com/in/..."
-                className={inputClass}
-              />
-            </div>
+        <div>
+          <label className="block text-sm font-medium text-th-text-s mb-2">
+            {t.contacts?.form?.website || "Website"}
+          </label>
+          <div className="relative">
+            <Globe24Regular className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-th-text-m" />
+            <input
+              type="url"
+              name="website"
+              value={formData.website}
+              onChange={handleInputChange}
+              placeholder="example.com"
+              className={inputClass}
+            />
           </div>
         </div>
 
@@ -3319,7 +3672,7 @@ export default function AddContactPage() {
                   "Brief summary about this contact..."
                 }
                 rows={4}
-                maxLength={500}
+                maxLength={1000}
                 className="w-full px-4 py-3 bg-th-surface border border-th-border rounded-xl text-th-text placeholder-th-text-m focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none"
               />
               <div className="flex justify-between mt-1">
@@ -3327,9 +3680,9 @@ export default function AddContactPage() {
                   {t.contacts?.form?.bioSummaryTip || "Key highlights"}
                 </span>
                 <span
-                  className={`text-xs ${formData.bioSummary.length > 450 ? "text-yellow-400" : "text-th-text-m"}`}
+                  className={`text-xs ${formData.bioSummary.length > 900 ? "text-yellow-400" : "text-th-text-m"}`}
                 >
-                  {formData.bioSummary.length}/500
+                  {formData.bioSummary.length}/1000
                 </span>
               </div>
             </>
@@ -3344,7 +3697,7 @@ export default function AddContactPage() {
                   "Detailed background, experience, and achievements..."
                 }
                 rows={8}
-                maxLength={2000}
+                maxLength={5000}
                 className="w-full px-4 py-3 bg-th-surface border border-th-border rounded-xl text-th-text placeholder-th-text-m focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none"
               />
               <div className="flex justify-between mt-1">
@@ -3352,9 +3705,9 @@ export default function AddContactPage() {
                   {t.contacts?.form?.bioFullTip || "Complete details"}
                 </span>
                 <span
-                  className={`text-xs ${formData.bioFull.length > 1800 ? "text-yellow-400" : "text-th-text-m"}`}
+                  className={`text-xs ${formData.bioFull.length > 4500 ? "text-yellow-400" : "text-th-text-m"}`}
                 >
-                  {formData.bioFull.length}/2000
+                  {formData.bioFull.length}/5000
                 </span>
               </div>
             </>
@@ -3367,7 +3720,7 @@ export default function AddContactPage() {
                 onClick={() =>
                   setFormData((prev) => ({
                     ...prev,
-                    bioSummary: aiSuggestions.bio.slice(0, 500),
+                    bioSummary: aiSuggestions.bio.slice(0, 1000),
                     bioFull: aiSuggestions.bio,
                   }))
                 }
@@ -3497,16 +3850,16 @@ export default function AddContactPage() {
             <div
               className={`flex flex-wrap gap-2 overflow-y-auto scrollbar-purple p-1 transition-all ${sectorsExpanded ? "max-h-96" : "max-h-32"}`}
             >
-              {sectors.map((sector) => {
+              {[...sectors].sort((a, b) => Number(formData.sectorIds.includes(b.id)) - Number(formData.sectorIds.includes(a.id))).map((sector) => {
                 const isSelected = formData.sectorIds.includes(sector.id);
                 return (
                   <div key={sector.id} className="relative">
                     <button
                       type="button"
                       onClick={() => toggleSector(sector.id)}
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                         isSelected
-                          ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white pe-7"
+                          ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white dark:bg-none dark:bg-[#3b82f633] dark:text-[#93c5fd] pe-6"
                           : "bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h"
                       }`}
                     >
@@ -3521,7 +3874,7 @@ export default function AddContactPage() {
                           e.stopPropagation();
                           toggleSector(sector.id);
                         }}
-                        className="absolute top-1/2 -translate-y-1/2 end-1.5 w-4 h-4 flex items-center justify-center rounded-full bg-th-surface-h text-th-text hover:bg-th-surface-h transition-all"
+                        className="absolute top-1/2 -translate-y-1/2 end-1 w-4 h-4 flex items-center justify-center rounded-full bg-th-surface-h text-th-text hover:bg-th-surface-h transition-all"
                       >
                         <Dismiss24Regular className="w-2.5 h-2.5" />
                       </button>
@@ -3634,7 +3987,7 @@ export default function AddContactPage() {
             <div
               className={`flex flex-wrap gap-2 overflow-y-auto scrollbar-purple p-1 transition-all ${skillsExpanded ? "max-h-96" : "max-h-32"}`}
             >
-              {skills.map((skill) => {
+              {[...skills].sort((a, b) => Number(formData.skillIds.includes(b.id)) - Number(formData.skillIds.includes(a.id))).map((skill) => {
                 const isSelected = formData.skillIds.includes(skill.id);
                 return (
                   <div key={skill.id} className="relative">
@@ -3643,7 +3996,7 @@ export default function AddContactPage() {
                       onClick={() => toggleSkill(skill.id)}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                         isSelected
-                          ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white pe-6"
+                          ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white dark:bg-none dark:bg-[#3b82f633] dark:text-[#93c5fd] pe-6"
                           : "bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h"
                       }`}
                     >
@@ -3771,7 +4124,7 @@ export default function AddContactPage() {
             <div
               className={`flex flex-wrap gap-2 overflow-y-auto scrollbar-purple p-1 transition-all ${interestsExpanded ? "max-h-96" : "max-h-32"}`}
             >
-              {interests.map((interest) => {
+              {[...interests].sort((a, b) => Number(formData.interestIds.includes(b.id)) - Number(formData.interestIds.includes(a.id))).map((interest) => {
                 const isSelected = formData.interestIds.includes(interest.id);
                 return (
                   <div key={interest.id} className="relative">
@@ -3780,7 +4133,7 @@ export default function AddContactPage() {
                       onClick={() => toggleInterest(interest.id)}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                         isSelected
-                          ? "bg-gradient-to-r from-yellow-500 to-lime-500 text-white pe-6"
+                          ? "bg-gradient-to-r from-yellow-500 to-lime-500 text-white dark:bg-none dark:bg-[#3b82f633] dark:text-[#93c5fd] pe-6"
                           : "bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h"
                       }`}
                     >
@@ -3881,7 +4234,7 @@ export default function AddContactPage() {
             <div
               className={`flex flex-wrap gap-2 overflow-y-auto scrollbar-purple p-1 transition-all ${hobbiesExpanded ? "max-h-96" : "max-h-32"}`}
             >
-              {hobbies.map((hobby) => {
+              {[...hobbies].sort((a, b) => Number(formData.hobbyIds.includes(b.id)) - Number(formData.hobbyIds.includes(a.id))).map((hobby) => {
                 const isSelected = formData.hobbyIds.includes(hobby.id);
                 return (
                   <div key={hobby.id} className="relative">
@@ -3890,7 +4243,7 @@ export default function AddContactPage() {
                       onClick={() => toggleHobby(hobby.id)}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                         isSelected
-                          ? "bg-gradient-to-r from-red-500 to-emerald-500 text-white pe-6"
+                          ? "bg-gradient-to-r from-red-500 to-emerald-500 text-white dark:bg-none dark:bg-[#3b82f633] dark:text-[#93c5fd] pe-6"
                           : "bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h"
                       }`}
                     >

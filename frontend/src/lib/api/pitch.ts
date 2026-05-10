@@ -220,6 +220,65 @@ export interface MatchReason {
 }
 
 /**
+ * Canonical Match Target type (UPPER_SNAKE), as returned by the pitch
+ * backend. Mirrors the MATCH_INTENT_OPTIONS values.
+ */
+export type MatchTargetType =
+  | 'INVESTOR'
+  | 'ADVISOR'
+  | 'STRATEGIC_PARTNER'
+  | 'COFOUNDER'
+  | 'CUSTOMER_BUYER';
+
+/** Global Match Target band shared across the matching engine. */
+export type MatchTargetBand =
+  | 'WEAK'
+  | 'PARTIAL'
+  | 'GOOD'
+  | 'VERY_GOOD'
+  | 'EXCELLENT';
+
+export type MatchTargetHardFilterStatus = 'PASS' | 'WARN' | 'FAIL';
+
+/** Per-Match-Target detailed score (one entry per selected Match Target). */
+export interface MatchTargetScoreDetail {
+  matchTarget: MatchTargetType;
+  intent: MatchTargetType;
+  label: string;
+  score: number;
+  deterministicScore: number;
+  finalScore: number;
+  matchLevel: MatchTargetBand;
+  confidence: number;
+  hardFilterStatus: MatchTargetHardFilterStatus;
+  hardFilterReason: string;
+  hardFilterDetails: string;
+  isBestMatchTarget: boolean;
+  scoreBreakdown: {
+    keywordTier: number;
+    semanticTier: number;
+    overlapBonus: number;
+    aiDelta: number;
+  };
+  strengths: string[];
+  gaps: string[];
+  matchedSignals: string[];
+  missingSignals: string[];
+  greenFlags: string[];
+  redFlags: string[];
+  explanation: string;
+  aiScore?: number | null;
+  aiReasoning?: string;
+  aiAdjustmentBounded?: boolean;
+}
+
+export interface MatchTargetOverallExplanation {
+  summary: string;
+  bestMatchTarget: MatchTargetType | null;
+  totalScoreRule: string;
+}
+
+/**
  * Pitch match
  */
 export interface PitchMatch {
@@ -231,6 +290,24 @@ export interface PitchMatch {
   angleCategory: string | null;
   outreachDraft: string | null;
   status: MatchStatus;
+
+  // Per-Match-Target fields (added by the new pitch engine)
+  /** MAX of all per-target finalScores (the headline number). */
+  totalScore?: number;
+  /** Backward-compat alias: same as totalScore. */
+  finalScore?: number;
+  /** The Match Target that produced totalScore. */
+  bestMatchTarget?: MatchTargetType | null;
+  /** Selected Match Targets for the parent pitch (canonical UPPER_SNAKE). */
+  selectedMatchTargets?: MatchTargetType[];
+  /** Detailed per-target score objects. */
+  matchTargetScores?: MatchTargetScoreDetail[];
+  /** Overall explanation describing totalScore. */
+  overallExplanation?: MatchTargetOverallExplanation | null;
+  /** Match band of totalScore. */
+  matchLevel?: MatchTargetBand | string | null;
+  /** Backward-compat: Match Target with the highest score (alias). */
+  selectedIntent?: MatchTargetType | null;
 }
 
 /**

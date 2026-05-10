@@ -144,6 +144,7 @@ function calculateDataQuality(fields: Record<string, unknown>): number {
 export interface UserWithRelations {
   id: string;
   fullName: string;
+  email?: string | null;
   jobTitle?: string | null;
   company?: string | null;
   bio?: string | null;
@@ -160,6 +161,7 @@ export interface UserWithRelations {
 export interface ContactWithRelations {
   id: string;
   fullName: string;
+  email?: string | null;
   jobTitle?: string | null;
   company?: string | null;
   bio?: string | null;

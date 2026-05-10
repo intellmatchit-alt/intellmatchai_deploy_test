@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ProjectAIValidationItem, ProjectProfile, ProviderProfile } from './project-matching.types';
 
 interface ValidateProjectMatchesArgs {

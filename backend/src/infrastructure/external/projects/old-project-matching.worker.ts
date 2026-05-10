@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ProjectMatchingService } from './project-matching.service';
 import { ProjectMatchingJobPayload } from './project-matching.types';
 

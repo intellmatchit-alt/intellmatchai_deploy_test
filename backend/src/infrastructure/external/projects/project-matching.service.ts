@@ -298,7 +298,15 @@ export class ProjectMatchingService {
             matchedSkills: match.matchedSkills,
             matchedSectors: match.matchedSectors,
             matchedMarkets: match.matchedMarkets,
-            scoreBreakdown: match.scoreBreakdown?.componentScores,
+            scoreBreakdown:
+              match.scoreBreakdown?.componentScoreMap ??
+              (Array.isArray(match.scoreBreakdown?.componentScores)
+                ? Object.fromEntries(
+                    match.scoreBreakdown.componentScores.map(
+                      (c: any) => [c.name, c.score],
+                    ),
+                  )
+                : undefined),
           },
         }))
         .filter((x: any) => !!x.provider),

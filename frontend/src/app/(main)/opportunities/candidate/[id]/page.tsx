@@ -25,6 +25,7 @@ import {
   Money24Regular,
   Timer24Regular,
   Sparkle24Regular,
+  PeopleTeam24Regular,
 } from '@fluentui/react-icons';
 import {
   getCandidateProfile,
@@ -172,6 +173,17 @@ export default function CandidateDetailPage() {
             <Edit24Regular className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Find Helpers CTA — opens the helper-flow results page */}
+        <button
+          onClick={() =>
+            router.push(`/opportunities/candidate/${candidateId}/helpers`)
+          }
+          className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium transition-colors"
+        >
+          <PeopleTeam24Regular className="w-4 h-4" />
+          Find People Who Can Help
+        </button>
 
         {/* Meta tags */}
         <div className="flex flex-wrap items-center gap-2 text-xs text-th-text-t">

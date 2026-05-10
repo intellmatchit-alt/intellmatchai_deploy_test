@@ -225,6 +225,72 @@ export interface ContactSummary {
 }
 
 /**
+ * Canonical Looking For type (UPPER_SNAKE), as returned by the backend.
+ *
+ * Note: the persisted/form-side IDs (lowercase) listed in
+ * LOOKING_FOR_OPTIONS map 1:1 to these values.
+ */
+export type LookingForType =
+  | "INVESTOR"
+  | "ADVISOR"
+  | "SERVICE_PROVIDER"
+  | "STRATEGIC_PARTNER"
+  | "CHANNEL_DISTRIBUTION"
+  | "TECHNICAL_PARTNER"
+  | "CO_FOUNDER_TALENT";
+
+/**
+ * Global match band shared across the matching engine.
+ *
+ *   WEAK:      0–39
+ *   PARTIAL:  40–54
+ *   GOOD:     55–69
+ *   VERY_GOOD:70–84
+ *   EXCELLENT:85–100
+ */
+export type LookingForMatchBand =
+  | "WEAK"
+  | "PARTIAL"
+  | "GOOD"
+  | "VERY_GOOD"
+  | "EXCELLENT";
+
+export type LookingForHardFilterStatus = "PASS" | "WARN" | "FAIL";
+
+/** Per-Looking-For detailed score (one entry per selected Looking For). */
+export interface LookingForScoreDetail {
+  lookingFor: LookingForType;
+  id: string;
+  label: string;
+  score: number;
+  finalScore: number;
+  matchLevel: LookingForMatchBand;
+  confidence: number;
+  hardFilterStatus: LookingForHardFilterStatus;
+  hardFilterReason: string;
+  isBestMatchType: boolean;
+  scoreBreakdown: {
+    keywordTier: number;
+    semanticTier: number;
+    overlapBonus: number;
+    aiDelta: number;
+  };
+  strengths: string[];
+  gaps: string[];
+  matchedSignals: string[];
+  missingSignals: string[];
+  greenFlags: string[];
+  redFlags: string[];
+  explanation: string;
+}
+
+export interface OverallLookingForExplanation {
+  summary: string;
+  bestLookingFor: LookingForType | null;
+  totalScoreRule: string;
+}
+
+/**
  * Project match interface
  */
 export interface ProjectMatch {
@@ -268,6 +334,28 @@ export interface ProjectMatch {
     | Record<string, number>;
   intent?: string;
   rank?: number;
+
+  // Per-Looking-For matching fields (added by the new engine)
+  /** Selected Looking For types (canonical, UPPER_SNAKE). */
+  selectedLookingFor?: LookingForType[];
+  /** Detailed per-Looking-For score objects. */
+  lookingForScoreDetails?: LookingForScoreDetail[] | null;
+  /** Backward-compat: simple Record<id, score>. Older UIs may rely on this. */
+  lookingForScores?: Record<string, number> | null;
+  /** id → label map. */
+  lookingForLabels?: Record<string, string> | null;
+  /** Overall explanation. */
+  overallExplanation?: OverallLookingForExplanation | null;
+  /** MAX of all per-Looking-For finalScores (the headline number). */
+  totalScore?: number;
+  /** Backward-compat: same as totalScore (older field name). */
+  lookingForTotalScore?: number | null;
+  /** Looking For type that produced totalScore. */
+  bestLookingFor?: LookingForType | null;
+  /** Backward-compat: top-level overall score. */
+  score?: number;
+  /** Backward-compat: top-level final score. */
+  finalScore?: number;
 }
 
 /**
@@ -426,13 +514,23 @@ export interface JobStatusResponse {
  * Find matches for a project (trigger AI matching)
  * @param projectId - Project ID
  * @param async - If true, run matching in background and return job ID
+ * @param selectedLookingFor - Optional Looking For ids (e.g. ["investor",
+ *   "technical_partner"]). When provided, the backend uses this list instead
+ *   of the persisted `project.lookingFor` and persists it back to the project.
+ *   Lets the user re-run matching with a different chip selection without
+ *   first saving the project form.
  */
 export async function findProjectMatches(
   projectId: string,
   async?: boolean,
+  selectedLookingFor?: string[],
 ): Promise<{ matchCount: number; matches: ProjectMatch[] } | AsyncJobResponse> {
   const query = async ? "?async=true" : "";
-  return api.post(`/projects/${projectId}/find-matches${query}`);
+  const body =
+    selectedLookingFor && selectedLookingFor.length
+      ? { selectedLookingFor }
+      : {};
+  return api.post(`/projects/${projectId}/find-matches${query}`, body);
 }
 
 /**

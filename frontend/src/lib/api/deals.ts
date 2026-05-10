@@ -140,7 +140,97 @@ export interface DealProgress {
 }
 
 /**
- * Deal match result interface
+ * v4.1 match band — single source of truth lives in the backend.
+ * The FE displays this string directly; do NOT recompute it from score.
+ */
+export type DealMatchLevel = 'WEAK' | 'PARTIAL' | 'GOOD' | 'VERY_GOOD' | 'EXCELLENT';
+
+/** v4.1 match mode — direct flows + helper flows */
+export type DealMatchMode =
+  | 'BUY_TO_NETWORK_SELLERS'
+  | 'SELL_TO_NETWORK_BUYERS'
+  | 'BUY_TO_SELLER_HELPERS'
+  | 'SELL_TO_BUYER_HELPERS';
+
+/** v4.1 hard-filter outcome */
+export type DealHardFilterStatus = 'PASS' | 'REVIEW' | 'FAIL';
+
+/** v4.1 retrieval breakdown — sub-scores fed by hybrid retrieval */
+export interface DealRetrievalBreakdown {
+  structuredScore: number;
+  lexicalScore: number;
+  semanticScore: number;
+  networkScore: number;
+  totalScore: number;
+  evidence?: string[];
+}
+
+/** v4.1 ranking factors — multipliers used to compute effectiveRankScore */
+export interface DealRankingFactors {
+  confidencePenalty: number;
+  reviewPenalty: number;
+  sparseDataPenalty: number;
+  networkBoost: number;
+  readinessBoost: number;
+  retrievalBoost: number;
+  multiplier: number;
+}
+
+/** v4.1 component-level score breakdown (preferred over legacy MatchBreakdown). */
+export interface DealScoreComponent {
+  name: string;
+  score: number;
+  weight: number;
+  confidence: number;
+  explanation: string;
+  matchedItems?: string[];
+  missingItems?: string[];
+  penalties?: string[];
+}
+
+export interface DealScoreBreakdownV4 {
+  components: DealScoreComponent[];
+  rawScore: number;
+  normalizedScore: number;
+  confidence: number;
+  totalWeight: number;
+  missingComponents: string[];
+  penalties: string[];
+}
+
+export interface DealMatchExplanationV4 {
+  summary: string;
+  finalScore: number;
+  scoreBand: DealMatchLevel;
+  surfacedStatus?: 'PASS' | 'REVIEW' | 'SUPPRESSED';
+  strengths: string[];
+  weaknesses: string[];
+  missingFields: string[];
+  penalties: string[];
+  confidenceNote: string;
+  commercialFitSummary: string;
+  requirementsCoverageSummary: string;
+  semanticFitSummary: string;
+  downgradeReason: string | null;
+}
+
+/** v4.1 network relationship between requester and counterparty (or helper) */
+export interface DealNetworkRelationship {
+  degree: 1 | 2 | 3 | null;
+  isFirstDegree: boolean;
+  isSecondDegree: boolean;
+  sameOrganization: boolean;
+  mutualConnections: number;
+  relationshipStrength: number;
+  notes?: string[];
+}
+
+/**
+ * Deal match result interface (direct buy↔sell flow).
+ * Legacy fields (`score`, `breakdown`, `reasons`, `category`) remain so old
+ * saved matches still render. v4.1 fields are all OPTIONAL — the FE must
+ * tolerate older rows without them. The displayed score everywhere is
+ * `finalScore ?? score`.
  */
 export interface DealMatchResult {
   id: string;
@@ -157,6 +247,98 @@ export interface DealMatchResult {
   ignoredAt?: string | null;
   contactedAt?: string | null;
   createdAt: string;
+
+  // v4.1 production fields — optional for backward compatibility
+  finalScore?: number;
+  deterministicScore?: number;
+  aiScore?: number | null;
+  effectiveRankScore?: number;
+  matchLevel?: DealMatchLevel;
+  matchMode?: DealMatchMode;
+  confidence?: number;
+  hardFilterStatus?: DealHardFilterStatus;
+  hardFilterReason?: string | null;
+  retrievalScore?: number;
+  retrievalBreakdown?: DealRetrievalBreakdown;
+  rankingFactors?: DealRankingFactors;
+  scoreBreakdownV4?: DealScoreBreakdownV4;
+  explanationV4?: DealMatchExplanationV4;
+  aiReasoning?: string | null;
+  aiGreenFlags?: string[];
+  aiRedFlags?: string[];
+  networkRelationship?: DealNetworkRelationship | null;
+  rank?: number;
+}
+
+/** Helper / introducer match — for BUY_TO_SELLER_HELPERS / SELL_TO_BUYER_HELPERS */
+export type DealHelperType = 'INSIDER' | 'INTRODUCER' | 'INFLUENCER' | 'ADVOCATE' | 'BROKER';
+
+export interface DealHelperMatchResult {
+  id: string;
+  dealRequestId: string;
+  matchMode: 'BUY_TO_SELLER_HELPERS' | 'SELL_TO_BUYER_HELPERS';
+  helperUserId: string | null;
+  helperContactId?: string | null;
+  helperName: string;
+  helperTitle: string | null;
+  helperRoleArea: string | null;
+  helperOrganization: string | null;
+  helperType: DealHelperType;
+  helperTypeLabel: string;
+  likelyHelpType: string;
+
+  finalScore: number;
+  deterministicScore: number;
+  aiScore: number | null;
+  effectiveRankScore: number;
+  matchLevel: DealMatchLevel;
+  confidence: number;
+
+  hardFilterStatus?: DealHardFilterStatus;
+  retrievalScore?: number;
+  retrievalBreakdown?: DealRetrievalBreakdown;
+  rankingFactors?: DealRankingFactors;
+  scoreBreakdown: DealScoreBreakdownV4;
+  explanation: DealMatchExplanationV4;
+  helperExplanation: string;
+  strengths?: string[];
+  gaps?: string[];
+  matchedSignals?: string[];
+  missingOrUncertainFields?: string[];
+  networkRelationship?: DealNetworkRelationship | null;
+
+  aiReasoning?: string | null;
+  aiGreenFlags?: string[];
+  aiRedFlags?: string[];
+
+  rank?: number;
+  status: DealMatchStatus;
+  createdAt: string;
+}
+
+/**
+ * Single source of truth for the displayed score on a direct match.
+ * Use this everywhere (card, badge, summary, detail). Do NOT compute
+ * the band locally — read `match.matchLevel` instead when present.
+ */
+export function getDisplayScore(m: Pick<DealMatchResult, 'finalScore' | 'score'>): number {
+  return typeof m.finalScore === 'number' ? m.finalScore : m.score;
+}
+
+/**
+ * Display label for v4.1 match bands. Returns null for legacy rows
+ * that don't carry a matchLevel — caller may then derive a fallback
+ * label or hide the band chip entirely.
+ */
+export function getMatchLevelLabel(level?: DealMatchLevel): string | null {
+  if (!level) return null;
+  return {
+    EXCELLENT: 'Excellent Match',
+    VERY_GOOD: 'Very Good Match',
+    GOOD: 'Good Match',
+    PARTIAL: 'Partial Match',
+    WEAK: 'Weak Match',
+  }[level];
 }
 
 /**
@@ -223,16 +405,26 @@ export interface CalculateMatchesResponse {
 }
 
 /**
- * Deal results response
+ * Deal results response.
+ *
+ * `results` carries direct buyer↔seller matches (existing behaviour).
+ * `helperResults` (v4.1) optionally carries helper / introducer matches when
+ * the engine ran a helper flow. Older responses won't include it; consumers
+ * MUST tolerate its absence.
  */
 export interface DealResultsResponse {
   deal: Deal;
   results: DealMatchResult[];
+  helperResults?: DealHelperMatchResult[];
   summary: {
     totalMatches: number;
     avgScore: number;
     topCategory: DealMatchCategory | null;
+    totalHelperMatches?: number;
+    avgHelperScore?: number;
   };
+  /** v4.1 engine version, when produced by v4 — useful for FE-side feature gating */
+  engineVersion?: string;
 }
 
 // ============================================================================
@@ -334,7 +526,16 @@ export async function updateDealMatchStatus(
 }
 
 /**
- * Extracted deal data from document
+ * Extracted deal data from a document upload.
+ *
+ * v4.1 widened the contract: the backend now returns every field the
+ * BUY/SELL forms collect, including the previously-missing required ones
+ * (`buyingStage`, `relevantIndustry`, `industryFocus`, `idealBuyerType`).
+ *
+ * - Legacy fields (`requirements`, `priceRange`, `timeline`, `metadata.*`)
+ *   are kept verbatim so older clients keep working.
+ * - New top-level arrays + the same data under `metadata.*` are populated
+ *   so either consumer pattern works.
  */
 export interface ExtractedDealData {
   mode: DealMode;
@@ -348,7 +549,26 @@ export interface ExtractedDealData {
   targetEntityType: string;
   priceRange?: string;
   timeline?: string;
+
+  /** v4.1: array form (preferred). Legacy `requirements` stays as a comma string. */
+  requirementTags?: string[];
   requirements?: string;
+
+  /** BUY only — must match exactly one of the BUYING_STAGES labels. */
+  buyingStage?: string;
+  /** BUY only — array of industry tags relevant to the request. */
+  relevantIndustry?: string[];
+  /** SELL only — array of industries the offering targets. */
+  industryFocus?: string[];
+  /** SELL only — buyer-persona labels (e.g. 'Budget Holder', 'C-Level'). */
+  idealBuyerType?: string[];
+
+  idealCustomerProfile?: string;
+  idealProviderProfile?: string;
+  targetMarketLocation?: string;
+  deliveryMode?: string;
+  deliveryModel?: string;
+
   metadata?: Record<string, any>;
 }
 

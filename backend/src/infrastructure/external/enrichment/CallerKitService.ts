@@ -169,15 +169,25 @@ export class CallerKitService {
       const processingTimeMs = Date.now() - startTime;
 
       if (!response.ok) {
-        const errorBody = String(await response.json());
+        const errorBody = (await response.json().catch(() => null)) as
+          | { msg?: string; data?: any }
+          | null;
         logger.warn("CallerKit API error", {
           status: response.status,
           phone: normalizedPhone,
-          error: errorBody,
+          msg: errorBody?.msg,
+          data: errorBody?.data,
         });
+        // Distinguish exhausted-credits / rate-limit from generic failure so callers
+        // can surface a meaningful message.
+        const isQuotaError =
+          response.status === 429 ||
+          /credit|quota|upgrade|exceeded/i.test(errorBody?.msg || "");
         return {
           success: false,
-          error: `CallerKit API error: ${response.status}`,
+          error: isQuotaError
+            ? `CallerKit quota exhausted: ${errorBody?.msg || "rate limited"}`
+            : `CallerKit API error: ${response.status}`,
           processingTimeMs,
         };
       }

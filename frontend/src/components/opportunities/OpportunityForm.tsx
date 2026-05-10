@@ -159,15 +159,15 @@ const requiredStar = <span className="text-[#8cffbf] ms-0.5">*</span>;
 const chipBoxClass = 'flex flex-wrap gap-2.5 overflow-y-auto p-3 bg-white/[0.025] rounded-2xl border-2 border-white/[0.12] transition-all';
 const searchInputClass = 'w-full ps-10 pe-4 py-[11px] bg-white/[0.04] border-2 border-white/[0.14] rounded-2xl text-sm text-th-text placeholder-th-text-m focus:outline-none focus:border-emerald-500/60 transition-all';
 const chipClass = (selected: boolean) =>
-  `px-3.5 py-[10px] rounded-full text-[0.92rem] font-bold transition-all active:scale-95 border-2 inline-flex items-center justify-center gap-2 whitespace-nowrap ${
+  `px-3 py-1.5 rounded-full text-xs font-medium transition-all active:scale-95 border inline-flex items-center justify-center gap-1.5 whitespace-nowrap ${
     selected
-      ? 'bg-emerald-400 border-emerald-400/80 text-[#042820] shadow-[0_0_0_2px_rgba(24,210,164,0.12)_inset]'
+      ? 'bg-[#3b82f633] border-blue-500/50 text-[#93c5fd] shadow-[0_0_0_2px_rgba(59,130,246,0.15)_inset]'
       : 'bg-white/[0.04] border-white/[0.12] text-th-text hover:bg-white/[0.07] hover:border-white/[0.20]'
   }`;
 const chipClassBlue = (selected: boolean) =>
-  `px-3.5 py-[10px] rounded-full text-[0.92rem] font-bold transition-all active:scale-95 border-2 inline-flex items-center justify-center gap-2 whitespace-nowrap ${
+  `px-3 py-1.5 rounded-full text-xs font-medium transition-all active:scale-95 border inline-flex items-center justify-center gap-1.5 whitespace-nowrap ${
     selected
-      ? 'bg-emerald-400 border-emerald-400/80 text-[#042820] shadow-[0_0_0_2px_rgba(77,163,255,0.12)_inset]'
+      ? 'bg-[#3b82f633] border-blue-500/50 text-[#93c5fd] shadow-[0_0_0_2px_rgba(59,130,246,0.15)_inset]'
       : 'bg-white/[0.04] border-white/[0.12] text-th-text hover:bg-white/[0.07] hover:border-white/[0.20]'
   }`;
 
@@ -298,8 +298,9 @@ export default function OpportunityForm({
   const [sectorSearch, setSectorSearch] = useState('');
   const [skillSearch, setSkillSearch] = useState('');
 
-  // Fill method choice: null = choosing, 'upload' = document, 'manual' = manual entry
-  const [fillMethod, setFillMethod] = useState<'upload' | 'manual' | null>(null);
+  // Fill method: default to 'upload' so AI Auto-Fill is visible at the top.
+  // User can still switch via "Change method" or just fill the form fields directly.
+  const [fillMethod, setFillMethod] = useState<'upload' | 'manual' | null>('upload');
 
   // File upload state
   const jobFileRef = useRef<HTMLInputElement>(null);
@@ -774,8 +775,8 @@ export default function OpportunityForm({
         </div>
       )}
 
-      {/* Form fields - shown for manual entry, after extraction, or when editing */}
-      {(fillMethod === 'manual' || jobExtractedFromDoc || !!opportunity) && (
+      {/* Form fields - always visible so users can fill manually or after extraction */}
+      {true && (
       <>
       {/* Progress steps */}
       {!opportunity && (
@@ -990,7 +991,7 @@ export default function OpportunityForm({
                     const skill = skills.find(s => s.id === id);
                     if (!skill) return null;
                     return (
-                      <span key={id} className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-400 text-[#042820] text-xs font-bold rounded-lg border border-emerald-400/80">
+                      <span key={id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#3b82f633] text-[#93c5fd] text-xs font-medium rounded-full border border-blue-500/50">
                         {skill.name}
                         <button type="button" onClick={() => setMustHaveSkills(prev => prev.filter(sid => sid !== id))} className="hover:text-red-800">
                           <Dismiss16Regular className="w-3 h-3" />
@@ -1031,7 +1032,7 @@ export default function OpportunityForm({
                     const skill = skills.find(s => s.id === id);
                     if (!skill) return null;
                     return (
-                      <span key={id} className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-400 text-[#042820] text-xs font-bold rounded-lg border border-emerald-400/80">
+                      <span key={id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#3b82f633] text-[#93c5fd] text-xs font-medium rounded-full border border-blue-500/50">
                         {skill.name}
                         <button type="button" onClick={() => setPreferredSkills(prev => prev.filter(sid => sid !== id))} className="hover:text-red-800">
                           <Dismiss16Regular className="w-3 h-3" />
@@ -1078,7 +1079,7 @@ export default function OpportunityForm({
                   const skill = skills.find(s => s.id === id);
                   if (!skill) return null;
                   return (
-                    <span key={id} className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-400 text-[#042820] text-xs font-bold rounded-lg border border-emerald-400/80">
+                    <span key={id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#3b82f633] text-[#93c5fd] text-xs font-medium rounded-full border border-blue-500/50">
                       {skill.name}
                       <button type="button" onClick={() => setMustHaveSkills(prev => prev.filter(sid => sid !== id))} className="hover:text-red-800">
                         <Dismiss16Regular className="w-3 h-3" />
@@ -1264,7 +1265,7 @@ export default function OpportunityForm({
             {languages.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {languages.map((lang, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-400 text-[#042820] text-xs font-medium rounded-lg border border-emerald-400/80">
+                  <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#3b82f633] text-[#93c5fd] text-xs font-medium rounded-full border border-blue-500/50">
                     {lang}
                     <button type="button" onClick={() => setLanguages(languages.filter((_, j) => j !== i))} className="hover:text-th-text"><Dismiss16Regular className="w-3 h-3" /></button>
                   </span>
@@ -1296,7 +1297,7 @@ export default function OpportunityForm({
             {certifications.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {certifications.map((cert, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-400 text-[#042820] text-xs font-medium rounded-lg border border-emerald-400/80">
+                  <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#3b82f633] text-[#93c5fd] text-xs font-medium rounded-full border border-blue-500/50">
                     {cert}
                     <button type="button" onClick={() => setCertifications(certifications.filter((_, j) => j !== i))} className="hover:text-th-text"><Dismiss16Regular className="w-3 h-3" /></button>
                   </span>
@@ -1328,7 +1329,7 @@ export default function OpportunityForm({
             {educationLevels.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {educationLevels.map((edu, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-400 text-[#042820] text-xs font-medium rounded-lg border border-emerald-400/80">
+                  <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#3b82f633] text-[#93c5fd] text-xs font-medium rounded-full border border-blue-500/50">
                     {edu}
                     <button type="button" onClick={() => setEducationLevels(educationLevels.filter((_, j) => j !== i))} className="hover:text-th-text"><Dismiss16Regular className="w-3 h-3" /></button>
                   </span>
@@ -1360,7 +1361,7 @@ export default function OpportunityForm({
             {industries.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {industries.map((ind, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-400 text-[#042820] text-xs font-medium rounded-lg border border-emerald-400/80">
+                  <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#3b82f633] text-[#93c5fd] text-xs font-medium rounded-full border border-blue-500/50">
                     {ind}
                     <button type="button" onClick={() => setIndustries(industries.filter((_, j) => j !== i))} className="hover:text-th-text"><Dismiss16Regular className="w-3 h-3" /></button>
                   </span>

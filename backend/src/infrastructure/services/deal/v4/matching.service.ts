@@ -1,13 +1,23 @@
 /**
- * Deal Matching Service
- * v4.0.0 — strict final production
+ * Deal Matching Service — v4.1
  *
- * v4 changes from v3:
- * - SurfacedStatus (PASS/REVIEW/SUPPRESSED) computed and passed to explanation
- * - semanticSubScores from scoring passed through to explanation
- * - suppressedByScore tracked in stats
- * - buyerRole passed to buyerPersonaFit
- * - generateMatchExplanation v4 signature (surfacedStatus, semanticSubScores)
+ * Pipeline (per IntellMatch spec):
+ *   1. applyPrefilters (structured)
+ *   2. for each candidate:
+ *      a. calculateRetrievalScore (hybrid: structured + lexical + semantic + network)
+ *      b. runDealHardFilters (PASS / REVIEW / FAIL — FAIL excluded)
+ *      c. calculateDealMatchScore (deterministic, 12 components incl. network)
+ *      d. confidence gate
+ *      e. applyBandGating (matchLevel)
+ *      f. (optional) AI validation — bounded ±10, never overrides FAIL
+ *      g. finalScore = aiScore ?? deterministicScore
+ *      h. calculateEffectiveRankScore + rankingFactors
+ *   3. dedupe (id / userId / orgId)
+ *   4. sort by effectiveRankScore (with deterministic tie-breakers)
+ *   5. paginate
+ *
+ * The displayed score everywhere is `finalScore`. `effectiveRankScore` is
+ * for ordering only and never goes on a score badge.
  */
 
 import {
@@ -18,33 +28,63 @@ import {
 import {
   ScoreBand, getScoreBand, HardFilterStatus, MatchExplanation, MatchingStats, SurfacedStatus,
   generateMatchExplanation, generateMatchId, getExpiryDate, mergeTags, calculateTagOverlap,
-  applyBandGating,
+  applyBandGating, ScoreBreakdown, RetrievalBreakdown, RankingFactors, NetworkRelationship,
+  HardFilterResult,
 } from './common';
 import {
-  runDealHardFilters, calculateDealMatchScore, sortDealMatches, assignDealRanks,
-  inferBuyerPersona,
+  runDealHardFilters, calculateDealMatchScore, inferBuyerPersona,
 } from './scoring.utils';
+import { NetworkContext } from './network.utils';
+import { calculateRetrievalScore } from './retrieval.utils';
+import { calculateEffectiveRankScore, sortByEffectiveRank, dedupeByKeys, normalizeFallbackKey } from './ranking.utils';
+import { DealAIValidator, AIValidationResult } from './ai-validator.service';
+
+export interface DealMatchInputs {
+  /** retrieval-time network context per offering id (optional) */
+  networkByTargetId?: Map<string, NetworkContext>;
+  /** owner-level metadata for dedupe by userId/orgId */
+  targetOwnerByTargetId?: Map<string, { userId?: string; organizationId?: string; fullName?: string; company?: string }>;
+  /** override AI validation toggle for this run; falls back to env */
+  enableAIValidation?: boolean;
+  /** maximum AI score adjustment (±). Defaults to 10. */
+  maxAIAdjustment?: number;
+  /** retrieval score floor — candidates below are skipped (default 25) */
+  retrievalMinScore?: number;
+}
+
+const DEFAULT_AI_MAX_ADJUSTMENT = Number(process.env.DEAL_AI_MAX_SCORE_ADJUSTMENT) || 10;
+const DEFAULT_RETRIEVAL_MIN = Number(process.env.DEAL_RETRIEVAL_MIN_SCORE) || 25;
 
 export class DealMatchingService {
   private weights: DealScoringWeights;
   private thresholds: DealThresholdConfig;
+  private aiValidator: DealAIValidator;
 
-  constructor(weights: Partial<DealScoringWeights> = {}, thresholds: Partial<DealThresholdConfig> = {}) {
+  constructor(
+    weights: Partial<DealScoringWeights> = {},
+    thresholds: Partial<DealThresholdConfig> = {},
+    aiValidator?: DealAIValidator,
+  ) {
     this.weights = { ...DEFAULT_DEAL_WEIGHTS, ...weights };
     this.thresholds = { ...DEFAULT_DEAL_THRESHOLDS, ...thresholds };
+    this.aiValidator = aiValidator ?? new DealAIValidator();
   }
 
   // ==========================================================================
-  // MAIN MATCHING
+  // BUY_TO_NETWORK_SELLERS
   // ==========================================================================
 
   async findMatches(
-    buyRequest: BuyRequest, sellOfferings: SellOffering[], request: FindDealMatchesRequest,
+    buyRequest: BuyRequest,
+    sellOfferings: SellOffering[],
+    request: FindDealMatchesRequest,
+    inputs: DealMatchInputs = {},
   ): Promise<DealMatchResponse> {
     const startTime = Date.now();
     const limit = request.limit || this.thresholds.maxResults;
     const offset = request.offset || 0;
     const filters = request.filters || {};
+    const retrievalMin = inputs.retrievalMinScore ?? DEFAULT_RETRIEVAL_MIN;
 
     const stats: MatchingStats = {
       totalCandidates: sellOfferings.length, passedHardFilters: 0, failedHardFilters: 0,
@@ -57,22 +97,53 @@ export class DealMatchingService {
     const matchResults: DealMatchResult[] = [];
 
     for (const offering of filteredOfferings) {
+      const network = inputs.networkByTargetId?.get(offering.id) ?? null;
+
+      // 2a. Hybrid retrieval score
+      const retrieval = calculateRetrievalScore(buyRequest, offering, network);
+      if (retrieval.totalScore < retrievalMin) {
+        stats.suppressedByScore++;
+        continue;
+      }
+
+      // 2b. Hard filters
       const hf = runDealHardFilters(buyRequest, offering);
       if (hf.status === HardFilterStatus.FAIL) { stats.failedHardFilters++; continue; }
       if (hf.status === HardFilterStatus.REVIEW) stats.reviewCandidates++;
       stats.passedHardFilters++;
 
-      const { finalScore, breakdown, fieldMatches, semanticSubScores } = calculateDealMatchScore(buyRequest, offering, this.weights);
+      // 2c. Deterministic score (with network component)
+      const { finalScore: deterministicScore, breakdown, fieldMatches, semanticSubScores } =
+        calculateDealMatchScore(buyRequest, offering, this.weights, network);
 
-      if (finalScore < this.thresholds.minScore) { stats.suppressedByScore++; continue; }
+      if (deterministicScore < this.thresholds.minScore) { stats.suppressedByScore++; continue; }
       if (breakdown.confidence < this.thresholds.minConfidence) { stats.suppressedByConfidence++; continue; }
 
       stats.scoredCandidates++;
 
+      // 2d. Sparse data + band gating
       const isSparse = Math.min(buyRequest.dataQualityScore || 0, offering.dataQualityScore || 0) < this.thresholds.sparseDataThreshold;
+
+      // 2e. AI validation (bounded ±maxAIAdjustment, never overrides FAIL)
+      let aiResult: AIValidationResult | null = null;
+      const aiEnabled = inputs.enableAIValidation ?? this.aiValidator.isEnabled();
+      if (aiEnabled) {
+        // hf.status cannot be FAIL here (filtered above) — AI never overrides FAIL.
+        aiResult = await this.aiValidator.validateDirectMatch({
+          matchMode: 'BUY_TO_NETWORK_SELLERS',
+          buyRequest, sellOffering: offering,
+          deterministicScore, scoreBreakdown: breakdown, hardFilter: hf,
+          networkContext: network,
+          maxAdjustment: inputs.maxAIAdjustment ?? DEFAULT_AI_MAX_ADJUSTMENT,
+        });
+      }
+
+      const aiScore = aiResult?.adjustedScore ?? null;
+      const finalScore = aiScore !== null ? aiScore : deterministicScore;
+
       const { effectiveBand, downgradeReason } = applyBandGating(
         getScoreBand(finalScore), breakdown.confidence, isSparse,
-        { strongMinConfidence: this.thresholds.strongMinConfidence, sparseMaxBand: this.thresholds.sparseMaxBand },
+        { excellentMinConfidence: this.thresholds.excellentMinConfidence, sparseMaxBand: this.thresholds.sparseMaxBand },
       );
 
       const surfacedStatus = hf.status === HardFilterStatus.REVIEW ? SurfacedStatus.REVIEW : SurfacedStatus.PASS;
@@ -84,15 +155,39 @@ export class DealMatchingService {
         downgradeReason, semanticSubScores,
       );
 
-      const result = this.buildMatchResult(
-        buyRequest, offering, finalScore, effectiveBand, surfacedStatus,
-        breakdown, hf, explanation, request.includeExplanations !== false,
-      );
+      // 2f. effectiveRankScore + rankingFactors
+      const { effectiveRankScore, rankingFactors } = calculateEffectiveRankScore({
+        finalScore, confidence: breakdown.confidence, hardFilterStatus: hf.status,
+        isSparse, retrievalScore: retrieval.totalScore, network,
+        buy: buyRequest, sell: offering,
+      });
+
+      const result = this.buildMatchResult({
+        buyRequest, offering, finalScore, deterministicScore, aiScore,
+        effectiveRankScore, retrievalBreakdown: retrieval, rankingFactors,
+        effectiveBand, surfacedStatus, breakdown, hf, explanation,
+        aiResult, network,
+        includeExplanation: request.includeExplanations !== false,
+      });
       matchResults.push(result);
     }
 
-    const sorted = sortDealMatches(matchResults);
-    const ranked = assignDealRanks(sorted);
+    // 3. Dedupe
+    const deduped = dedupeByKeys(matchResults, m => {
+      const owner = inputs.targetOwnerByTargetId?.get(m.sellOfferingId);
+      return {
+        primary: m.sellOfferingId,
+        userId: owner?.userId,
+        organizationId: owner?.organizationId,
+        fallback: normalizeFallbackKey(m.sellerName, owner?.company),
+      };
+    });
+
+    // 4. Rerank — effectiveRankScore primary, with deterministic tiebreakers
+    const sorted = sortByEffectiveRank(deduped);
+
+    // 5. Assign rank, then paginate (rerank-then-paginate, NEVER paginate then rerank)
+    const ranked = sorted.map((m, i) => ({ ...m, rank: i + 1 }));
     const page = ranked.slice(offset, offset + limit);
 
     stats.finalMatches = page.length;
@@ -104,6 +199,111 @@ export class DealMatchingService {
       success: true, matches: page, buyRequestId: buyRequest.id,
       buyRequestName: buyRequest.requestName || buyRequest.whatYouNeed.substring(0, 50),
       totalCandidates: sellOfferings.length, filteredCount: ranked.length,
+      processingTimeMs: stats.processingTimeMs, stats,
+    };
+  }
+
+  // ==========================================================================
+  // SELL_TO_NETWORK_BUYERS
+  // ==========================================================================
+
+  async findBuyersForSeller(
+    sell: SellOffering,
+    buyRequests: BuyRequest[],
+    limit = 50,
+    inputs: DealMatchInputs = {},
+  ): Promise<DealMatchResponse> {
+    const startTime = Date.now();
+    const retrievalMin = inputs.retrievalMinScore ?? DEFAULT_RETRIEVAL_MIN;
+    const stats: MatchingStats = {
+      totalCandidates: buyRequests.length, passedHardFilters: 0, failedHardFilters: 0,
+      reviewCandidates: 0, scoredCandidates: 0,
+      suppressedByConfidence: 0, suppressedByScore: 0,
+      finalMatches: 0, avgScore: 0, avgConfidence: 0, processingTimeMs: 0,
+    };
+    const results: DealMatchResult[] = [];
+
+    for (const buy of buyRequests) {
+      if (!buy.isActive || buy.isDeleted) { stats.failedHardFilters++; continue; }
+      const network = inputs.networkByTargetId?.get(buy.id) ?? null;
+
+      const retrieval = calculateRetrievalScore(buy, sell, network);
+      if (retrieval.totalScore < retrievalMin) { stats.suppressedByScore++; continue; }
+
+      const hf = runDealHardFilters(buy, sell);
+      if (hf.status === HardFilterStatus.FAIL) { stats.failedHardFilters++; continue; }
+      if (hf.status === HardFilterStatus.REVIEW) stats.reviewCandidates++;
+      stats.passedHardFilters++;
+
+      const { finalScore: deterministicScore, breakdown, fieldMatches, semanticSubScores } =
+        calculateDealMatchScore(buy, sell, this.weights, network);
+      if (deterministicScore < this.thresholds.minScore) { stats.suppressedByScore++; continue; }
+      if (breakdown.confidence < this.thresholds.minConfidence) { stats.suppressedByConfidence++; continue; }
+      stats.scoredCandidates++;
+
+      const isSparse = Math.min(buy.dataQualityScore || 0, sell.dataQualityScore || 0) < this.thresholds.sparseDataThreshold;
+
+      let aiResult: AIValidationResult | null = null;
+      const aiEnabled = inputs.enableAIValidation ?? this.aiValidator.isEnabled();
+      if (aiEnabled) {
+        // hf.status cannot be FAIL here (filtered above) — AI never overrides FAIL.
+        aiResult = await this.aiValidator.validateDirectMatch({
+          matchMode: 'SELL_TO_NETWORK_BUYERS',
+          buyRequest: buy, sellOffering: sell,
+          deterministicScore, scoreBreakdown: breakdown, hardFilter: hf,
+          networkContext: network,
+          maxAdjustment: inputs.maxAIAdjustment ?? DEFAULT_AI_MAX_ADJUSTMENT,
+        });
+      }
+      const aiScore = aiResult?.adjustedScore ?? null;
+      const finalScore = aiScore !== null ? aiScore : deterministicScore;
+
+      const { effectiveBand, downgradeReason } = applyBandGating(
+        getScoreBand(finalScore), breakdown.confidence, isSparse,
+        { excellentMinConfidence: this.thresholds.excellentMinConfidence, sparseMaxBand: this.thresholds.sparseMaxBand },
+      );
+
+      const surfacedStatus = hf.status === HardFilterStatus.REVIEW ? SurfacedStatus.REVIEW : SurfacedStatus.PASS;
+      const missing = this.getMissingFields(buy, sell);
+      const explanation = generateMatchExplanation(
+        finalScore, effectiveBand, surfacedStatus,
+        breakdown.components, hf, fieldMatches, missing,
+        downgradeReason, semanticSubScores,
+      );
+      const { effectiveRankScore, rankingFactors } = calculateEffectiveRankScore({
+        finalScore, confidence: breakdown.confidence, hardFilterStatus: hf.status,
+        isSparse, retrievalScore: retrieval.totalScore, network,
+        buy, sell,
+      });
+
+      results.push(this.buildMatchResult({
+        buyRequest: buy, offering: sell, finalScore, deterministicScore, aiScore,
+        effectiveRankScore, retrievalBreakdown: retrieval, rankingFactors,
+        effectiveBand, surfacedStatus, breakdown, hf, explanation, aiResult, network,
+        includeExplanation: true,
+      }));
+    }
+
+    const deduped = dedupeByKeys(results, m => {
+      const owner = inputs.targetOwnerByTargetId?.get(m.buyRequestId);
+      return {
+        primary: m.buyRequestId,
+        userId: owner?.userId,
+        organizationId: owner?.organizationId,
+        fallback: normalizeFallbackKey(m.buyerNeed, owner?.company),
+      };
+    });
+    const sorted = sortByEffectiveRank(deduped);
+    const ranked = sorted.slice(0, limit).map((m, i) => ({ ...m, rank: i + 1 }));
+    stats.finalMatches = ranked.length;
+    stats.avgScore = ranked.length > 0 ? ranked.reduce((s, m) => s + m.finalScore, 0) / ranked.length : 0;
+    stats.avgConfidence = ranked.length > 0 ? ranked.reduce((s, m) => s + m.confidence, 0) / ranked.length : 0;
+    stats.processingTimeMs = Date.now() - startTime;
+
+    return {
+      success: true, matches: ranked, buyRequestId: 'N/A',
+      buyRequestName: `Buyers for ${sell.productServiceName}`,
+      totalCandidates: buyRequests.length, filteredCount: ranked.length,
       processingTimeMs: stats.processingTimeMs, stats,
     };
   }
@@ -134,29 +334,63 @@ export class DealMatchingService {
   }
 
   // ==========================================================================
-  // BUILD MATCH RESULT — v4: surfacedStatus, buyerRole
+  // BUILD MATCH RESULT — populates v4.1 BaseMatchResult fields
   // ==========================================================================
 
-  private buildMatchResult(
-    buy: BuyRequest, sell: SellOffering, finalScore: number,
-    effectiveBand: ScoreBand, surfacedStatus: SurfacedStatus,
-    breakdown: any, hf: any, explanation: MatchExplanation,
-    includeExplanation: boolean,
-  ): DealMatchResult {
+  private buildMatchResult(args: {
+    buyRequest: BuyRequest; offering: SellOffering;
+    finalScore: number; deterministicScore: number; aiScore: number | null;
+    effectiveRankScore: number;
+    retrievalBreakdown: RetrievalBreakdown;
+    rankingFactors: RankingFactors;
+    effectiveBand: ScoreBand; surfacedStatus: SurfacedStatus;
+    breakdown: ScoreBreakdown; hf: HardFilterResult;
+    explanation: MatchExplanation;
+    aiResult: AIValidationResult | null;
+    network: NetworkContext | null;
+    includeExplanation: boolean;
+  }): DealMatchResult {
+    const {
+      buyRequest: buy, offering: sell, finalScore, deterministicScore, aiScore,
+      effectiveRankScore, retrievalBreakdown, rankingFactors,
+      effectiveBand, surfacedStatus, breakdown, hf, explanation, aiResult, network, includeExplanation,
+    } = args;
+
     const industryFit = this.calculateIndustryFit(buy, sell);
     const requirementsFit = this.calculateRequirementsFit(buy, sell);
     const budgetFit = this.calculateBudgetFit(buy, sell);
     const personaFit = this.calculateBuyerPersonaFit(buy, sell);
 
+    const networkRelationship: NetworkRelationship | null = network ? {
+      degree: network.isFirstDegree ? 1 : network.isSecondDegree ? 2 : null,
+      isFirstDegree: network.isFirstDegree,
+      isSecondDegree: network.isSecondDegree,
+      sameOrganization: network.sameOrganization,
+      mutualConnections: network.mutualConnections,
+      relationshipStrength: network.relationshipStrength,
+      notes: network.notes ?? [],
+    } : null;
+
     return {
       id: generateMatchId('deal', buy.id, sell.id),
       sourceId: buy.id, targetId: sell.id,
-      finalScore, scoreBand: effectiveBand, surfacedStatus,
+      finalScore, deterministicScore, aiScore,
+      effectiveRankScore,
+      scoreBand: effectiveBand,
+      matchLevel: effectiveBand,
+      surfacedStatus,
       confidence: breakdown.confidence,
       hardFilterStatus: hf.status,
       hardFilterReason: hf.reason !== 'NONE' ? hf.reason : null,
+      retrievalScore: retrievalBreakdown.totalScore,
+      retrievalBreakdown,
+      rankingFactors,
       scoreBreakdown: breakdown,
       explanation: includeExplanation ? explanation : {} as MatchExplanation,
+      aiReasoning: aiResult?.reasoning ?? null,
+      aiGreenFlags: aiResult?.greenFlags ?? [],
+      aiRedFlags: aiResult?.redFlags ?? [],
+      networkRelationship,
       rank: 0, createdAt: new Date(), expiresAt: getExpiryDate(7),
       buyRequestId: buy.id, sellOfferingId: sell.id,
       sellerName: sell.productServiceName,
@@ -173,7 +407,7 @@ export class DealMatchingService {
   }
 
   // ==========================================================================
-  // FIT HELPERS
+  // FIT HELPERS (preserved from v4.0)
   // ==========================================================================
 
   private calculateIndustryFit(buy: BuyRequest, sell: SellOffering) {
@@ -244,21 +478,44 @@ export class DealMatchingService {
   }
 
   // ==========================================================================
-  // SINGLE MATCH
+  // SINGLE MATCH (preserved API)
   // ==========================================================================
 
-  async calculateSingleMatch(buy: BuyRequest, sell: SellOffering, includeExplanation = true): Promise<DealMatchResult | null> {
+  async calculateSingleMatch(
+    buy: BuyRequest, sell: SellOffering, includeExplanation = true,
+    inputs: DealMatchInputs = {},
+  ): Promise<DealMatchResult | null> {
+    const network = inputs.networkByTargetId?.get(sell.id) ?? null;
+
+    const retrieval = calculateRetrievalScore(buy, sell, network);
     const hf = runDealHardFilters(buy, sell);
     if (hf.status === HardFilterStatus.FAIL) return null;
 
-    const { finalScore, breakdown, fieldMatches, semanticSubScores } = calculateDealMatchScore(buy, sell, this.weights);
-    if (finalScore < this.thresholds.minScore) return null;
+    const { finalScore: deterministicScore, breakdown, fieldMatches, semanticSubScores } =
+      calculateDealMatchScore(buy, sell, this.weights, network);
+    if (deterministicScore < this.thresholds.minScore) return null;
     if (breakdown.confidence < this.thresholds.minConfidence) return null;
 
     const isSparse = Math.min(buy.dataQualityScore || 0, sell.dataQualityScore || 0) < this.thresholds.sparseDataThreshold;
+
+    let aiResult: AIValidationResult | null = null;
+    const aiEnabled = inputs.enableAIValidation ?? this.aiValidator.isEnabled();
+    if (aiEnabled) {
+      // hf.status cannot be FAIL here (filtered above) — AI never overrides FAIL.
+      aiResult = await this.aiValidator.validateDirectMatch({
+        matchMode: 'BUY_TO_NETWORK_SELLERS',
+        buyRequest: buy, sellOffering: sell,
+        deterministicScore, scoreBreakdown: breakdown, hardFilter: hf,
+        networkContext: network,
+        maxAdjustment: inputs.maxAIAdjustment ?? DEFAULT_AI_MAX_ADJUSTMENT,
+      });
+    }
+    const aiScore = aiResult?.adjustedScore ?? null;
+    const finalScore = aiScore !== null ? aiScore : deterministicScore;
+
     const { effectiveBand, downgradeReason } = applyBandGating(
       getScoreBand(finalScore), breakdown.confidence, isSparse,
-      { strongMinConfidence: this.thresholds.strongMinConfidence, sparseMaxBand: this.thresholds.sparseMaxBand },
+      { excellentMinConfidence: this.thresholds.excellentMinConfidence, sparseMaxBand: this.thresholds.sparseMaxBand },
     );
 
     const surfacedStatus = hf.status === HardFilterStatus.REVIEW ? SurfacedStatus.REVIEW : SurfacedStatus.PASS;
@@ -269,64 +526,18 @@ export class DealMatchingService {
       downgradeReason, semanticSubScores,
     );
 
-    return this.buildMatchResult(buy, sell, finalScore, effectiveBand, surfacedStatus, breakdown, hf, explanation, includeExplanation);
-  }
+    const { effectiveRankScore, rankingFactors } = calculateEffectiveRankScore({
+      finalScore, confidence: breakdown.confidence, hardFilterStatus: hf.status,
+      isSparse, retrievalScore: retrieval.totalScore, network,
+      buy, sell,
+    });
 
-  // ==========================================================================
-  // REVERSE MATCHING
-  // ==========================================================================
-
-  async findBuyersForSeller(sell: SellOffering, buyRequests: BuyRequest[], limit = 50): Promise<DealMatchResponse> {
-    const startTime = Date.now();
-    const stats: MatchingStats = {
-      totalCandidates: buyRequests.length, passedHardFilters: 0, failedHardFilters: 0,
-      reviewCandidates: 0, scoredCandidates: 0,
-      suppressedByConfidence: 0, suppressedByScore: 0,
-      finalMatches: 0, avgScore: 0, avgConfidence: 0, processingTimeMs: 0,
-    };
-    const results: DealMatchResult[] = [];
-
-    for (const buy of buyRequests) {
-      if (!buy.isActive || buy.isDeleted) { stats.failedHardFilters++; continue; }
-      const hf = runDealHardFilters(buy, sell);
-      if (hf.status === HardFilterStatus.FAIL) { stats.failedHardFilters++; continue; }
-      if (hf.status === HardFilterStatus.REVIEW) stats.reviewCandidates++;
-      stats.passedHardFilters++;
-
-      const { finalScore, breakdown, fieldMatches, semanticSubScores } = calculateDealMatchScore(buy, sell, this.weights);
-      if (finalScore < this.thresholds.minScore) { stats.suppressedByScore++; continue; }
-      if (breakdown.confidence < this.thresholds.minConfidence) { stats.suppressedByConfidence++; continue; }
-      stats.scoredCandidates++;
-
-      const isSparse = Math.min(buy.dataQualityScore || 0, sell.dataQualityScore || 0) < this.thresholds.sparseDataThreshold;
-      const { effectiveBand, downgradeReason } = applyBandGating(
-        getScoreBand(finalScore), breakdown.confidence, isSparse,
-        { strongMinConfidence: this.thresholds.strongMinConfidence, sparseMaxBand: this.thresholds.sparseMaxBand },
-      );
-
-      const surfacedStatus = hf.status === HardFilterStatus.REVIEW ? SurfacedStatus.REVIEW : SurfacedStatus.PASS;
-      const missing = this.getMissingFields(buy, sell);
-      const explanation = generateMatchExplanation(
-        finalScore, effectiveBand, surfacedStatus,
-        breakdown.components, hf, fieldMatches, missing,
-        downgradeReason, semanticSubScores,
-      );
-      results.push(this.buildMatchResult(buy, sell, finalScore, effectiveBand, surfacedStatus, breakdown, hf, explanation, true));
-    }
-
-    const sorted = sortDealMatches(results);
-    const ranked = assignDealRanks(sorted.slice(0, limit));
-    stats.finalMatches = ranked.length;
-    stats.avgScore = ranked.length > 0 ? ranked.reduce((s, m) => s + m.finalScore, 0) / ranked.length : 0;
-    stats.avgConfidence = ranked.length > 0 ? ranked.reduce((s, m) => s + m.confidence, 0) / ranked.length : 0;
-    stats.processingTimeMs = Date.now() - startTime;
-
-    return {
-      success: true, matches: ranked, buyRequestId: 'N/A',
-      buyRequestName: `Buyers for ${sell.productServiceName}`,
-      totalCandidates: buyRequests.length, filteredCount: ranked.length,
-      processingTimeMs: stats.processingTimeMs, stats,
-    };
+    return this.buildMatchResult({
+      buyRequest: buy, offering: sell, finalScore, deterministicScore, aiScore,
+      effectiveRankScore, retrievalBreakdown: retrieval, rankingFactors,
+      effectiveBand, surfacedStatus, breakdown, hf, explanation,
+      aiResult, network, includeExplanation,
+    });
   }
 
   // ==========================================================================

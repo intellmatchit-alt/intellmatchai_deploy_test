@@ -14,19 +14,19 @@ interface PillSelectorProps {
 
 const colorMap = {
   emerald: {
-    active: 'bg-emerald-400 text-[#042820] border-emerald-400/80 shadow-emerald-500/10',
+    active: 'bg-[#3b82f633] text-[#93c5fd] border-blue-500/50',
     inactive: 'bg-th-surface text-th-text border-th-border hover:bg-white/[0.12]',
   },
   blue: {
-    active: 'bg-emerald-400 text-[#042820] border-emerald-400/80 shadow-emerald-500/10',
+    active: 'bg-[#3b82f633] text-[#93c5fd] border-blue-500/50',
     inactive: 'bg-th-surface text-th-text border-th-border hover:bg-white/[0.12]',
   },
   purple: {
-    active: 'bg-emerald-400 text-[#042820] border-emerald-400/80 shadow-emerald-500/10',
+    active: 'bg-[#3b82f633] text-[#93c5fd] border-blue-500/50',
     inactive: 'bg-th-surface text-th-text border-th-border hover:bg-white/[0.12]',
   },
   amber: {
-    active: 'bg-emerald-400 text-[#042820] border-emerald-400/80 shadow-emerald-500/10',
+    active: 'bg-[#3b82f633] text-[#93c5fd] border-blue-500/50',
     inactive: 'bg-th-surface text-th-text border-th-border hover:bg-white/[0.12]',
   },
 };
@@ -42,7 +42,7 @@ export function PillSelector({ options, value, onChange, accentColor = 'purple' 
           type="button"
           onClick={() => onChange(value === opt.value ? '' : opt.value)}
           className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-all ${
-            value === opt.value ? colors.active + ' shadow-sm' : colors.inactive
+            value === opt.value ? colors.active : colors.inactive
           }`}
         >
           {opt.label}
