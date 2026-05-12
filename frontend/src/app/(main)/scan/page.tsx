@@ -1310,7 +1310,7 @@ export default function ScanPage() {
                   onClick={() => handleCameraCapture("front")}
                   className="block md:hidden flex-1 h-full flex flex-col items-center justify-center gap-2 hover:bg-emerald-500/10 rounded-lg transition-all"
                 >
-                  <Camera24Regular className="w-8 h-8 text-emerald-400" />
+                  <Camera24Regular className="w-8 h-8 text-[#93c5fd]" />
                   <span className="text-xs text-th-text-t">Take Photo</span>
                 </button>
                 <div className=" block md:hidden w-px h-12 bg-white/10" />
@@ -1318,7 +1318,7 @@ export default function ScanPage() {
                   onClick={() => handleCapture("front")}
                   className="flex-1 h-full flex flex-col items-center justify-center gap-2 hover:bg-emerald-500/10 rounded-lg transition-all"
                 >
-                  <Image24Regular className="w-8 h-8 text-emerald-400" />
+                  <Image24Regular className="w-8 h-8 text-[#93c5fd]" />
                   <span className="text-xs text-th-text-t">Upload Image</span>
                 </button>
               </div>
@@ -1389,7 +1389,7 @@ export default function ScanPage() {
         {cardImages.length > 0 && (
           <button
             onClick={processAllImages}
-            className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-emerald-600 text-white font-semibold rounded-xl transition-all shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 flex items-center justify-center gap-2"
+            className="w-full py-4 bg-[#3b82f633] hover:from-emerald-600 hover:to-emerald-600 text-white font-semibold rounded-xl transition-all shadow-lg shadow-[#3b82f6]/25 hover:shadow-[#3b82f6]/40 flex items-center justify-center gap-2"
           >
             <Sparkle24Regular className="w-5 h-5" />
             {t.scan?.scanNow || "Scan"}{" "}
@@ -1784,13 +1784,13 @@ export default function ScanPage() {
         <div className="bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-5 mb-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-medium text-th-text flex items-center gap-2">
-              <Sparkle24Regular className="w-4 h-4 text-emerald-400" />
+              <Sparkle24Regular className="w-4 h-4 text-[#93c5fd]" />
               {deepSearchResult
                 ? t?.scan?.profileDataFromWeb || "Profile Data (from Web)"
                 : t?.scan?.suggestedSectors || "Suggested Sectors"}
             </h3>
             {isDeepSearching && (
-              <div className="flex items-center gap-2 text-xs text-emerald-300">
+              <div className="flex items-center gap-2 text-xs text-[#93c5fd]">
                 <div className="w-3 h-3 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
                 {t?.scan?.searchingWebDots || "Searching web..."}
               </div>
@@ -1837,7 +1837,7 @@ export default function ScanPage() {
                     onClick={() => toggleSector(sector)}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                       selectedSectors.includes(sector)
-                        ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25"
+                        ? "bg-[#3b82f633] text-white shadow-lg shadow-[#3b82f6]/25"
                         : "bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h"
                     }`}
                   >
@@ -1969,7 +1969,7 @@ export default function ScanPage() {
           </button>
           <button onClick={handleConfirm} className="relative flex-1 group">
             <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl blur-lg opacity-50 group-hover:opacity-80 transition-opacity" />
-            <span className="relative flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all">
+            <span className="relative flex items-center justify-center gap-2 w-full py-3 bg-[#3b82f633] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all">
               {t?.scan?.saveContact || "Save Contact"}
             </span>
           </button>
@@ -1993,7 +1993,7 @@ export default function ScanPage() {
           {t?.scan?.savingContact || "Saving Contact..."}
         </h2>
         <p className="text-th-text-t mt-2 flex items-center justify-center gap-2">
-          <Sparkle24Regular className="w-4 h-4 text-emerald-400" />
+          <Sparkle24Regular className="w-4 h-4 text-[#93c5fd]" />
           {t?.scan?.enrichingProfile || "Enriching profile with AI"}
         </p>
       </div>
@@ -2025,7 +2025,7 @@ export default function ScanPage() {
             className="relative w-full group"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl blur-lg opacity-50 group-hover:opacity-80 transition-opacity" />
-            <span className="relative flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all">
+            <span className="relative flex items-center justify-center gap-2 w-full py-3 bg-[#3b82f633] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all">
               {t?.scan?.viewContacts || "View Contacts"}
             </span>
           </button>

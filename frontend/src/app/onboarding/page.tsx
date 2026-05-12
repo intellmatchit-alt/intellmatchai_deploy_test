@@ -63,7 +63,7 @@ import {
 const EditableIndicator = ({ show }: { show: boolean }) => {
   if (!show) return null;
   return (
-    <div className="absolute -top-2 end-2 flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-[10px] text-emerald-400 z-10">
+    <div className="absolute -top-2 end-2 flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-[10px] text-[#93c5fd] z-10">
       <Edit16Regular className="w-3 h-3" />
       <span>Editable</span>
     </div>
@@ -287,7 +287,7 @@ function BioPreviewDialog({
             <button
               type="button"
               onClick={handleSave}
-              className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-lg hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+              className="px-4 py-2 bg-[#3b82f633] text-white font-thin rounded-lg hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all"
             >
               {t.common?.save || 'Save'}
             </button>
@@ -357,7 +357,7 @@ function StepIndicator({ currentStep, totalSteps }: { currentStep: number; total
             <div
               className={`h-1 flex-1 rounded-full transition-all duration-300 ${
                 index <= currentStep
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                  ? 'bg-[#3b82f633]'
                   : 'bg-th-surface-h'
               }`}
             />
@@ -647,7 +647,7 @@ function SocialCVStep({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
-                  <DocumentText24Regular className="w-5 h-5 text-emerald-400" />
+                  <DocumentText24Regular className="w-5 h-5 text-[#93c5fd]" />
                 </div>
                 <div>
                   <p className="text-th-text font-medium text-sm">{cvFile.name}</p>
@@ -699,7 +699,7 @@ function SocialCVStep({
                 <span className="text-sm font-medium text-th-text">
                   {t.onboarding.enhanceWithWebSearch?.title || 'Enhance with Online Search'}
                 </span>
-                <span className="px-1.5 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded text-[10px] font-medium text-emerald-400">
+                <span className="px-1.5 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded text-[10px] font-medium text-[#93c5fd]">
                   Beta
                 </span>
               </div>
@@ -755,7 +755,7 @@ function ProfileStep({
   return (
     <div className="space-y-5">
       <p className="text-sm text-th-text-s mb-4 flex items-center gap-2">
-        <Sparkle24Regular className="w-5 h-5 text-emerald-400" />
+        <Sparkle24Regular className="w-5 h-5 text-[#93c5fd]" />
         {t.onboarding.reviewStep?.description || 'Review your profile information'}
       </p>
 
@@ -829,7 +829,7 @@ function ProfileStep({
           <button
             type="button"
             onClick={() => setIsBioDialogOpen(true)}
-            className="flex items-center gap-1.5 px-2 py-1 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-2 py-1 text-xs text-[#93c5fd] hover:text-[#93c5fd] hover:bg-emerald-500/10 rounded-lg transition-colors"
           >
             <FullScreenMaximize24Regular className="w-4 h-4" />
             {t.onboarding.bioPreview?.expand || 'Expand'}
@@ -889,7 +889,7 @@ function ProfileStep({
                           navigator.clipboard.writeText(bioSummary);
                           toast.success(t.onboarding.cvBio?.copiedToClipboard || 'Copied to clipboard');
                         }}
-                        className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-th-text-t hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                        className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-th-text-t hover:text-[#93c5fd] hover:bg-emerald-500/10 rounded-lg transition-colors"
                         title={t.onboarding.cvBio?.copyBio || 'Copy bio'}
                       >
                         <Copy24Regular className="w-3.5 h-3.5" />
@@ -901,7 +901,7 @@ function ProfileStep({
                           onClick={() => {
                             navigator.share({ text: bioSummary }).catch(() => {});
                           }}
-                          className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-th-text-t hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                          className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-th-text-t hover:text-[#93c5fd] hover:bg-emerald-500/10 rounded-lg transition-colors"
                           title={t.onboarding.cvBio?.shareBio || 'Share bio'}
                         >
                           <Share24Regular className="w-3.5 h-3.5" />
@@ -939,7 +939,7 @@ function ProfileStep({
                           navigator.clipboard.writeText(bioFull);
                           toast.success(t.onboarding.cvBio?.copiedToClipboard || 'Copied to clipboard');
                         }}
-                        className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-th-text-t hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                        className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-th-text-t hover:text-[#93c5fd] hover:bg-emerald-500/10 rounded-lg transition-colors"
                         title={t.onboarding.cvBio?.copyBio || 'Copy bio'}
                       >
                         <Copy24Regular className="w-3.5 h-3.5" />
@@ -951,7 +951,7 @@ function ProfileStep({
                           onClick={() => {
                             navigator.share({ text: bioFull }).catch(() => {});
                           }}
-                          className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-th-text-t hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                          className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-th-text-t hover:text-[#93c5fd] hover:bg-emerald-500/10 rounded-lg transition-colors"
                           title={t.onboarding.cvBio?.shareBio || 'Share bio'}
                         >
                           <Share24Regular className="w-3.5 h-3.5" />
@@ -1075,7 +1075,7 @@ function SectorsStep({
                 onClick={() => toggleItem(item.id)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                   isSelected
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white pe-8'
+                    ? 'bg-[#3b82f633] text-white pe-8'
                     : 'bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'
                 } ${item.isCustom && !isSelected ? 'border-dashed' : ''}`}
               >
@@ -1121,7 +1121,7 @@ function SectorsStep({
           type="button"
           onClick={handleAddCustom}
           disabled={!customInput.trim()}
-          className="px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl hover:bg-emerald-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+          className="px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 text-[#93c5fd] rounded-xl hover:bg-emerald-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
         >
           {t.common?.add || 'Add'}
         </button>
@@ -1293,7 +1293,7 @@ function SkillsInterestsStep({
                   onClick={() => toggleSkill(item.id)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
                     isSelected
-                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white pe-6'
+                      ? 'bg-[#3b82f633] text-white pe-6'
                       : 'bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'
                   } ${item.isCustom && !isSelected ? 'border-dashed' : ''}`}
                 >
@@ -1336,7 +1336,7 @@ function SkillsInterestsStep({
             type="button"
             onClick={handleAddCustomSkill}
             disabled={!customSkillInput.trim()}
-            className="px-3 py-1.5 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-lg hover:bg-emerald-500/30 transition-all disabled:opacity-50 text-xs"
+            className="px-3 py-1.5 bg-emerald-500/20 border border-emerald-500/30 text-[#93c5fd] rounded-lg hover:bg-emerald-500/30 transition-all disabled:opacity-50 text-xs"
           >
             {t.common?.add || 'Add'}
           </button>
@@ -1368,7 +1368,7 @@ function SkillsInterestsStep({
                   onClick={() => toggleInterest(item.id)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
                     isSelected
-                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white pe-6'
+                      ? 'bg-[#3b82f633] text-white pe-6'
                       : 'bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'
                   } ${item.isCustom && !isSelected ? 'border-dashed' : ''}`}
                 >
@@ -1411,7 +1411,7 @@ function SkillsInterestsStep({
             type="button"
             onClick={handleAddCustomInterest}
             disabled={!customInterestInput.trim()}
-            className="px-3 py-1.5 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-lg hover:bg-emerald-500/30 transition-all disabled:opacity-50 text-xs"
+            className="px-3 py-1.5 bg-emerald-500/20 border border-emerald-500/30 text-[#93c5fd] rounded-lg hover:bg-emerald-500/30 transition-all disabled:opacity-50 text-xs"
           >
             {t.common?.add || 'Add'}
           </button>
@@ -1443,7 +1443,7 @@ function SkillsInterestsStep({
                   onClick={() => toggleHobby(item.id)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
                     isSelected
-                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white pe-6'
+                      ? 'bg-[#3b82f633] text-white pe-6'
                       : 'bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'
                   } ${item.isCustom && !isSelected ? 'border-dashed' : ''}`}
                 >
@@ -1486,7 +1486,7 @@ function SkillsInterestsStep({
             type="button"
             onClick={handleAddCustomHobby}
             disabled={!customHobbyInput.trim()}
-            className="px-3 py-1.5 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-lg hover:bg-emerald-500/30 transition-all disabled:opacity-50 text-xs"
+            className="px-3 py-1.5 bg-emerald-500/20 border border-emerald-500/30 text-[#93c5fd] rounded-lg hover:bg-emerald-500/30 transition-all disabled:opacity-50 text-xs"
           >
             {t.common?.add || 'Add'}
           </button>
@@ -2203,7 +2203,7 @@ function FeatureCardsStep({
       icon: <Lightbulb24Regular className="w-5 h-5" />,
       title: fc?.projects?.title || 'Projects',
       description: fc?.projects?.description || 'Collaboration ideas',
-      color: 'text-emerald-100',
+      color: 'text-[#93c5fd]',
       activeColor: 'border-emerald-400',
       activeBg: 'bg-emerald-500/30',
       activeBorder: 'border-emerald-400',
@@ -2219,7 +2219,7 @@ function FeatureCardsStep({
       icon: <Handshake24Regular className="w-5 h-5" />,
       title: fc?.deals?.title || 'Smart Deals',
       description: fc?.deals?.description || 'Buy or sell solutions',
-      color: 'text-emerald-100',
+      color: 'text-[#93c5fd]',
       activeColor: 'border-emerald-400',
       activeBg: 'bg-emerald-500/30',
       activeBorder: 'border-emerald-400',
@@ -2365,12 +2365,12 @@ function FeatureCardsStep({
                         ? 'bg-yellow-500/20 border-yellow-500/50'
                         : 'bg-emerald-500/10 border-emerald-500/20'
                     }`}>
-                      <Rocket24Regular className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                      <Rocket24Regular className="w-4 h-4 text-[#93c5fd] flex-shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-th-text truncate">{project.title}</p>
                         {project.summary && <p className="text-[10px] text-th-text-t truncate">{project.summary}</p>}
                         <div className="flex flex-wrap gap-1 mt-0.5">
-                          {project.stage && <span className="px-1 py-0.5 bg-emerald-500/20 text-emerald-300 text-[8px] rounded">{STAGE_OPTIONS.find(s => s.id === project.stage)?.label}</span>}
+                          {project.stage && <span className="px-1 py-0.5 bg-emerald-500/20 text-[#93c5fd] text-[8px] rounded">{STAGE_OPTIONS.find(s => s.id === project.stage)?.label}</span>}
                           {project.category && <span className="px-1 py-0.5 bg-blue-500/20 text-blue-300 text-[8px] rounded">{project.category}</span>}
                         </div>
                       </div>
@@ -2399,7 +2399,7 @@ function FeatureCardsStep({
 
               {/* Document Upload */}
               <div className="bg-gradient-to-r from-emerald-500/10 to-blue-500/10 border border-emerald-500/20 rounded-xl p-3">
-                <div className="flex items-center gap-2 text-emerald-400 mb-2">
+                <div className="flex items-center gap-2 text-[#93c5fd] mb-2">
                   <Document24Regular className="w-4 h-4" />
                   <span className="text-xs font-medium">Upload Project Document (Optional)</span>
                 </div>
@@ -2412,7 +2412,7 @@ function FeatureCardsStep({
                 ) : (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 p-2 bg-th-surface rounded-lg">
-                      <Document24Regular className="w-4 h-4 text-emerald-400" />
+                      <Document24Regular className="w-4 h-4 text-[#93c5fd]" />
                       <span className="text-xs text-th-text truncate flex-1">{projFile.name}</span>
                       <button type="button" onClick={() => { setProjFile(null); setProjExtractedFromDoc(false); }} className="text-th-text-t hover:text-th-text">
                         <Dismiss24Regular className="w-4 h-4" />
@@ -2426,7 +2426,7 @@ function FeatureCardsStep({
                         </button>
                         {projIsExtracting && (
                           <div className="w-full h-1.5 bg-th-surface-h rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-300"
+                            <div className="h-full bg-[#3b82f633] rounded-full transition-all duration-300"
                               style={{ width: `${Math.min(projExtractionProgress, 100)}%` }} />
                           </div>
                         )}
@@ -2450,7 +2450,7 @@ function FeatureCardsStep({
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-medium text-neutral-200">Summary *</label>
-                  <button type="button" onClick={() => setProjSummaryExpanded(!projSummaryExpanded)} className="text-[10px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+                  <button type="button" onClick={() => setProjSummaryExpanded(!projSummaryExpanded)} className="text-[10px] text-[#93c5fd] hover:text-[#93c5fd] flex items-center gap-1">
                     {projSummaryExpanded ? <><ChevronUp24Regular className="w-3 h-3" />Less</> : <><ChevronDown24Regular className="w-3 h-3" />More</>}
                   </button>
                 </div>
@@ -2462,7 +2462,7 @@ function FeatureCardsStep({
 
               {/* Advanced Toggle */}
               <button type="button" onClick={() => setProjShowAdvanced(!projShowAdvanced)}
-                className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300">
+                className="flex items-center gap-1 text-xs text-[#93c5fd] hover:text-[#93c5fd]">
                 {projShowAdvanced ? <ChevronUp24Regular className="w-4 h-4" /> : <ChevronDown24Regular className="w-4 h-4" />}
                 {projShowAdvanced ? 'Hide details' : 'Show all fields'}
               </button>
@@ -2473,7 +2473,7 @@ function FeatureCardsStep({
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-xs font-medium text-neutral-200">Detailed Description</label>
-                      <button type="button" onClick={() => setProjDetailedDescExpanded(!projDetailedDescExpanded)} className="text-[10px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+                      <button type="button" onClick={() => setProjDetailedDescExpanded(!projDetailedDescExpanded)} className="text-[10px] text-[#93c5fd] hover:text-[#93c5fd] flex items-center gap-1">
                         {projDetailedDescExpanded ? <><ChevronUp24Regular className="w-3 h-3" />Less</> : <><ChevronDown24Regular className="w-3 h-3" />More</>}
                       </button>
                     </div>
@@ -2507,7 +2507,7 @@ function FeatureCardsStep({
                     <div className="flex flex-wrap gap-1">
                       {STAGE_OPTIONS.map((opt) => (
                         <button key={opt.id} type="button" onClick={() => setProjStage(opt.id as ProjectStage)}
-                          className={`px-2 py-1 rounded text-[10px] font-medium transition-all ${projStage === opt.id ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50' : 'bg-th-surface text-th-text-t border border-th-border hover:bg-th-surface-h'}`}>
+                          className={`px-2 py-1 rounded text-[10px] font-medium transition-all ${projStage === opt.id ? 'bg-emerald-500/20 text-[#93c5fd] border border-emerald-500/50' : 'bg-th-surface text-th-text-t border border-th-border hover:bg-th-surface-h'}`}>
                           {opt.label}
                         </button>
                       ))}
@@ -2527,7 +2527,7 @@ function FeatureCardsStep({
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-xs font-medium text-neutral-200">Looking For {projLookingFor.length > 0 && <span className="text-green-400">({projLookingFor.length})</span>}</label>
-                      <button type="button" onClick={() => setProjLookingForExpanded(!projLookingForExpanded)} className="text-[10px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+                      <button type="button" onClick={() => setProjLookingForExpanded(!projLookingForExpanded)} className="text-[10px] text-[#93c5fd] hover:text-[#93c5fd] flex items-center gap-1">
                         {projLookingForExpanded ? <><ChevronUp24Regular className="w-3 h-3" />Less</> : <><ChevronDown24Regular className="w-3 h-3" />More</>}
                       </button>
                     </div>
@@ -2549,7 +2549,7 @@ function FeatureCardsStep({
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-xs font-medium text-neutral-200">Industry Sectors {projSectorIds.length > 0 && <span className="text-orange-400">({projSectorIds.length})</span>}</label>
-                      <button type="button" onClick={() => setProjSectorsExpanded(!projSectorsExpanded)} className="text-[10px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+                      <button type="button" onClick={() => setProjSectorsExpanded(!projSectorsExpanded)} className="text-[10px] text-[#93c5fd] hover:text-[#93c5fd] flex items-center gap-1">
                         {projSectorsExpanded ? <><ChevronUp24Regular className="w-3 h-3" />Less</> : <><ChevronDown24Regular className="w-3 h-3" />More</>}
                       </button>
                     </div>
@@ -2574,7 +2574,7 @@ function FeatureCardsStep({
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-xs font-medium text-neutral-200">Skills Needed {projSkills.length > 0 && <span className="text-cyan-400">({projSkills.length})</span>}</label>
-                      <button type="button" onClick={() => setProjSkillsExpanded(!projSkillsExpanded)} className="text-[10px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+                      <button type="button" onClick={() => setProjSkillsExpanded(!projSkillsExpanded)} className="text-[10px] text-[#93c5fd] hover:text-[#93c5fd] flex items-center gap-1">
                         {projSkillsExpanded ? <><ChevronUp24Regular className="w-3 h-3" />Less</> : <><ChevronDown24Regular className="w-3 h-3" />More</>}
                       </button>
                     </div>
@@ -2601,7 +2601,7 @@ function FeatureCardsStep({
                     <div className="grid grid-cols-3 gap-1">
                       {[{ id: 'PUBLIC', label: 'Public' }, { id: 'CONNECTIONS_ONLY', label: 'Connections' }, { id: 'PRIVATE', label: 'Private' }].map((opt) => (
                         <button key={opt.id} type="button" onClick={() => setProjVisibility(opt.id as typeof projVisibility)}
-                          className={`px-2 py-1.5 rounded text-[10px] font-medium transition-all ${projVisibility === opt.id ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50' : 'bg-th-surface text-th-text-t border border-th-border hover:bg-th-surface-h'}`}>
+                          className={`px-2 py-1.5 rounded text-[10px] font-medium transition-all ${projVisibility === opt.id ? 'bg-emerald-500/20 text-[#93c5fd] border border-emerald-500/50' : 'bg-th-surface text-th-text-t border border-th-border hover:bg-th-surface-h'}`}>
                           {opt.label}
                         </button>
                       ))}
@@ -2626,7 +2626,7 @@ function FeatureCardsStep({
                   {fc?.cancel || 'Close'}
                 </button>
                 <button type="button" onClick={handleSaveProject} disabled={!projTitle.trim() || !projSummary.trim()}
-                  className={`flex-1 px-3 py-2 ${editingProjectId ? 'bg-gradient-to-r from-yellow-500 to-cyan-500' : 'bg-gradient-to-r from-emerald-500 to-teal-500'} text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 text-sm font-medium`}>
+                  className={`flex-1 px-3 py-2 ${editingProjectId ? 'bg-[#3b82f633]' : 'bg-[#3b82f633]'} text-[#93c5fd] rounded-lg hover:shadow-lg transition-all disabled:opacity-50 text-sm font-thin`}>
                   {editingProjectId ? <><Save24Regular className="w-4 h-4 inline me-1" />Update</> : <><Add24Regular className="w-4 h-4 inline me-1" />{fc?.saveAndClose || 'Save'}</>}
                 </button>
               </div>
@@ -2842,7 +2842,7 @@ function FeatureCardsStep({
                   {fc?.cancel || 'Close'}
                 </button>
                 <button type="button" onClick={handleSaveDeal} disabled={!dealSolutionType.trim() || isSaving}
-                  className={`flex-1 px-3 py-2 ${editingDealId ? 'bg-gradient-to-r from-yellow-500 to-cyan-500' : 'bg-gradient-to-r from-green-500 to-emerald-500'} text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 text-sm font-medium`}>
+                  className={`flex-1 px-3 py-2 ${editingDealId ? 'bg-[#3b82f633]' : 'bg-gradient-to-r from-green-500 to-emerald-500'} text-[#93c5fd] rounded-lg hover:shadow-lg transition-all disabled:opacity-50 text-sm font-thin`}>
                   {isSaving ? (fc?.saving || 'Saving...') : editingDealId ? <><Save24Regular className="w-4 h-4 inline me-1" />Update</> : <><Add24Regular className="w-4 h-4 inline me-1" />{fc?.saveAndClose || 'Save'}</>}
                 </button>
               </div>
@@ -2932,7 +2932,7 @@ function FeatureCardsStep({
                         </button>
                         {pitchIsExtracting && (
                           <div className="w-full h-1.5 bg-th-surface-h rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full transition-all duration-300"
+                            <div className="h-full bg-[#3b82f633] rounded-full transition-all duration-300"
                               style={{ width: `${Math.min(pitchExtractionProgress, 100)}%` }} />
                           </div>
                         )}
@@ -3003,7 +3003,7 @@ function FeatureCardsStep({
                   {fc?.cancel || 'Cancel'}
                 </button>
                 <button type="button" onClick={handleSavePitch} disabled={!pitchDescription.trim() || isSaving}
-                  className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 text-sm font-medium">
+                  className="flex-1 px-3 py-2 bg-[#3b82f633] text-[#93c5fd] rounded-lg hover:shadow-lg transition-all disabled:opacity-50 text-sm font-thin">
                   {isSaving ? (fc?.saving || 'Saving...') : (fc?.saveAndClose || 'Save')}
                 </button>
               </div>
@@ -3174,7 +3174,7 @@ function FeatureCardsStep({
                   {fc?.cancel || 'Close'}
                 </button>
                 <button type="button" onClick={handleSaveJob} disabled={!jobTitle.trim() || !jobIntentType || isSaving}
-                  className={`flex-1 px-3 py-2 ${editingJobId ? 'bg-gradient-to-r from-yellow-500 to-cyan-500' : 'bg-gradient-to-r from-blue-500 to-emerald-500'} text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 text-sm font-medium`}>
+                  className={`flex-1 px-3 py-2 ${editingJobId ? 'bg-[#3b82f633]' : 'bg-gradient-to-r from-blue-500 to-emerald-500'} text-[#93c5fd] rounded-lg hover:shadow-lg transition-all disabled:opacity-50 text-sm font-thin`}>
                   {isSaving ? (fc?.saving || 'Saving...') : editingJobId ? <><Save24Regular className="w-4 h-4 inline me-1" />Update</> : <><Add24Regular className="w-4 h-4 inline me-1" />{fc?.saveAndClose || 'Save'}</>}
                 </button>
               </div>
@@ -3274,7 +3274,7 @@ function ObjectivesStep({
                   <p className="text-sm text-th-text-s mt-1">{item.description}</p>
                 </div>
                 {selected.includes(item.id) && (
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 flex items-center justify-center">
+                  <div className="w-6 h-6 rounded-full bg-[#3b82f633] flex items-center justify-center">
                     <Checkmark24Regular className="w-4 h-4 text-th-text" />
                   </div>
                 )}
@@ -3311,7 +3311,7 @@ function ObjectivesStep({
           type="button"
           onClick={handleAddCustom}
           disabled={!customInput.trim()}
-          className="px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl hover:bg-emerald-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+          className="px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 text-[#93c5fd] rounded-xl hover:bg-emerald-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
         >
           {t.common?.add || 'Add'}
         </button>
@@ -4193,7 +4193,7 @@ function OnboardingContent() {
                     className="relative flex-1 group"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl blur-lg opacity-50 group-hover:opacity-80 transition-opacity" />
-                    <span className="relative flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50">
+                    <span className="relative flex items-center justify-center gap-2 w-full py-3 bg-[#3b82f633] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all disabled:opacity-50">
                       {isEnriching ? (
                         <span className="w-full flex flex-col items-center gap-1">
                           <span className="text-sm">{enrichmentProgress < 100 ? (t.onboarding.buttons?.analyzing || 'Analyzing...') : 'Done!'}</span>
@@ -4220,7 +4220,7 @@ function OnboardingContent() {
                     className="relative flex-1 group"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl blur-lg opacity-50 group-hover:opacity-80 transition-opacity" />
-                    <span className="relative flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50">
+                    <span className="relative flex items-center justify-center gap-2 w-full py-3 bg-[#3b82f633] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all disabled:opacity-50">
                       {isLoading ? (
                         <>
                           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />

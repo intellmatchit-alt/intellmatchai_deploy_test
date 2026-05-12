@@ -229,7 +229,7 @@ function MatchDetailModal({
             <div className="space-y-1.5">
               {match.reasons.map((reason, i) => (
                 <div key={i} className="flex items-start gap-2 text-sm">
-                  <Checkmark24Regular className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <Checkmark24Regular className="w-4 h-4 text-[#93c5fd] flex-shrink-0 mt-0.5" />
                   <span className="text-white">{typeof reason === 'string' ? reason : reason.text}</span>
                 </div>
               ))}
@@ -498,21 +498,21 @@ export default function PitchDetailPage() {
       {/* Processing Progress */}
       {isProcessing && pitchData.progress && (
         <div className="bg-th-surface backdrop-blur-sm border border-emerald-500/30 rounded-xl p-6">
-          <div className="flex items-center gap-2 text-emerald-400 mb-4">
+          <div className="flex items-center gap-2 text-[#93c5fd] mb-4">
             <ArrowSync24Regular className="w-5 h-5 animate-spin" />
             <span className="font-medium">Processing Pitch...</span>
           </div>
           <div className="w-full h-2 bg-th-surface-h rounded-full overflow-hidden mb-3">
-            <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all" style={{ width: `${pitchData.progress.overall}%` }} />
+            <div className="h-full bg-[#3b82f633] rounded-full transition-all" style={{ width: `${pitchData.progress.overall}%` }} />
           </div>
           <div className="space-y-2">
             {pitchData.progress.steps.map((step) => (
               <div key={step.step} className="flex items-center gap-2 text-sm">
                 {step.status === 'COMPLETED' && <CheckmarkCircle24Regular className="w-4 h-4 text-green-400" />}
-                {step.status === 'PROCESSING' && <ArrowSync24Regular className="w-4 h-4 text-emerald-400 animate-spin" />}
+                {step.status === 'PROCESSING' && <ArrowSync24Regular className="w-4 h-4 text-[#93c5fd] animate-spin" />}
                 {step.status === 'FAILED' && <ErrorCircle24Regular className="w-4 h-4 text-red-400" />}
                 {step.status === 'PENDING' && <div className="w-4 h-4 rounded-full border border-th-border" />}
-                <span className={step.status === 'COMPLETED' ? 'text-green-400' : step.status === 'PROCESSING' ? 'text-emerald-400' : 'text-th-text-m'}>
+                <span className={step.status === 'COMPLETED' ? 'text-green-400' : step.status === 'PROCESSING' ? 'text-[#93c5fd]' : 'text-th-text-m'}>
                   {step.step.replace(/_/g, ' ')}
                 </span>
               </div>
@@ -610,7 +610,7 @@ export default function PitchDetailPage() {
       {sections.length > 0 && (
         <div className="bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-6">
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <Document24Regular className="w-5 h-5 text-emerald-400" />
+            <Document24Regular className="w-5 h-5 text-[#93c5fd]" />
             {t.pitch?.sections || 'Pitch Sections'} ({sections.length})
           </h3>
           <div className="space-y-2">
@@ -648,7 +648,7 @@ export default function PitchDetailPage() {
       {needs.length > 0 && (
         <div className="bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-6">
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <Tag24Regular className="w-5 h-5 text-emerald-400" />
+            <Tag24Regular className="w-5 h-5 text-[#93c5fd]" />
             {t.pitch?.needs || 'Identified Needs'} ({needs.length})
           </h3>
           <div className="space-y-2">
@@ -703,7 +703,7 @@ export default function PitchDetailPage() {
           <div className="space-y-4">
             <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Sparkle24Regular className="w-6 h-6 text-emerald-400" />
+                <Sparkle24Regular className="w-6 h-6 text-[#93c5fd]" />
                 {t.pitch?.matches || 'Matches'}
                 {activeCount > 0 && <span className="text-sm font-normal text-th-text-m">({activeCount})</span>}
               </h2>
@@ -800,7 +800,7 @@ export default function PitchDetailPage() {
         <>
           <div className="bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-6">
             <h3 className="text-lg font-semibold text-th-text mb-4 flex items-center gap-2">
-              <PeopleTeam24Regular className="w-5 h-5 text-emerald-400" />
+              <PeopleTeam24Regular className="w-5 h-5 text-[#93c5fd]" />
               Collaborators
             </h3>
             <TeamMembersList sourceType="PITCH" sourceId={pitchId} isOwner={true} />

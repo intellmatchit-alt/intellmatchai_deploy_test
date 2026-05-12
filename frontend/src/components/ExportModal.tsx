@@ -168,7 +168,7 @@ export default function ExportModal({
                       : 'bg-th-surface border-th-border text-th-text-s hover:bg-th-surface-h'
                   }`}
                 >
-                  <div className={`mb-2 ${format === option.id ? 'text-emerald-400' : 'text-th-text-m'}`}>
+                  <div className={`mb-2 ${format === option.id ? 'text-[#93c5fd]' : 'text-th-text-m'}`}>
                     {option.icon}
                   </div>
                   <p className="font-medium">{option.title}</p>
@@ -198,7 +198,7 @@ export default function ExportModal({
                   }`}
                 >
                   <span>{option.label}</span>
-                  <span className={`text-sm ${scope === option.id ? 'text-emerald-400' : 'text-th-text-m'}`}>
+                  <span className={`text-sm ${scope === option.id ? 'text-[#93c5fd]' : 'text-th-text-m'}`}>
                     {option.count} {t.contacts?.title?.toLowerCase() || 'contacts'}
                   </span>
                 </button>
@@ -218,7 +218,7 @@ export default function ExportModal({
           <button
             onClick={handleExport}
             disabled={isExporting || (scope === 'selected' && selectedIds.length === 0)}
-            className="flex-1 px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-3 bg-[#3b82f633] text-white font-thin rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isExporting ? (
               <>

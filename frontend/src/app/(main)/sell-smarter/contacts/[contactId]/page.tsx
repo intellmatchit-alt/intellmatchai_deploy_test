@@ -254,19 +254,19 @@ export default function ContactDetailPage() {
             {/* Contact Info */}
             <div className="flex flex-wrap gap-3 mt-3">
               {contact.email && (
-                <a href={`mailto:${contact.email}`} className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300">
+                <a href={`mailto:${contact.email}`} className="flex items-center gap-1 text-xs text-[#93c5fd] hover:text-[#93c5fd]">
                   <Mail24Regular className="w-3 h-3" />
                   {contact.email}
                 </a>
               )}
               {contact.phone && (
-                <a href={`tel:${contact.phone}`} className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300">
+                <a href={`tel:${contact.phone}`} className="flex items-center gap-1 text-xs text-[#93c5fd] hover:text-[#93c5fd]">
                   <Phone24Regular className="w-3 h-3" />
                   {contact.phone}
                 </a>
               )}
               {contact.linkedinUrl && (
-                <a href={contact.linkedinUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300">
+                <a href={contact.linkedinUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-[#93c5fd] hover:text-[#93c5fd]">
                   <Globe24Regular className="w-3 h-3" />
                   LinkedIn
                 </a>
@@ -322,8 +322,8 @@ export default function ContactDetailPage() {
       {/* Suggested Approach */}
       {result.talkAngle && (
         <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
-          <h3 className="text-sm font-medium text-emerald-300 mb-2">{t.sellSmarter?.suggestedApproach || 'Suggested Approach'}</h3>
-          <p className="text-sm text-emerald-200">{result.talkAngle}</p>
+          <h3 className="text-sm font-medium text-[#93c5fd] mb-2">{t.sellSmarter?.suggestedApproach || 'Suggested Approach'}</h3>
+          <p className="text-sm text-[#93c5fd]">{result.talkAngle}</p>
         </div>
       )}
 
@@ -335,14 +335,14 @@ export default function ContactDetailPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsEditing(!isEditing)}
-                className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                className="flex items-center gap-1 text-xs text-[#93c5fd] hover:text-[#93c5fd] transition-colors"
               >
                 <Edit24Regular className="w-3 h-3" />
                 {isEditing ? (t.common?.cancel || 'Cancel') : (t.common?.edit || 'Edit')}
               </button>
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                className="flex items-center gap-1 text-xs text-[#93c5fd] hover:text-[#93c5fd] transition-colors"
               >
                 <Copy24Regular className="w-3 h-3" />
                 {isCopied ? (t.sellSmarter?.copied || 'Copied!') : (t.sellSmarter?.copy || 'Copy')}
@@ -381,7 +381,7 @@ export default function ContactDetailPage() {
               <h4 className="text-xs text-th-text-m mb-2">{t.sellSmarter?.sectors || 'Sectors'}</h4>
               <div className="flex flex-wrap gap-1">
                 {contact.sectors.map((sector, i) => (
-                  <span key={i} className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  <span key={i} className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/20 text-[#93c5fd] border border-emerald-500/30">
                     {sector}
                   </span>
                 ))}
@@ -452,7 +452,7 @@ export default function ContactDetailPage() {
       {/* View Contact Link */}
       <Link
         href={`/contacts/${contactId}`}
-        className="block w-full text-center py-3 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+        className="block w-full text-center py-3 text-sm text-[#93c5fd] hover:text-[#93c5fd] transition-colors"
       >
         {t.sellSmarter?.viewFullProfile || 'View Full Contact Profile'}
       </Link>

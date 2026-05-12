@@ -153,23 +153,23 @@ function MatchActionsPopup({
   const actions = [
     {
       label: t.matchesPage?.viewMatch || "View Match Details",
-      icon: <Sparkle24Regular className="w-5 h-5 text-emerald-400" />,
+      icon: <Sparkle24Regular className="w-5 h-5 text-[#00d084]" />,
       href: matchHref,
-      accent: "hover:bg-emerald-500/10",
+      accent: "hover:bg-[#00d084]/10",
     },
     {
       label: `${t.matchingHub?.open || "Open"} ${sourceLabel}`,
       sublabel: match.sourceTitle,
-      icon: <SourceIcon className="w-5 h-5 text-blue-400" />,
+      icon: <SourceIcon className="w-5 h-5 text-[#2F80ED]" />,
       href: sourceHref,
-      accent: "hover:bg-blue-500/10",
+      accent: "hover:bg-[#2F80ED]/10",
     },
     {
       label: t.matchesPage?.viewContact || "View Contact",
       sublabel: match.name,
-      icon: <PersonCircle24Regular className="w-5 h-5 text-violet-400" />,
+      icon: <PersonCircle24Regular className="w-5 h-5 text-[#9B51E0]" />,
       href: contactHref,
-      accent: "hover:bg-violet-500/10",
+      accent: "hover:bg-[#9B51E0]/10",
     },
   ];
 
@@ -178,27 +178,27 @@ function MatchActionsPopup({
     actions.push({
       label: t.common?.call || "Call",
       sublabel: match.channels.phone,
-      icon: <Chat24Regular className="w-5 h-5 text-green-400" />,
+      icon: <Chat24Regular className="w-5 h-5 text-[#12D18E]" />,
       href: `tel:${match.channels.phone}`,
-      accent: "hover:bg-green-500/10",
+      accent: "hover:bg-[#12D18E]/10",
     });
   }
   if (match.channels.email) {
     actions.push({
       label: t.common?.email || "Email",
       sublabel: match.channels.email,
-      icon: <Mail24Regular className="w-5 h-5 text-orange-400" />,
+      icon: <Mail24Regular className="w-5 h-5 text-[#F2994A]" />,
       href: `mailto:${match.channels.email}`,
-      accent: "hover:bg-orange-500/10",
+      accent: "hover:bg-[#F2994A]/10",
     });
   }
   if (match.channels.linkedinUrl) {
     actions.push({
       label: "LinkedIn",
       sublabel: undefined,
-      icon: <Open24Regular className="w-5 h-5 text-sky-400" />,
+      icon: <Open24Regular className="w-5 h-5 text-[#2F80ED]" />,
       href: match.channels.linkedinUrl,
-      accent: "hover:bg-sky-500/10",
+      accent: "hover:bg-[#2F80ED]/10",
     });
   }
 
@@ -211,8 +211,8 @@ function MatchActionsPopup({
       <div className="relative w-full max-w-sm mx-4 mb-4 sm:mb-0 bg-[#131b2e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-slide-up">
         {/* Header */}
         <div className="flex items-center gap-3 p-4 border-b border-white/5">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500/30 to-teal-500/30 border border-emerald-500/40 flex items-center justify-center">
-            <span className="text-sm font-bold text-emerald-400">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00d084]/30 to-[#00b870]/30 border border-[#00d084]/40 flex items-center justify-center">
+            <span className="text-sm font-bold text-[#00d084]">
               {Math.round(match.score)}%
             </span>
           </div>
@@ -436,7 +436,7 @@ function StatCard({
 
   const content = (
     <div
-      className={`relative bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-5 hover:bg-th-surface-h transition-colors ${href ? "cursor-pointer" : ""}`}
+      className={`group relative bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-5 hover:bg-th-surface-h hover:border-white/[0.12] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-12px_rgba(0,208,132,0.18)] transition-all duration-200 ${href ? "cursor-pointer" : ""}`}
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
@@ -450,7 +450,7 @@ function StatCard({
       )}
       <div className="flex items-start justify-between mb-4">
         <div
-          className={`w-10 h-10 ${gradient} rounded-xl flex items-center justify-center text-white shadow-lg`}
+          className={`w-10 h-10 ${gradient} rounded-xl flex items-center justify-center text-white shadow-md shadow-black/20 ring-1 ring-white/10 group-hover:scale-[1.03] transition-transform duration-200`}
         >
           {icon}
         </div>
@@ -463,17 +463,17 @@ function StatCard({
           />
         )}
       </div>
-      <p className="text-3xl font-bold text-white">{value}</p>
-      <p className="text-sm text-white/60 mt-1">{label}</p>
+      <p className="text-3xl font-bold text-white tracking-tight tabular-nums leading-none">{value}</p>
+      <p className="text-sm text-white/55 mt-1.5">{label}</p>
       {change !== undefined && changeLabel && (
         <div className="flex items-center gap-1 mt-2">
           {isPositive ? (
-            <ArrowUp24Regular className="w-4 h-4 text-green-400" />
+            <ArrowUp24Regular className="w-4 h-4 text-[#12D18E]" />
           ) : change < 0 ? (
             <ArrowDown24Regular className="w-4 h-4 text-red-400" />
           ) : null}
           <span
-            className={`text-sm font-medium ${isPositive ? "text-green-400" : change < 0 ? "text-red-400" : "text-white/60"}`}
+            className={`text-sm font-medium ${isPositive ? "text-[#12D18E]" : change < 0 ? "text-red-400" : "text-white/60"}`}
           >
             {isPositive ? "+" : ""}
             {change}%
@@ -549,7 +549,7 @@ function RecommendationCard({
         <div className="flex items-start gap-3">
           <div className="relative">
             <Avatar src={avatarUrl} name={name} size="lg" />
-            <div className="absolute -bottom-1 -end-1 w-5 h-5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
+            <div className="absolute -bottom-1 -end-1 w-5 h-5 bg-gradient-to-r from-[#00d084] to-[#00b870] rounded-full flex items-center justify-center">
               <Star24Filled className="w-3 h-3 text-white" />
             </div>
           </div>
@@ -560,14 +560,14 @@ function RecommendationCard({
                 <p className="text-sm text-white/60 truncate">{company}</p>
               </div>
               <div className="flex flex-col items-center ms-2">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-emerald-500/20 to-emerald-500/20 border-2 border-emerald-500/50 flex items-center justify-center">
-                  <span className="text-sm font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-[#00d084]/20 to-[#00d084]/20 border-2 border-[#00d084]/50 flex items-center justify-center">
+                  <span className="text-sm font-bold bg-gradient-to-r from-[#00d084] to-[#00d084] bg-clip-text text-transparent">
                     {score}%
                   </span>
                 </div>
               </div>
             </div>
-            <p className="text-xs text-emerald-400 mt-2">{reason}</p>
+            <p className="text-xs text-[#00d084] mt-2">{reason}</p>
             {tags && tags.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
                 {tags.map((tag, i) => (
@@ -606,7 +606,7 @@ function InsightCard({
   href?: string;
 }) {
   const content = (
-    <div className="bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-sm border border-th-border rounded-xl p-4 hover:border-emerald-500/30 transition-all duration-200 cursor-pointer group h-full">
+    <div className="bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-sm border border-th-border rounded-xl p-4 hover:border-[#00d084]/30 transition-all duration-200 cursor-pointer group h-full">
       <div
         className={`w-10 h-10 ${gradient} rounded-xl flex items-center justify-center text-white mb-3`}
       >
@@ -614,7 +614,7 @@ function InsightCard({
       </div>
       <h3 className="font-medium text-white mb-1">{title}</h3>
       <p className="text-sm text-white/60 mb-3">{description}</p>
-      <span className="text-sm text-emerald-400 group-hover:text-emerald-300 flex items-center gap-1">
+      <span className="text-sm text-[#00d084] group-hover:text-[#00e896] flex items-center gap-1">
         {action}
         <ChevronRight24Regular className="w-4 h-4 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform rtl:rotate-180" />
       </span>
@@ -640,7 +640,7 @@ function NetworkHealthCard({
 }) {
   if (!health) {
     return (
-      <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/10 backdrop-blur-sm border border-emerald-500/20 rounded-xl p-4 animate-pulse">
+      <div className="bg-gradient-to-br from-[#00d084]/10 to-[#00d084]/10 backdrop-blur-sm border border-[#00d084]/20 rounded-xl p-4 animate-pulse">
         <div className="h-4 w-32 bg-th-surface-h rounded mb-4" />
         <div className="h-8 w-16 bg-th-surface-h rounded mb-4" />
         <div className="space-y-3">
@@ -653,12 +653,12 @@ function NetworkHealthCard({
   }
 
   return (
-    <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/10 backdrop-blur-sm border border-emerald-500/20 rounded-xl p-4">
+    <div className="bg-gradient-to-br from-[#00d084]/10 to-[#00d084]/10 backdrop-blur-sm border border-[#00d084]/20 rounded-xl p-4">
       <div className="flex items-center justify-between mb-4">
         <span className="text-sm text-white/60">
           {t.dashboard.overallScore}
         </span>
-        <span className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+        <span className="text-2xl font-bold bg-gradient-to-r from-[#00d084] to-[#00d084] bg-clip-text text-transparent">
           {health.overallScore}/100
         </span>
       </div>
@@ -668,11 +668,11 @@ function NetworkHealthCard({
           <div className="flex items-center gap-2">
             <div className="w-24 h-1.5 bg-th-surface-h rounded-full overflow-hidden">
               <div
-                className="h-full bg-green-500 rounded-full transition-all duration-500"
+                className="h-full bg-[#12D18E] rounded-full transition-all duration-500"
                 style={{ width: `${health.diversity.score}%` }}
               />
             </div>
-            <span className="text-green-400 text-xs">
+            <span className="text-[#12D18E] text-xs">
               {health.diversity.score}%
             </span>
           </div>
@@ -687,11 +687,11 @@ function NetworkHealthCard({
           <div className="flex items-center gap-2">
             <div className="w-24 h-1.5 bg-th-surface-h rounded-full overflow-hidden">
               <div
-                className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                className="h-full bg-[#2F80ED] rounded-full transition-all duration-500"
                 style={{ width: `${health.engagement.score}%` }}
               />
             </div>
-            <span className="text-blue-400 text-xs">
+            <span className="text-[#2F80ED] text-xs">
               {health.engagement.score}%
             </span>
           </div>
@@ -706,11 +706,11 @@ function NetworkHealthCard({
           <div className="flex items-center gap-2">
             <div className="w-24 h-1.5 bg-th-surface-h rounded-full overflow-hidden">
               <div
-                className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                className="h-full bg-[#00d084] rounded-full transition-all duration-500"
                 style={{ width: `${health.growth.score}%` }}
               />
             </div>
-            <span className="text-emerald-400 text-xs">
+            <span className="text-[#00d084] text-xs">
               {health.growth.score}%
             </span>
           </div>
@@ -727,11 +727,11 @@ function NetworkHealthCard({
           <div className="flex items-center gap-2">
             <div className="w-24 h-1.5 bg-th-surface-h rounded-full overflow-hidden">
               <div
-                className="h-full bg-cyan-500 rounded-full transition-all duration-500"
+                className="h-full bg-[#2F80ED] rounded-full transition-all duration-500"
                 style={{ width: `${health.quality.score}%` }}
               />
             </div>
-            <span className="text-cyan-400 text-xs">
+            <span className="text-[#2F80ED] text-xs">
               {health.quality.score}%
             </span>
           </div>
@@ -1162,7 +1162,7 @@ export default function DashboardPage() {
       title: t.dashboard.networkGrowingFast,
       description: `${contactCount} ${t.dashboard.totalContacts.toLowerCase()} — ${contactCount > 20 ? t.dashboard.insightDescriptions?.networkExpanding || "Your professional network is expanding nicely. Keep adding contacts to unlock better AI matches." : t.dashboard.insightDescriptions?.addMoreContacts || "Add more contacts to grow your network and improve match quality."}`,
       action: t.dashboard.viewInsights,
-      gradient: "bg-gradient-to-br from-emerald-500 to-teal-500",
+      gradient: "bg-gradient-to-br from-[#00d084] to-[#00b870]",
       href: "/contacts",
     },
     {
@@ -1170,7 +1170,7 @@ export default function DashboardPage() {
       title: t.dashboard.highValueMatches,
       description: `${matchCount} ${t.dashboard.aiMatches.toLowerCase()} — ${matchCount > 0 ? t.dashboard.insightDescriptions?.aiFoundCollaborators || "AI found potential collaborators based on your skills, sectors, and project interests." : t.dashboard.insightDescriptions?.noMatchesYet || "No matches yet. Create projects or enrich your profile to get AI-powered match suggestions."}`,
       action: t.dashboard.viewMatches,
-      gradient: "bg-gradient-to-br from-blue-500 to-cyan-500",
+      gradient: "bg-gradient-to-br from-[#2F80ED] to-[#2F80ED]",
       href: "/matches",
     },
   ];
@@ -1284,9 +1284,9 @@ export default function DashboardPage() {
       case "HIGH":
         return "bg-red-500/20 text-red-400 border-red-500/30";
       case "MEDIUM":
-        return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
+        return "bg-[#F2994A]/20 text-[#F2994A] border-[#F2994A]/30";
       case "LOW":
-        return "bg-green-500/20 text-green-400 border-green-500/30";
+        return "bg-[#12D18E]/20 text-[#12D18E] border-[#12D18E]/30";
       default:
         return "bg-white/[0.03]0/20 text-white/60 border-neutral-500/30";
     }
@@ -1303,10 +1303,10 @@ export default function DashboardPage() {
     <div className="space-y-6 animate-fade-in pb-6">
       {/* Quick Actions */}
       <section>
-        <h1 className="text-2xl font-bold text-white">
+        <h1 className="text-2xl font-bold text-white tracking-tight leading-tight">
           {getGreeting()}, {user?.name ?? myName}
         </h1>
-        <p className="text-white/60 mb-3">
+        <p className="text-sm text-white/55 mt-1 mb-4">
           {t.dashboard.quickActionsSubtitle ||
             "Jump right in, here are your most-used actions"}
         </p>
@@ -1412,7 +1412,7 @@ export default function DashboardPage() {
                 }}
                 className={`px-3 py-2 text-sm transition-colors ${
                   period === opt.value && !showDatePicker
-                    ? "bg-emerald-500/20 text-emerald-300"
+                    ? "bg-[#00d084]/20 text-[#00e896]"
                     : "text-white/60 hover:bg-th-surface-h"
                 }`}
               >
@@ -1424,7 +1424,7 @@ export default function DashboardPage() {
               onClick={() => setShowDatePicker(!showDatePicker)}
               className={`px-3 py-2 text-sm flex items-center gap-1.5 transition-colors border-s border-th-border ${
                 showDatePicker || period === "custom"
-                  ? "bg-emerald-500/20 text-emerald-300"
+                  ? "bg-[#00d084]/20 text-[#00e896]"
                   : "text-white/60 hover:bg-th-surface-h"
               }`}
             >
@@ -1439,7 +1439,7 @@ export default function DashboardPage() {
                 type="date"
                 value={customFrom}
                 onChange={(e) => setCustomFrom(e.target.value)}
-                className="px-2 py-1.5 bg-th-surface border border-th-border rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                className="px-2 py-1.5 bg-th-surface border border-th-border rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#00d084]/50"
               />
               <span className="text-white/60 text-sm">
                 {t.common?.to || "to"}
@@ -1448,7 +1448,7 @@ export default function DashboardPage() {
                 type="date"
                 value={customTo}
                 onChange={(e) => setCustomTo(e.target.value)}
-                className="px-2 py-1.5 bg-th-surface border border-th-border rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                className="px-2 py-1.5 bg-th-surface border border-th-border rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#00d084]/50"
               />
               <button
                 type="button"
@@ -1458,7 +1458,7 @@ export default function DashboardPage() {
                     setPeriod("custom");
                   }
                 }}
-                className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm rounded-lg transition-colors"
+                className="px-3 py-1.5 bg-[#00d084] hover:bg-[#00b870] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm rounded-lg transition-colors"
               >
                 {t.common?.apply || "Apply"}
               </button>
@@ -1470,11 +1470,11 @@ export default function DashboardPage() {
       {/* Onboarding Progress Card - Show if not completed */}
       {onboardingProgress && !onboardingProgress.isCompleted && (
         <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-emerald-500/20 rounded-xl blur-lg opacity-50" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#00d084]/20 to-[#00d084]/20 rounded-xl blur-lg opacity-50" />
           <div className="relative bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-[#00d084] to-[#00b870] rounded-xl flex items-center justify-center">
                   <PersonCircle24Regular className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -1534,7 +1534,7 @@ export default function DashboardPage() {
                 </div>
                 <Link
                   href="/onboarding"
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-medium rounded-lg hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#00d084] to-[#00b870] text-white text-sm font-medium rounded-lg hover:shadow-lg hover:shadow-[#00d084]/25 transition-all"
                 >
                   {t.dashboard.continueSetup || "Continue Setup"}
                   <ArrowRight24Regular className="w-4 h-4" />
@@ -1548,9 +1548,9 @@ export default function DashboardPage() {
                   key={step}
                   className={`h-1.5 flex-1 rounded-full transition-colors ${
                     step < onboardingProgress.currentStep
-                      ? "bg-gradient-to-r from-emerald-500 to-teal-500"
+                      ? "bg-gradient-to-r from-[#00d084] to-[#00b870]"
                       : step === onboardingProgress.currentStep
-                        ? "bg-emerald-500/50"
+                        ? "bg-[#00d084]/50"
                         : "bg-th-surface-h"
                   }`}
                 />
@@ -1624,7 +1624,7 @@ export default function DashboardPage() {
                   : t.common?.vsLastMonth || "vs last month"
             }
             icon={<People24Regular className="w-5 h-5" />}
-            gradient="bg-gradient-to-br from-emerald-500 to-teal-500"
+            gradient="bg-gradient-to-br from-[#00d084] to-[#00b870]"
             sparklineData={sparklineContacts}
             sparklineColor="#10b981"
             tooltip={t.dashboard.tooltips?.totalContacts}
@@ -1642,7 +1642,7 @@ export default function DashboardPage() {
                   : t.common?.vsLastMonth || "vs last month"
             }
             icon={<Handshake24Regular className="w-5 h-5" />}
-            gradient="bg-gradient-to-br from-blue-500 to-cyan-500"
+            gradient="bg-gradient-to-br from-[#2F80ED] to-[#2F80ED]"
             sparklineData={sparklineMatches}
             sparklineColor="#3b82f6"
             tooltip={t.dashboard.tooltips?.aiMatches}
@@ -1685,10 +1685,10 @@ export default function DashboardPage() {
                   href="/contacts?sector=all"
                   className="flex items-center justify-between mb-1 group"
                 >
-                  <h3 className="text-sm font-medium text-white/70 group-hover:text-emerald-400 transition-colors">
+                  <h3 className="text-sm font-medium text-white/70 group-hover:text-[#00d084] transition-colors">
                     {t.dashboard.contactsBySector || "Contacts by Sector"}
                   </h3>
-                  <span className="text-xs text-white/50 group-hover:text-emerald-400 transition-colors flex items-center gap-1">
+                  <span className="text-xs text-white/50 group-hover:text-[#00d084] transition-colors flex items-center gap-1">
                     {t.common?.viewAll || "View All"}{" "}
                     <ArrowRight24Regular className="w-3 h-3 rtl:rotate-180" />
                   </span>
@@ -1824,12 +1824,12 @@ export default function DashboardPage() {
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-              <TaskListSquareAdd24Regular className="w-5 h-5 text-cyan-400" />
+              <TaskListSquareAdd24Regular className="w-5 h-5 text-[#2F80ED]" />
               {t.dashboard.tasksAndReminders || "Tasks & Reminders"}
             </h2>
             <Link
               href="/calendar"
-              className="flex items-center gap-1 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+              className="flex items-center gap-1 text-sm text-[#00d084] hover:text-[#00e896] transition-colors"
             >
               {t.common.viewAll}
               <ArrowRight24Regular className="w-4 h-4 rtl:rotate-180" />
@@ -1840,7 +1840,7 @@ export default function DashboardPage() {
             {reminders.length > 0 && (
               <div className="bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <Clock24Regular className="w-4 h-4 text-emerald-400" />
+                  <Clock24Regular className="w-4 h-4 text-[#00d084]" />
                   <h3 className="text-sm font-medium text-white/70">
                     {t.dashboard.remindersCount || "Reminders"} (
                     {reminders.filter((r) => !r.isCompleted).length})
@@ -1865,7 +1865,7 @@ export default function DashboardPage() {
                             {new Date(reminder.reminderAt).toLocaleString()}
                           </p>
                           {reminder.contact && (
-                            <span className="text-xs text-emerald-400">
+                            <span className="text-xs text-[#00d084]">
                               {reminder.contact.fullName}
                             </span>
                           )}
@@ -1906,7 +1906,7 @@ export default function DashboardPage() {
             {tasks.length > 0 && (
               <div className="bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <TaskListSquareAdd24Regular className="w-4 h-4 text-cyan-400" />
+                  <TaskListSquareAdd24Regular className="w-4 h-4 text-[#2F80ED]" />
                   <h3 className="text-sm font-medium text-white/70">
                     {t.dashboard.tasksCount || "Tasks"} (
                     {tasks.filter((t) => t.status !== "COMPLETED").length})
@@ -1941,7 +1941,7 @@ export default function DashboardPage() {
                             </p>
                           )}
                           {task.contact && (
-                            <span className="text-xs text-cyan-400">
+                            <span className="text-xs text-[#2F80ED]">
                               {task.contact.fullName}
                             </span>
                           )}
@@ -1975,7 +1975,7 @@ export default function DashboardPage() {
                               e.stopPropagation();
                               playVoice(task.id, task.voiceNoteUrl!);
                             }}
-                            className="p-1.5 hover:bg-th-surface-h rounded-lg text-cyan-400"
+                            className="p-1.5 hover:bg-th-surface-h rounded-lg text-[#2F80ED]"
                           >
                             {playingAudio === task.id ? (
                               <Pause24Regular className="w-4 h-4" />
@@ -2007,9 +2007,9 @@ export default function DashboardPage() {
               className="flex items-start gap-3 group animate-slide-up-fade active:scale-[0.98] transition-transform"
               style={{ animationDelay: `${i * 100}ms` }}
             >
-              <CheckmarkCircle24Regular className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+              <CheckmarkCircle24Regular className="w-5 h-5 text-[#12D18E] flex-shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-white font-medium group-hover:text-green-300 transition-colors">
+                <p className="text-sm text-white font-medium group-hover:text-[#00e896] transition-colors">
                   {insight.title}
                 </p>
                 <p className="text-xs text-white/60">{insight.description}</p>
@@ -2038,7 +2038,7 @@ export default function DashboardPage() {
               </h2>
               <Link
                 href="/matches"
-                className="flex items-center gap-1 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+                className="flex items-center gap-1 text-sm text-[#00d084] hover:text-[#00e896] transition-colors"
               >
                 {t.common.viewAll}
                 <ArrowRight24Regular className="w-4 h-4 rtl:rotate-180" />
@@ -2072,7 +2072,7 @@ export default function DashboardPage() {
                           e.stopPropagation();
                           setSelectedMatch(match);
                         }}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-emerald-500/15 text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/25 active:scale-95 transition-all cursor-pointer"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-[#00d084]/15 text-[#00d084] border-[#00d084]/25 hover:bg-[#00d084]/25 active:scale-95 transition-all cursor-pointer"
                       >
                         {t.common?.actions || "Actions"}
                       </button>
@@ -2087,7 +2087,7 @@ export default function DashboardPage() {
                   </p>
                   <Link
                     href="/matching"
-                    className="text-emerald-400 hover:text-emerald-300 text-sm mt-2 inline-block"
+                    className="text-[#00d084] hover:text-[#00e896] text-sm mt-2 inline-block"
                   >
                     {t.dashboard.goToMatching || "Go to Matching"}
                   </Link>
@@ -2105,14 +2105,14 @@ export default function DashboardPage() {
                     "Collaboration Requests"}
                 </h2>
                 {pendingCollabRequests.length > 0 && (
-                  <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full bg-violet-500 text-white text-[10px] font-bold leading-none">
+                  <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full bg-[#9B51E0] text-white text-[10px] font-bold leading-none">
                     {pendingCollabRequests.length}
                   </span>
                 )}
               </div>
               <Link
                 href="/collaborations"
-                className="flex items-center gap-1 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+                className="flex items-center gap-1 text-sm text-[#00d084] hover:text-[#00e896] transition-colors"
               >
                 {t.common.viewAll}
                 <ArrowRight24Regular className="w-4 h-4 rtl:rotate-180" />
@@ -2150,7 +2150,7 @@ export default function DashboardPage() {
                           setCollabConfirm({ id: req.id, action: "accept" })
                         }
                         disabled={!!collabActionLoading}
-                        className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors disabled:opacity-50"
+                        className="px-2.5 py-1 rounded-lg text-xs font-medium bg-[#00d084]/20 text-[#00d084] hover:bg-[#00d084]/30 transition-colors disabled:opacity-50"
                       >
                         {collabActionLoading === req.id + "-accept"
                           ? "..."
@@ -2230,7 +2230,7 @@ export default function DashboardPage() {
                     disabled={!!collabActionLoading}
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors disabled:opacity-50 ${
                       collabConfirm.action === "accept"
-                        ? "bg-emerald-600 hover:bg-emerald-500"
+                        ? "bg-[#00b870] hover:bg-[#00d084]"
                         : "bg-red-600 hover:bg-red-500"
                     }`}
                   >
@@ -2253,7 +2253,7 @@ export default function DashboardPage() {
               </h2>
               <Link
                 href="/messages"
-                className="flex items-center gap-1 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+                className="flex items-center gap-1 text-sm text-[#00d084] hover:text-[#00e896] transition-colors"
               >
                 {t.common.viewAll}
                 <ArrowRight24Regular className="w-4 h-4 rtl:rotate-180" />
@@ -2274,7 +2274,7 @@ export default function DashboardPage() {
                         size="md"
                       />
                       {conv.otherUser.isOnline && (
-                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-th-surface" />
+                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#12D18E] border-2 border-th-surface" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -2300,7 +2300,7 @@ export default function DashboardPage() {
                           {conv.lastMessage?.content || "Attachment"}
                         </p>
                         {conv.unreadCount > 0 && (
-                          <span className="min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-emerald-500 text-white text-[10px] font-bold flex-shrink-0">
+                          <span className="min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-[#00d084] text-white text-[10px] font-bold flex-shrink-0">
                             {conv.unreadCount > 99 ? "99+" : conv.unreadCount}
                           </span>
                         )}
@@ -2412,18 +2412,18 @@ function getActivityIcon(type: string): React.ReactNode {
 
 function getActivityIconBg(type: string): string {
   const colors: Record<string, string> = {
-    SCANNED: "bg-emerald-500",
-    SAVED: "bg-blue-500",
-    VIEWED: "bg-cyan-500",
-    NOTED: "bg-yellow-500",
-    MEETING: "bg-green-500",
-    MESSAGE: "bg-cyan-500",
-    FOLLOW_UP: "bg-emerald-500",
-    INTRODUCED: "bg-emerald-500",
-    CALLED: "bg-teal-500",
+    SCANNED: "bg-[#00d084]",
+    SAVED: "bg-[#2F80ED]",
+    VIEWED: "bg-[#2F80ED]",
+    NOTED: "bg-[#F2994A]",
+    MEETING: "bg-[#12D18E]",
+    MESSAGE: "bg-[#2F80ED]",
+    FOLLOW_UP: "bg-[#00d084]",
+    INTRODUCED: "bg-[#00d084]",
+    CALLED: "bg-[#00b870]",
     EMAILED: "bg-red-500",
-    CONTACT_ADDED: "bg-emerald-500",
-    MATCH_FOUND: "bg-emerald-500",
+    CONTACT_ADDED: "bg-[#00d084]",
+    MATCH_FOUND: "bg-[#00d084]",
   };
   return colors[type] || "bg-white/[0.03]0";
 }

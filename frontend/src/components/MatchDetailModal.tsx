@@ -185,15 +185,15 @@ export default function MatchDetailModal({
               <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 px-4 py-3 bg-th-bg-t border border-th-border rounded-xl text-xs text-th-text-s w-72 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl pointer-events-none">
                 <p className="font-semibold text-th-text mb-2 text-sm">How Match Score is Calculated</p>
                 <div className="space-y-1 text-[11px]">
-                  <div className="flex justify-between"><span>AI Semantic Similarity*</span><span className="text-emerald-400">25%</span></div>
-                  <div className="flex justify-between"><span>Goals Alignment</span><span className="text-emerald-400">20%</span></div>
+                  <div className="flex justify-between"><span>AI Semantic Similarity*</span><span className="text-[#93c5fd]">25%</span></div>
+                  <div className="flex justify-between"><span>Goals Alignment</span><span className="text-[#93c5fd]">20%</span></div>
                   <div className="flex justify-between"><span>Sector Overlap</span><span className="text-blue-400">12%</span></div>
                   <div className="flex justify-between"><span>Skills Match</span><span className="text-cyan-400">12%</span></div>
-                  <div className="flex justify-between"><span>Network Proximity</span><span className="text-emerald-400">8%</span></div>
+                  <div className="flex justify-between"><span>Network Proximity</span><span className="text-[#93c5fd]">8%</span></div>
                   <div className="flex justify-between"><span>Complementary Skills</span><span className="text-green-400">8%</span></div>
-                  <div className="flex justify-between"><span>Recency Bonus</span><span className="text-teal-400">5%</span></div>
+                  <div className="flex justify-between"><span>Recency Bonus</span><span className="text-[#93c5fd]">5%</span></div>
                   <div className="flex justify-between"><span>Interaction History</span><span className="text-cyan-400">4%</span></div>
-                  <div className="flex justify-between"><span>Shared Interests</span><span className="text-emerald-400">3%</span></div>
+                  <div className="flex justify-between"><span>Shared Interests</span><span className="text-[#93c5fd]">3%</span></div>
                   <div className="flex justify-between"><span>Hobbies</span><span className="text-red-400">3%</span></div>
                 </div>
                 <p className="mt-2 pt-2 border-t border-th-border text-th-text-t text-[10px]">Score = sum of (component score × weight)</p>
@@ -276,15 +276,15 @@ export default function MatchDetailModal({
               <div key={item.label} className="bg-th-surface rounded-lg p-2 hover:bg-th-surface-h transition-colors group relative">
                 <div className="flex items-center gap-1.5 mb-1">
                   <item.Icon className={`w-3.5 h-3.5 ${
-                    item.color === 'purple' ? 'text-emerald-400' :
+                    item.color === 'purple' ? 'text-[#93c5fd]' :
                     item.color === 'blue' ? 'text-blue-400' :
                     item.color === 'cyan' ? 'text-cyan-400' :
-                    item.color === 'violet' ? 'text-emerald-400' :
-                    item.color === 'indigo' ? 'text-emerald-400' :
+                    item.color === 'violet' ? 'text-[#93c5fd]' :
+                    item.color === 'indigo' ? 'text-[#93c5fd]' :
                     item.color === 'green' ? 'text-green-400' :
-                    item.color === 'teal' ? 'text-teal-400' :
+                    item.color === 'teal' ? 'text-[#93c5fd]' :
                     item.color === 'cyan' ? 'text-cyan-400' :
-                    item.color === 'pink' ? 'text-emerald-400' :
+                    item.color === 'pink' ? 'text-[#93c5fd]' :
                     'text-red-400'
                   }`} />
                   <span className="text-[11px] font-medium text-th-text-s flex-1">{item.label}</span>
@@ -329,7 +329,7 @@ export default function MatchDetailModal({
               {match.sharedAttributes.map((attr, index) => (
                 <span
                   key={index}
-                  className="px-3 py-1.5 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-sm text-emerald-300"
+                  className="px-3 py-1.5 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-sm text-[#93c5fd]"
                 >
                   {attr}
                 </span>
@@ -463,7 +463,7 @@ export default function MatchDetailModal({
           </button>
           <button
             onClick={handleSendMessage}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-[#3b82f633] text-white font-thin rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all"
           >
             <Chat24Regular className="w-5 h-5" />
             {t.contacts?.matchDetails?.sendMessage || 'Send Message'}

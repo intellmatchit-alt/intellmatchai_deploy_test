@@ -13,37 +13,28 @@ import { cva } from 'class-variance-authority';
  * Avatar variants using class-variance-authority
  */
 export const avatarVariants = cva(
-  // Base styles applied to all avatars
+  // Base styles applied to all avatars — shared fallback gradient and typography
+  // give every surface the same identity language.
   [
-    'relative inline-flex items-center justify-center',
+    'relative inline-flex items-center justify-center shrink-0',
     'overflow-hidden rounded-full',
-    'bg-[#00d084]/20 text-white',
-    'font-medium uppercase',
+    'bg-gradient-to-br from-[#00d084]/35 to-[#00b870]/25 text-white',
+    'font-semibold uppercase tracking-tight',
     'select-none',
   ],
   {
     variants: {
       /**
-       * Size variant
+       * Size variant — px sizes intentional so designers can reason in pixels.
        */
       size: {
-        // Extra small (profile lists)
-        xs: 'h-6 w-6 text-xs',
-
-        // Small (compact lists)
-        sm: 'h-8 w-8 text-sm',
-
-        // Medium/default
-        md: 'h-10 w-10 text-base',
-
-        // Large (profile cards)
-        lg: 'h-12 w-12 text-lg',
-
-        // Extra large (profile pages)
-        xl: 'h-16 w-16 text-xl',
-
-        // 2XL (main profile)
-        '2xl': 'h-24 w-24 text-2xl',
+        xs: 'h-6 w-6 text-[10px]',          // 24px — dense lists / inline mentions
+        sm: 'h-8 w-8 text-xs',              // 32px — compact rows
+        md: 'h-10 w-10 text-sm',            // 40px — default
+        header: 'h-9 w-9 text-sm',          // 36px — top nav avatar
+        lg: 'h-12 w-12 text-base',          // 48px — cards
+        xl: 'h-16 w-16 text-lg',            // 64px — list headers
+        '2xl': 'h-24 w-24 text-2xl',        // 96px — profile hero
       },
 
       /**
@@ -55,10 +46,26 @@ export const avatarVariants = cva(
       },
 
       /**
-       * Border variant
+       * Intent — visual emphasis. `hero` carries the full glow treatment;
+       * lighter intents share the same identity language at reduced intensity.
+       */
+      intent: {
+        none: '',
+        hero:
+          'ring-2 ring-[#00d084]/45 shadow-[0_8px_28px_-4px_rgba(0,208,132,0.35)]',
+        header:
+          'ring-1 ring-white/15 hover:ring-[#00d084]/40 transition-all duration-200',
+        menu:
+          'ring-1 ring-white/10',
+        soft:
+          'ring-1 ring-[#00d084]/20',
+      },
+
+      /**
+       * Legacy bordered prop — keep for backwards compatibility.
        */
       bordered: {
-        true: 'ring-2 ring-white',
+        true: 'ring-2 ring-white/80',
         false: '',
       },
     },
@@ -67,6 +74,7 @@ export const avatarVariants = cva(
     defaultVariants: {
       size: 'md',
       shape: 'circle',
+      intent: 'none',
       bordered: false,
     },
   }

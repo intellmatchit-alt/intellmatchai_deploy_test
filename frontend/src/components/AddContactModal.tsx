@@ -465,7 +465,7 @@ export default function AddContactModal({
                 onClick={() => toggleSector(sector.id)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                   formData.sectorIds.includes(sector.id)
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
+                    ? 'bg-[#3b82f633] text-white'
                     : 'bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'
                 }`}
               >
@@ -490,7 +490,7 @@ export default function AddContactModal({
                 onClick={() => toggleSkill(skill.id)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                   formData.skillIds.includes(skill.id)
-                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
+                    ? 'bg-[#3b82f633] text-[#93c5fd]'
                     : 'bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'
                 }`}
               >
@@ -520,7 +520,7 @@ export default function AddContactModal({
       <button
         onClick={handleSaveContact}
         disabled={isLoading || !formData.fullName.trim()}
-        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#3b82f633] text-white font-thin rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoading ? (
           <>
@@ -582,7 +582,7 @@ export default function AddContactModal({
                 onClick={() => handleTabChange('scan')}
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                   activeTab === 'scan'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    ? 'bg-emerald-500/20 text-[#93c5fd] border border-emerald-500/30'
                     : 'bg-th-surface text-th-text-t hover:bg-th-surface-h'
                 }`}
               >
@@ -593,7 +593,7 @@ export default function AddContactModal({
                 onClick={() => handleTabChange('manual')}
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                   activeTab === 'manual'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    ? 'bg-emerald-500/20 text-[#93c5fd] border border-emerald-500/30'
                     : 'bg-th-surface text-th-text-t hover:bg-th-surface-h'
                 }`}
               >
@@ -604,7 +604,7 @@ export default function AddContactModal({
                 onClick={() => handleTabChange('import')}
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                   activeTab === 'import'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    ? 'bg-emerald-500/20 text-[#93c5fd] border border-emerald-500/30'
                     : 'bg-th-surface text-th-text-t hover:bg-th-surface-h'
                 }`}
               >
@@ -622,7 +622,7 @@ export default function AddContactModal({
             <div className="space-y-4">
               <div className="text-center py-8">
                 <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                  <Camera24Regular className="w-10 h-10 text-emerald-400" />
+                  <Camera24Regular className="w-10 h-10 text-[#93c5fd]" />
                 </div>
                 <h3 className="text-lg font-medium text-th-text mb-2">
                   {t.contacts?.scan?.title || 'Scan Business Card'}
@@ -638,7 +638,7 @@ export default function AddContactModal({
                   onClick={handleScanCard}
                   className="flex flex-col items-center gap-3 p-6 bg-th-surface border border-th-border rounded-xl hover:bg-th-surface-h transition-colors"
                 >
-                  <Camera24Regular className="w-8 h-8 text-emerald-400" />
+                  <Camera24Regular className="w-8 h-8 text-[#93c5fd]" />
                   <span className="text-sm font-medium text-th-text">
                     {t.contacts?.scan?.takePhoto || 'Take Photo'}
                   </span>
@@ -647,7 +647,7 @@ export default function AddContactModal({
                   onClick={() => fileInputRef.current?.click()}
                   className="flex flex-col items-center gap-3 p-6 bg-th-surface border border-th-border rounded-xl hover:bg-th-surface-h transition-colors"
                 >
-                  <DocumentAdd24Regular className="w-8 h-8 text-emerald-400" />
+                  <DocumentAdd24Regular className="w-8 h-8 text-[#93c5fd]" />
                   <span className="text-sm font-medium text-th-text">
                     {t.contacts?.scan?.uploadImage || 'Upload Image'}
                   </span>
@@ -689,7 +689,7 @@ export default function AddContactModal({
               {importedContacts.length === 0 ? (
                 <div className="text-center py-8">
                   <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                    <ContactCard24Regular className="w-10 h-10 text-emerald-400" />
+                    <ContactCard24Regular className="w-10 h-10 text-[#93c5fd]" />
                   </div>
                   <h3 className="text-lg font-medium text-th-text mb-2">
                     {t.contacts?.import?.title || 'Import from Phone'}
@@ -701,7 +701,7 @@ export default function AddContactModal({
                   <button
                     onClick={handlePhoneImport}
                     disabled={isLoading || !isContactPickerSupported()}
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#3b82f633] text-white font-thin rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading ? (
                       <>
@@ -729,7 +729,7 @@ export default function AddContactModal({
                       className="w-full flex items-center gap-3 p-4 bg-th-surface border border-th-border rounded-xl hover:bg-th-surface-h transition-colors text-start"
                     >
                       <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                        <Person24Regular className="w-5 h-5 text-emerald-400" />
+                        <Person24Regular className="w-5 h-5 text-[#93c5fd]" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-th-text truncate">

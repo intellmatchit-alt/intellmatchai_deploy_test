@@ -100,7 +100,7 @@ export default function OrgInvitePage() {
           <p className="mb-8 text-th-text-t">{error || 'This invitation link is invalid or has expired.'}</p>
           <Link
             href="/"
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-3 font-medium text-white transition-opacity hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#3b82f633] px-6 py-3 font-thin text-white transition-opacity hover:opacity-90"
           >
             Go Home
           </Link>
@@ -114,7 +114,7 @@ export default function OrgInvitePage() {
       <div className="flex min-h-screen items-center justify-center bg-th-bg px-4">
         <div className="w-full max-w-md text-center">
           <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/20">
-            <ErrorCircle24Regular className="h-10 w-10 text-emerald-400" />
+            <ErrorCircle24Regular className="h-10 w-10 text-[#93c5fd]" />
           </div>
           <h1 className="mb-2 text-2xl font-bold text-th-text">
             {invitation.status === 'EXPIRED' ? 'Invitation Expired' : `Invitation ${invitation.status}`}
@@ -126,7 +126,7 @@ export default function OrgInvitePage() {
           </p>
           <Link
             href="/"
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-3 font-medium text-white transition-opacity hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#3b82f633] px-6 py-3 font-thin text-white transition-opacity hover:opacity-90"
           >
             Go Home
           </Link>
@@ -188,7 +188,7 @@ export default function OrgInvitePage() {
               {invitation.invitedBy.avatarUrl ? (
                 <img src={invitation.invitedBy.avatarUrl} alt="" className="h-5 w-5 rounded-full object-cover" />
               ) : (
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/30 text-[10px] font-bold text-emerald-300">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/30 text-[10px] font-bold text-[#93c5fd]">
                   {invitation.invitedBy.fullName?.charAt(0)?.toUpperCase()}
                 </div>
               )}
@@ -198,7 +198,7 @@ export default function OrgInvitePage() {
           <div className="h-px bg-th-surface" />
           <div className="flex items-center justify-between">
             <span className="text-sm text-th-text-t">Your role</span>
-            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/20 px-2.5 py-0.5 text-xs font-medium text-emerald-300">
+            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/20 px-2.5 py-0.5 text-xs font-medium text-[#93c5fd]">
               {invitation.role}
             </span>
           </div>
@@ -215,13 +215,13 @@ export default function OrgInvitePage() {
             <p className="text-center text-sm text-th-text-t">You need to sign in to accept this invitation.</p>
             <Link
               href={`/login?redirect=/invite/org/${token}`}
-              className="block w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-3 text-center font-medium text-white transition-opacity hover:opacity-90"
+              className="block w-full rounded-xl bg-[#3b82f633] px-4 py-3 text-center font-thin text-white transition-opacity hover:opacity-90"
             >
               Sign In to Accept
             </Link>
             <p className="text-center text-sm text-th-text-m">
               Don&apos;t have an account?{' '}
-              <Link href={`/register?redirect=/invite/org/${token}`} className="text-emerald-400 hover:underline">
+              <Link href={`/register?redirect=/invite/org/${token}`} className="text-[#93c5fd] hover:underline">
                 Sign up
               </Link>
             </p>
@@ -229,7 +229,7 @@ export default function OrgInvitePage() {
         ) : (
           <div className="space-y-3">
             {user?.email?.toLowerCase() !== invitation.email.toLowerCase() && (
-              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-center text-sm text-emerald-400">
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-center text-sm text-[#93c5fd]">
                 This invitation was sent to <span className="font-semibold">{invitation.email}</span>. You are signed in as <span className="font-semibold">{user?.email}</span>.
               </div>
             )}
@@ -243,7 +243,7 @@ export default function OrgInvitePage() {
             <button
               onClick={handleAccept}
               disabled={accepting}
-              className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-3 font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="w-full rounded-xl bg-[#3b82f633] px-4 py-3 font-thin text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {accepting ? (
                 <span className="flex items-center justify-center gap-2">

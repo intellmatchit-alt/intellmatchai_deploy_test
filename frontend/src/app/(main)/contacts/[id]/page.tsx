@@ -147,9 +147,9 @@ interface ContactNote {
 /**
  * Icons - Styled to match the theme
  */
-const PhoneIcon = () => <Call24Regular className="w-5 h-5 text-emerald-400" />;
+const PhoneIcon = () => <Call24Regular className="w-5 h-5 text-[#93c5fd]" />;
 
-const EmailIcon = () => <Mail24Regular className="w-5 h-5 text-emerald-400" />;
+const EmailIcon = () => <Mail24Regular className="w-5 h-5 text-[#93c5fd]" />;
 
 const SmsIcon = () => <Chat24Regular className="w-5 h-5 text-blue-400" />;
 
@@ -192,7 +192,7 @@ function InfoItem({
 }) {
   const content = (
     <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-th-surface-h transition-colors">
-      <div className="w-9 h-9 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400 flex-shrink-0">
+      <div className="w-9 h-9 rounded-lg bg-emerald-500/15 flex items-center justify-center text-[#93c5fd] flex-shrink-0">
         {icon}
       </div>
       <div>
@@ -1207,7 +1207,7 @@ export default function ContactDetailPage() {
           className="flex flex-col items-center text-center"
         >
           <div className="relative mb-3" style={{ direction: "ltr" }}>
-            <div className="p-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full">
+            <div className="p-1 bg-[#3b82f633] rounded-full">
               <Avatar src={contact.avatarUrl} name={contact.name} size="2xl" />
             </div>
             <label className="absolute bottom-0 right-0 p-2 bg-emerald-500 rounded-full cursor-pointer hover:bg-emerald-600 transition-colors">
@@ -1254,7 +1254,7 @@ export default function ContactDetailPage() {
           {contact.phone && (
             <a
               href={`tel:${contact.phone}`}
-              className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors flex-shrink-0"
+              className="p-2 rounded-lg bg-emerald-500/20 text-[#93c5fd] hover:bg-emerald-500/30 transition-colors flex-shrink-0"
             >
               <Call24Regular className="w-4 h-4" />
             </a>
@@ -1347,9 +1347,9 @@ export default function ContactDetailPage() {
             className="flex flex-col items-center gap-2 p-3 min-w-[72px] rounded-xl bg-th-surface backdrop-blur-sm border border-th-border hover:bg-th-surface-h hover:border-emerald-400/40 transition-all group active:scale-95 disabled:opacity-50"
           >
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500/30 to-emerald-500/30 flex items-center justify-center group-hover:from-emerald-500/40 group-hover:to-emerald-500/40 transition-colors ring-1 ring-emerald-400/30">
-              <Sparkle24Regular className="w-5 h-5 text-emerald-300" />
+              <Sparkle24Regular className="w-5 h-5 text-[#93c5fd]" />
             </div>
-            <span className="text-xs text-neutral-200 font-medium group-hover:text-emerald-300 transition-colors">
+            <span className="text-xs text-neutral-200 font-medium group-hover:text-[#93c5fd] transition-colors">
               IntellMatch
             </span>
           </button>
@@ -1362,7 +1362,7 @@ export default function ContactDetailPage() {
           <TabsList className="w-full flex gap-2 bg-th-surface border border-th-border rounded-xl p-1.5">
             <TabsTrigger
               value="match"
-              className="flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all border-none text-th-text-t hover:text-white hover:bg-th-surface-h data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/30"
+              className="flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all border-none text-th-text-t hover:text-white hover:bg-th-surface-h data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#3b82f6]/30"
             >
               {t.contactDetails.tabs.match}
             </TabsTrigger>
@@ -1430,7 +1430,7 @@ export default function ContactDetailPage() {
                 contact.enrichmentData.education?.length > 0) && (
                 <div className="mt-3 bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-4 space-y-4">
                   <div className="flex items-center gap-2">
-                    <Sparkle24Regular className="w-5 h-5 text-emerald-400" />
+                    <Sparkle24Regular className="w-5 h-5 text-[#93c5fd]" />
                     <h3 className="text-base font-semibold text-th-text">
                       Career & Education
                     </h3>
@@ -1533,7 +1533,7 @@ export default function ContactDetailPage() {
                   {/* Ice Breakers */}
                   {contact.enrichmentData.iceBreakers?.length > 0 && (
                     <div>
-                      <p className="text-xs text-emerald-300 mb-2 flex items-center gap-1 font-medium">
+                      <p className="text-xs text-[#93c5fd] mb-2 flex items-center gap-1 font-medium">
                         <Chat24Regular className="w-4 h-4" /> Conversation
                         Starters
                       </p>
@@ -1553,7 +1553,7 @@ export default function ContactDetailPage() {
                                 onClick={() =>
                                   navigator.clipboard.writeText(iceBreaker)
                                 }
-                                className="mt-1 text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                                className="mt-1 text-xs text-[#93c5fd] hover:text-[#93c5fd] flex items-center gap-1"
                               >
                                 <Copy24Regular className="w-3 h-3" /> Copy
                               </button>
@@ -1629,7 +1629,7 @@ export default function ContactDetailPage() {
             <div className="mt-3 bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-4 space-y-4">
               {contact.sectors.length > 0 && (
                 <div>
-                  <p className="text-sm font-semibold text-emerald-300 mb-2 flex items-center gap-1.5">
+                  <p className="text-sm font-semibold text-[#93c5fd] mb-2 flex items-center gap-1.5">
                     <div className="w-1 h-3.5 bg-emerald-400 rounded-full" />
                     {t.contactDetails.labels.sectors}
                   </p>
@@ -1637,7 +1637,7 @@ export default function ContactDetailPage() {
                     {contact.sectors.map((sector: string) => (
                       <span
                         key={sector}
-                        className="px-3 py-1 rounded-full text-sm bg-emerald-500/20 text-emerald-200 border border-emerald-500/30 font-medium"
+                        className="px-3 py-1 rounded-full text-sm bg-emerald-500/20 text-[#93c5fd] border border-emerald-500/30 font-medium"
                       >
                         {sector}
                       </span>
@@ -1665,7 +1665,7 @@ export default function ContactDetailPage() {
               )}
               {contact.interests.length > 0 && (
                 <div>
-                  <p className="text-sm font-semibold text-emerald-300 mb-2 flex items-center gap-1.5">
+                  <p className="text-sm font-semibold text-[#93c5fd] mb-2 flex items-center gap-1.5">
                     <div className="w-1 h-3.5 bg-emerald-400 rounded-full" />
                     {t.contactDetails.labels.interests}
                   </p>
@@ -1673,7 +1673,7 @@ export default function ContactDetailPage() {
                     {contact.interests.map((interest: string) => (
                       <span
                         key={interest}
-                        className="px-3 py-1 rounded-full text-sm bg-emerald-500/20 text-emerald-200 border border-emerald-500/30 font-medium"
+                        className="px-3 py-1 rounded-full text-sm bg-emerald-500/20 text-[#93c5fd] border border-emerald-500/30 font-medium"
                       >
                         {interest}
                       </span>
@@ -1688,13 +1688,13 @@ export default function ContactDetailPage() {
               <div className="mt-3 bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-base font-semibold text-th-text flex items-center gap-2">
-                    <Image24Regular className="w-5 h-5 text-emerald-400" />
+                    <Image24Regular className="w-5 h-5 text-[#93c5fd]" />
                     {t.contactDetails.labels?.businessCard || "Business Card"}
                   </h3>
                   <button
                     type="button"
                     onClick={() => setShowCardImage(!showCardImage)}
-                    className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+                    className="text-sm text-[#93c5fd] hover:text-[#93c5fd] transition-colors"
                   >
                     {showCardImage
                       ? t.common.hide || "Hide"
@@ -1879,7 +1879,7 @@ export default function ContactDetailPage() {
                                                 return (
                                                   <div className="space-y-4 pt-3">
                                                     <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3.5">
-                                                      <h4 className="text-xs font-medium text-emerald-400 mb-2">
+                                                      <h4 className="text-xs font-medium text-[#93c5fd] mb-2">
                                                         {t.projects
                                                           ?.projectContext ||
                                                           "Project Context"}
@@ -1889,7 +1889,7 @@ export default function ContactDetailPage() {
                                                       </p>
                                                       <div className="flex flex-wrap gap-1.5">
                                                         {stageLabel && (
-                                                          <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                                          <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/20 text-[#93c5fd] border border-emerald-500/30">
                                                             {stageLabel}
                                                           </span>
                                                         )}
@@ -2330,7 +2330,7 @@ export default function ContactDetailPage() {
                             className="w-full flex items-center gap-3 p-4 hover:bg-th-surface transition-colors"
                           >
                             <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                              <SlideText24Regular className="w-5 h-5 text-emerald-400" />
+                              <SlideText24Regular className="w-5 h-5 text-[#93c5fd]" />
                             </div>
                             <div className="flex-1 text-left">
                               <h3 className="font-semibold text-th-text">
@@ -2343,7 +2343,7 @@ export default function ContactDetailPage() {
                               </p>
                             </div>
                             {count > 0 && (
-                              <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded-full font-medium">
+                              <span className="px-2 py-0.5 bg-emerald-500/20 text-[#93c5fd] text-xs rounded-full font-medium">
                                 {count}
                               </span>
                             )}
@@ -2357,14 +2357,14 @@ export default function ContactDetailPage() {
                             <div className="px-4 pb-4 border-t border-th-border">
                               {userPitches.length === 0 ? (
                                 <div className="text-center py-8">
-                                  <SlideText24Regular className="w-10 h-10 text-emerald-400/30 mx-auto mb-3" />
+                                  <SlideText24Regular className="w-10 h-10 text-[#93c5fd]/30 mx-auto mb-3" />
                                   <p className="text-th-text-m mb-3">
                                     {t.contacts?.matchDetails?.noPitches ||
                                       "Upload a pitch to see matches"}
                                   </p>
                                   <Link
                                     href="/pitch"
-                                    className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-lg hover:bg-emerald-500/30 transition-colors"
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 text-[#93c5fd] rounded-lg hover:bg-emerald-500/30 transition-colors"
                                   >
                                     <Add24Regular className="w-4 h-4" />
                                     {t.contacts?.matchDetails?.uploadPitch ||
@@ -2435,7 +2435,7 @@ export default function ContactDetailPage() {
                                                 return (
                                                   <div className="space-y-4 pt-3">
                                                     <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3.5">
-                                                      <h4 className="text-xs font-medium text-emerald-400 mb-2">
+                                                      <h4 className="text-xs font-medium text-[#93c5fd] mb-2">
                                                         Pitch Context
                                                       </h4>
                                                       <p className="text-sm text-neutral-200 mb-2">
@@ -2444,7 +2444,7 @@ export default function ContactDetailPage() {
                                                           "Pitch"}
                                                       </p>
                                                       {match.angleCategory && (
-                                                        <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                                        <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/20 text-[#93c5fd] border border-emerald-500/30">
                                                           {match.angleCategory}
                                                         </span>
                                                       )}
@@ -2827,7 +2827,7 @@ export default function ContactDetailPage() {
                       className="w-full flex items-center gap-3 p-4 hover:bg-th-surface transition-colors rounded-t-xl"
                     >
                       <div className="w-10 h-10 rounded-full bg-emerald-500/25 flex items-center justify-center ring-1 ring-emerald-400/30">
-                        <PersonAvailable24Regular className="w-5 h-5 text-emerald-300" />
+                        <PersonAvailable24Regular className="w-5 h-5 text-[#93c5fd]" />
                       </div>
                       <div className="flex-1 text-left">
                         <h3 className="font-semibold text-th-text">
@@ -2866,7 +2866,7 @@ export default function ContactDetailPage() {
                             </p>
                             <Link
                               href="/profile"
-                              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-lg hover:bg-emerald-500/30 transition-colors"
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 text-[#93c5fd] rounded-lg hover:bg-emerald-500/30 transition-colors"
                             >
                               <Add24Regular className="w-4 h-4" />
                               {t.contacts?.matchDetails?.setupProfile ||
@@ -2927,7 +2927,7 @@ export default function ContactDetailPage() {
             <div className="mt-3">
               <button
                 type="button"
-                className="w-full px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+                className="w-full px-4 py-3 bg-[#3b82f633] text-white font-thin rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all"
               >
                 {t.contactDetails.activity.logInteraction}
               </button>
@@ -2941,7 +2941,7 @@ export default function ContactDetailPage() {
         {/* Notes Section */}
         <div className="bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-4">
           <h3 className="text-base font-semibold text-th-text flex items-center gap-2 mb-3">
-            <DocumentText24Regular className="w-5 h-5 text-emerald-400" />
+            <DocumentText24Regular className="w-5 h-5 text-[#93c5fd]" />
             {t.contactDetails?.notes?.title || "Notes"}
           </h3>
 
@@ -3088,7 +3088,7 @@ export default function ContactDetailPage() {
               <button
                 type="button"
                 onClick={handleAddNote}
-                className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg text-sm text-emerald-300 font-medium transition-colors"
+                className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg text-sm text-[#93c5fd] font-medium transition-colors"
               >
                 <Add24Regular className="w-4 h-4" />
                 {t.contactDetails?.notes?.title
@@ -3104,7 +3104,7 @@ export default function ContactDetailPage() {
               <button
                 type="button"
                 onClick={handleAddNote}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-xl text-emerald-300 font-medium transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-xl text-[#93c5fd] font-medium transition-colors"
               >
                 <Add24Regular className="w-5 h-5" />
                 {t.contactDetails?.notes?.title

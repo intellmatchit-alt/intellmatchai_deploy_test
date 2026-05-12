@@ -75,6 +75,45 @@ function saveLocalStatuses(statuses: Record<string, string>) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(statuses));
 }
 
+/**
+ * Convert raw matching-engine keys (e.g. "FIND_SERVICE_PROVIDER", "CO_FOUNDER",
+ * "GO_TO_MARKET_STRATEGY") into clean human-readable labels. Prefers an exact or
+ * normalized match against LOOKING_FOR_OPTIONS; falls back to Title-Casing the
+ * snake/screaming key. Special-cases compound labels like "Co-Founder".
+ */
+function humanizeLookingForKey(raw: string): string {
+  if (!raw) return '';
+  const overrides: Record<string, string> = {
+    CO_FOUNDER: 'Co-Founder',
+    COFOUNDER: 'Co-Founder',
+    COFOUNDER_TALENT: 'Co-Founder / Talent',
+    CO_FOUNDER_TALENT: 'Co-Founder / Talent',
+    TALENT: 'Talent',
+    GO_TO_MARKET_STRATEGY: 'Go To Market Strategy',
+    GTM_STRATEGY: 'Go-to-Market Strategy',
+    FIND_INVESTOR: 'Investor',
+    FIND_ADVISOR: 'Advisor',
+    FIND_SERVICE_PROVIDER: 'Service Provider',
+    FIND_STRATEGIC_PARTNER: 'Strategic Partner',
+    FIND_TECHNICAL_PARTNER: 'Technical Partner',
+    FIND_CHANNEL_DISTRIBUTION: 'Channel / Distribution',
+  };
+  if (overrides[raw]) return overrides[raw];
+  // Try exact match in LOOKING_FOR_OPTIONS (lowercase ids)
+  const direct = LOOKING_FOR_OPTIONS.find((o) => o.id === raw);
+  if (direct) return direct.label;
+  // Strip FIND_ prefix, lowercase, swap underscores; try options again
+  const normalized = raw.replace(/^FIND_/i, '').toLowerCase();
+  const byNormalized = LOOKING_FOR_OPTIONS.find((o) => o.id === normalized);
+  if (byNormalized) return byNormalized.label;
+  // Fallback: Title-case the snake/screaming key
+  return normalized
+    .split(/[_-]/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
 /** Map ProjectMatch to MatchCardData for the shared MatchCard */
 function projectMatchToCardData(match: ProjectMatch, projectTitle: string): MatchCardData | null {
   const person = match.matchedUser || match.matchedContact;
@@ -247,8 +286,8 @@ function MatchDetailModal({
           {/* Match Summary — emerald accent (like Intent Alignment in opportunity) */}
           <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Sparkle24Regular className="w-5 h-5 text-emerald-400" />
-              <h3 className="text-sm font-medium text-emerald-400">Match Summary</h3>
+              <Sparkle24Regular className="w-5 h-5 text-[#93c5fd]" />
+              <h3 className="text-sm font-medium text-[#93c5fd]">Match Summary</h3>
             </div>
             {match.explanation?.summary ? (
               <p className="text-sm text-white">{match.explanation.summary}</p>
@@ -372,7 +411,7 @@ function MatchDetailModal({
                       </div>
                       {comp.explanation && <p className="text-xs text-white/80">{comp.explanation}</p>}
                       {comp.evidence?.length > 0 && comp.evidence.map((e: string, j: number) => (
-                        <p key={j} className="text-xs text-emerald-400/70 pl-2">{e}</p>
+                        <p key={j} className="text-xs text-[#93c5fd]/70 pl-2">{e}</p>
                       ))}
                       {comp.penalties?.length > 0 && comp.penalties.filter((p: string) => !p.includes('Low score')).map((p: string, j: number) => (
                         <p key={j} className="text-xs text-orange-400/70 pl-2">{p}</p>
@@ -420,7 +459,7 @@ function MatchDetailModal({
           )}
           <button
             onClick={handleViewProfile}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-[#3b82f633] text-white font-thin rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all"
           >
             {isUser ? 'View Profile' : 'View Details'}
             <ChevronRight24Regular className="w-4 h-4" />
@@ -658,161 +697,9 @@ export default function ProjectDetailPage() {
         </div>
       </div>
 
-      {/* Project Info */}
-      <div className="bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-6 space-y-4">
+      {/* Project Info — title is rendered in the header above; only the summary is shown here */}
+      <div className="bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-6">
         <p className="text-white">{project.summary}</p>
-
-        {project.detailedDesc && (
-          <p className="text-sm text-white">{project.detailedDesc}</p>
-        )}
-
-        {/* Tags */}
-        <div className="flex flex-wrap gap-2">
-          <span className="px-3 py-1 rounded-full text-sm bg-emerald-400 text-[#042820] border border-emerald-400/80 font-bold">
-            <Rocket24Regular className="w-4 h-4 inline me-1" />
-            {stageLabel}
-          </span>
-          {project.category && (
-            <span className="px-3 py-1 rounded-full text-sm bg-emerald-400 text-[#042820] border border-emerald-400/80 font-bold">
-              {(t.projects?.categories as Record<string, string>)?.[project.category] || project.category}
-            </span>
-          )}
-        </div>
-
-        {/* Looking For */}
-        {lookingForLabels.length > 0 && (
-          <div>
-            <h4 className="text-sm font-medium text-white mb-2 flex items-center gap-2">
-              <People24Regular className="w-4 h-4" />
-              {t.projects?.lookingFor || 'Looking For'}
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {lookingForLabels.map((label, i) => (
-                <span key={i} className="px-2 py-1 rounded-lg text-sm bg-emerald-400 text-[#042820] border border-emerald-400/80 font-bold">
-                  {label}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Sectors & Skills */}
-        <div className="grid grid-cols-2 gap-4">
-          {project.sectors.length > 0 && (
-            <div>
-              <h4 className="text-sm font-medium text-white mb-2">{t.projects?.sectors || 'Sectors'}</h4>
-              <div className="flex flex-wrap gap-1">
-                {project.sectors.map((s) => (
-                  <span key={s.id} className="px-2 py-0.5 rounded-full text-xs bg-emerald-400 text-[#042820] border border-emerald-400/80 font-bold">
-                    {s.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          {project.skillsNeeded.length > 0 && (
-            <div>
-              <h4 className="text-sm font-medium text-white mb-2">{t.projects?.skillsNeeded || 'Skills Needed'}</h4>
-              <div className="flex flex-wrap gap-1">
-                {project.skillsNeeded.map((s) => (
-                  <span key={s.id} className="px-2 py-0.5 rounded-full text-xs bg-emerald-400 text-[#042820] border border-emerald-400/80 font-bold">
-                    {s.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Needs */}
-        {project.needs && project.needs.length > 0 && (
-          <div>
-            <h4 className="text-sm font-medium text-white mb-2">{t.projects?.needs || 'Needs'}</h4>
-            <div className="flex flex-wrap gap-1.5">
-              {project.needs.map((need: string, i: number) => (
-                <span key={i} className="px-2 py-0.5 rounded-full text-xs bg-emerald-400 text-[#042820] border border-emerald-400/80 font-bold">{need}</span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Markets */}
-        {project.markets && project.markets.length > 0 && (
-          <div>
-            <h4 className="text-sm font-medium text-white mb-2">{t.projects?.markets || 'Markets'}</h4>
-            <div className="flex flex-wrap gap-1.5">
-              {project.markets.map((m: string, i: number) => (
-                <span key={i} className="px-2 py-0.5 rounded-full text-xs bg-emerald-400 text-[#042820] border border-emerald-400/80 font-bold">{m}</span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Funding */}
-        {(project.fundingAskMin || project.fundingAskMax) && (
-          <div>
-            <h4 className="text-sm font-medium text-white mb-2">{t.projects?.fundingRange || 'Funding Range'}</h4>
-            <span className="text-sm text-white">
-              {project.fundingAskMin && project.fundingAskMax
-                ? `$${project.fundingAskMin.toLocaleString()} – $${project.fundingAskMax.toLocaleString()}`
-                : project.fundingAskMin
-                  ? `From $${project.fundingAskMin.toLocaleString()}`
-                  : `Up to $${project.fundingAskMax!.toLocaleString()}`}
-            </span>
-          </div>
-        )}
-
-        {/* Advanced Matching Fields */}
-        {(project.tractionSignals?.length || project.advisoryTopics?.length || project.partnerTypeNeeded?.length || project.targetCustomerTypes?.length || project.engagementModel?.length || project.commitmentLevelNeeded || project.idealCounterpartProfile) && (
-          <div className="pt-3 border-t border-th-border space-y-3">
-            <h4 className="text-sm font-medium text-white">{t.projects?.advancedSection || 'Matching Preferences'}</h4>
-            {project.tractionSignals && project.tractionSignals.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-xs text-white font-bold uppercase">Traction:</span>
-                {project.tractionSignals.map((s: string, i: number) => (<span key={i} className="px-2 py-0.5 rounded-full text-xs bg-emerald-400 text-[#042820] border border-emerald-400/80 font-bold">{s}</span>))}
-              </div>
-            )}
-            {project.advisoryTopics && project.advisoryTopics.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-xs text-white font-bold uppercase">Advisory:</span>
-                {project.advisoryTopics.map((s: string, i: number) => (<span key={i} className="px-2 py-0.5 rounded-full text-xs bg-emerald-400 text-[#042820] border border-emerald-400/80 font-bold">{s}</span>))}
-              </div>
-            )}
-            {project.partnerTypeNeeded && project.partnerTypeNeeded.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-xs text-white font-bold uppercase">Partner Type:</span>
-                {project.partnerTypeNeeded.map((s: string, i: number) => (<span key={i} className="px-2 py-0.5 rounded-full text-xs bg-emerald-400 text-[#042820] border border-emerald-400/80 font-bold">{s}</span>))}
-              </div>
-            )}
-            {project.targetCustomerTypes && project.targetCustomerTypes.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-xs text-white font-bold uppercase">Customers:</span>
-                {project.targetCustomerTypes.map((s: string, i: number) => (<span key={i} className="px-2 py-0.5 rounded-full text-xs bg-emerald-400 text-[#042820] border border-emerald-400/80 font-bold">{s}</span>))}
-              </div>
-            )}
-            {project.engagementModel && project.engagementModel.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-xs text-white font-bold uppercase">Engagement:</span>
-                {project.engagementModel.map((s: string, i: number) => (<span key={i} className="px-2 py-0.5 rounded-full text-xs bg-emerald-400 text-[#042820] border border-emerald-400/80 font-bold">{s}</span>))}
-              </div>
-            )}
-            {project.commitmentLevelNeeded && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-white font-bold uppercase">Commitment:</span>
-                <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-400 text-[#042820] border border-emerald-400/80 font-bold">{project.commitmentLevelNeeded}</span>
-              </div>
-            )}
-            {project.idealCounterpartProfile && (
-              <div>
-                <span className="text-xs text-white font-bold uppercase">Ideal Counterpart:</span>
-                <p className="text-xs text-white mt-0.5 leading-relaxed">{project.idealCounterpartProfile}</p>
-              </div>
-            )}
-            {project.strictLookingFor && (
-              <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-red-500/10 text-red-300 border border-red-500/20 font-bold">Strict Matching</span>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Tabs */}
@@ -828,7 +715,7 @@ export default function ProjectDetailPage() {
           <Sparkle24Regular className="w-5 h-5" />
           {t.projects?.matches || 'Matches'}
           {activeCount > 0 && (
-            <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-emerald-500/20 text-emerald-400">
+            <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-emerald-500/20 text-[#93c5fd]">
               {activeCount}
             </span>
           )}
@@ -852,7 +739,7 @@ export default function ProjectDetailPage() {
       <div className="space-y-4">
         <div className="flex items-center gap-3 flex-wrap">
           <h2 className="text-xl font-semibold text-th-text flex items-center gap-2">
-            <Sparkle24Regular className="w-6 h-6 text-emerald-400" />
+            <Sparkle24Regular className="w-6 h-6 text-[#93c5fd]" />
             {t.projects?.matches || 'Matches'}
             {activeCount > 0 && (
               <span className="text-sm font-normal text-th-text-m">({activeCount})</span>
@@ -862,7 +749,7 @@ export default function ProjectDetailPage() {
             <button
               onClick={handleFindMatches}
               disabled={isFindingMatches}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-medium rounded-lg hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#3b82f633] text-white text-sm font-thin rounded-lg hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all disabled:opacity-50"
             >
               {isFindingMatches ? (
                 <>
@@ -899,7 +786,7 @@ export default function ProjectDetailPage() {
               onClick={() => setMatchStatusFilter(tab.id)}
               className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                 matchStatusFilter === tab.id
-                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-[#3b82f6]/20'
                   : 'text-th-text-t hover:text-th-text hover:bg-th-surface-h'
               }`}
             >
@@ -908,33 +795,174 @@ export default function ProjectDetailPage() {
           ))}
         </div>
 
-        {/* Matches List */}
+        {/* Matches List — compact grid (4 per row on desktop) */}
         {filteredMatches.length > 0 ? (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {filteredMatches.map((match) => {
-              const cardData = projectMatchToCardData(match, project?.title || 'Project');
-              if (!cardData) return null;
+              const person = match.matchedUser || match.matchedContact;
+              if (!person) return null;
+
+              // Build per-role scores. Prefer scoreBreakdown (Record<role, number>) when present;
+              // fall back to the single intent + matchScore. Display top 3 sorted desc.
+              const normalize = (v: number) => Math.round(v > 1 ? v : v * 100);
+              const breakdown = match.scoreBreakdown && !Array.isArray(match.scoreBreakdown)
+                ? (match.scoreBreakdown as Record<string, number>)
+                : null;
+              type RoleScore = { role: string; label: string; score: number };
+              const roleScores: RoleScore[] = [];
+              if (breakdown) {
+                // Pull every key from the breakdown so engine-emitted keys
+                // (e.g. FIND_SERVICE_PROVIDER, CO_FOUNDER) are not filtered
+                // out just because they aren't in the project's lookingFor list.
+                const projectRoles = new Set((project.lookingFor || []).map((r) => r));
+                for (const role of Object.keys(breakdown)) {
+                  const val = (breakdown as Record<string, number>)[role];
+                  if (typeof val !== 'number') continue;
+                  // Allow keys present in the project's lookingFor (any case),
+                  // OR engine keys (UPPERCASE / FIND_*) that don't appear there.
+                  const isInProjectRoles =
+                    projectRoles.has(role) ||
+                    projectRoles.has(role.toLowerCase()) ||
+                    projectRoles.has(role.replace(/^FIND_/i, '').toLowerCase());
+                  const isEngineKey = /^[A-Z][A-Z_]+$/.test(role);
+                  if (!isInProjectRoles && !isEngineKey) continue;
+                  roleScores.push({
+                    role,
+                    label: humanizeLookingForKey(role),
+                    score: normalize(val),
+                  });
+                }
+              }
+              if (roleScores.length === 0 && match.intent) {
+                roleScores.push({
+                  role: match.intent,
+                  label: humanizeLookingForKey(match.intent),
+                  score: normalize(match.matchScore),
+                });
+              }
+              roleScores.sort((a, b) => b.score - a.score);
+              // Top 5 Looking For items where score > 0. The highest still drives the main circle.
+              const visibleRoleScores = roleScores.filter((rs) => rs.score > 0).slice(0, 5);
+
+              // Main displayed score = highest among Looking For items (or matchScore as fallback).
+              const mainScore = visibleRoleScores.length > 0 ? visibleRoleScores[0].score : normalize(match.matchScore);
+
+              const scoreTone =
+                mainScore >= 80 ? { ring: 'stroke-emerald-400', text: 'text-emerald-300' }
+                : mainScore >= 60 ? { ring: 'stroke-blue-400', text: 'text-blue-300' }
+                : mainScore >= 40 ? { ring: 'stroke-amber-400', text: 'text-amber-300' }
+                : { ring: 'stroke-th-text-m', text: 'text-th-text-s' };
+
+              // New Match = created after the user's last visit to this project's detail page.
+              const isNew = !!match.createdAt && (!project.matchesViewedAt || new Date(match.createdAt) > new Date(project.matchesViewedAt));
+
+              const handleStatusChangeLocal = async (status: MatchStatus) => {
+                try {
+                  await updateMatchStatus(projectId, match.id, status);
+                  const localStatuses = getLocalStatuses();
+                  localStatuses[`proj-${match.id}`] = status;
+                  saveLocalStatuses(localStatuses);
+                  handleMatchStatusChange(match.id, status);
+                  toast({ title: t.projects?.statusUpdated || 'Status updated', variant: 'success' });
+                } catch (err: any) {
+                  toast({ title: t.common?.error || 'Error', description: err?.message || 'Failed', variant: 'error' });
+                }
+              };
+
+              // SVG ring geometry
+              const ringRadius = 22;
+              const ringCircumference = 2 * Math.PI * ringRadius;
+              const ringDashOffset = ringCircumference * (1 - Math.min(100, Math.max(0, mainScore)) / 100);
+
               return (
-                <MatchCard
+                <div
                   key={match.id}
-                  match={cardData}
                   onClick={() => setSelectedMatch(match)}
-                  onStatusChange={async (id, status) => {
-                    const localStatuses = getLocalStatuses();
-                    const storageKey = `proj-${match.id}`;
-                    if (status === 'ACTIVE') {
-                      delete localStatuses[storageKey];
-                      handleMatchStatusChange(match.id, 'PENDING' as MatchStatus);
-                    } else {
-                      localStatuses[storageKey] = status;
-                      handleMatchStatusChange(match.id, status as MatchStatus);
-                    }
-                    saveLocalStatuses(localStatuses);
-                    toast({ title: t.projects?.statusUpdated || 'Status updated', variant: 'success' });
-                  }}
-                  hideSource
-                  t={t}
-                />
+                  className="group relative cursor-pointer bg-th-surface border border-th-border rounded-xl p-4 hover:border-emerald-500/40 hover:shadow-[0_0_0_1px_rgba(24,210,164,0.18),0_8px_24px_-12px_rgba(24,210,164,0.35)] transition-all duration-200"
+                >
+                  {/* Top row: score circle (left) + New Match flag (right) */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="relative w-14 h-14 flex-shrink-0">
+                      <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
+                        <circle cx="28" cy="28" r={ringRadius} className="stroke-white/[0.08]" strokeWidth="4" fill="none" />
+                        <circle
+                          cx="28"
+                          cy="28"
+                          r={ringRadius}
+                          className={scoreTone.ring}
+                          strokeWidth="4"
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeDasharray={ringCircumference}
+                          strokeDashoffset={ringDashOffset}
+                          style={{ transition: 'stroke-dashoffset 0.6s ease' }}
+                        />
+                      </svg>
+                      <span className={`absolute inset-0 flex items-center justify-center text-[13px] font-extrabold tabular-nums ${scoreTone.text}`}>
+                        {mainScore}%
+                      </span>
+                    </div>
+                    {isNew && (
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#3b82f633] text-[#93c5fd] border border-[#3b82f6]/40 shadow-[0_0_12px_rgba(59,130,246,0.35)]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#93c5fd] animate-pulse" />
+                        New Match
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Name + position */}
+                  <h3 className="mt-3 text-[14px] font-bold text-white truncate">{person.fullName}</h3>
+                  <p className="mt-0.5 text-[12px] text-th-text-m leading-snug truncate">
+                    {[person.jobTitle, person.company].filter(Boolean).join(' • ') || '—'}
+                  </p>
+
+                  {/* Per-role scores */}
+                  {visibleRoleScores.length > 0 && (
+                    <div className="mt-3 space-y-1">
+                      {visibleRoleScores.map((rs) => (
+                        <div key={rs.role} className="flex items-center justify-between gap-2 text-[12px]">
+                          <span className="text-th-text-t truncate">{rs.label}</span>
+                          <span className={`font-bold tabular-nums flex-shrink-0 ${
+                            rs.score >= 80 ? 'text-emerald-300'
+                            : rs.score >= 60 ? 'text-blue-300'
+                            : rs.score >= 40 ? 'text-amber-300'
+                            : 'text-th-text-m'
+                          }`}>
+                            {rs.score}%
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Action buttons */}
+                  <div className="mt-4 grid grid-cols-3 gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleStatusChangeLocal('CONNECTED' as MatchStatus); }}
+                      className="px-2 py-1.5 rounded-lg text-[11px] font-bold bg-[#3b82f633] text-[#93c5fd] border border-[#3b82f6]/30 hover:bg-[#3b82f6]/30 hover:border-[#3b82f6]/50 transition-all"
+                    >
+                      Connect
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStatusChangeLocal((match.status === 'ARCHIVED' ? 'PENDING' : 'ARCHIVED') as MatchStatus);
+                      }}
+                      className="px-2 py-1.5 rounded-lg text-[11px] font-bold bg-white/[0.04] text-th-text-t border border-white/15 hover:bg-white/[0.07] hover:border-white/25 transition-all"
+                    >
+                      {match.status === 'ARCHIVED' ? 'Unarchive' : 'Archive'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleStatusChangeLocal('DISMISSED' as MatchStatus); }}
+                      className="px-2 py-1.5 rounded-lg text-[11px] font-bold bg-red-500/[0.06] text-red-300/80 border border-red-500/20 hover:bg-red-500/10 hover:border-red-500/40 transition-all"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -962,7 +990,7 @@ export default function ProjectDetailPage() {
       {/* Collaborators Section */}
       <div className="bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-6">
         <h3 className="text-lg font-semibold text-th-text mb-4 flex items-center gap-2">
-          <PeopleTeam24Regular className="w-5 h-5 text-emerald-400" />
+          <PeopleTeam24Regular className="w-5 h-5 text-[#93c5fd]" />
           {t.projects?.collaborators || 'Collaborators'}
         </h3>
         <TeamMembersList
@@ -1095,7 +1123,7 @@ export default function ProjectDetailPage() {
                             </span>
                           )}
                           {introSummary.accepted > 0 && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/20 text-emerald-400">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/20 text-[#93c5fd]">
                               {introSummary.accepted} {t.collaborations?.accepted || 'Accepted'}
                             </span>
                           )}

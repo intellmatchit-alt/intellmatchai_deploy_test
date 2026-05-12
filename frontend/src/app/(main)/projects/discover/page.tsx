@@ -131,7 +131,7 @@ function ProjectDetailModal({
               )}
             </div>
             <div className="flex items-center gap-2 mt-2">
-              <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-[#93c5fd] border border-emerald-500/30">
                 {stageLabel}
               </span>
             </div>
@@ -212,7 +212,7 @@ function ProjectDetailModal({
                 {project.skillsNeeded.map((skill) => (
                   <span
                     key={skill.id}
-                    className="px-3 py-1 rounded-full text-sm bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                    className="px-3 py-1 rounded-full text-sm bg-emerald-500/20 text-[#93c5fd] border border-emerald-500/30"
                   >
                     {skill.name}
                   </span>
@@ -362,7 +362,7 @@ function DiscoverCard({
 
           {/* Tags */}
           <div className="flex flex-wrap gap-2">
-            <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/20 text-[#93c5fd] border border-emerald-500/30">
               {stageLabel}
             </span>
             {project.category && (
@@ -588,7 +588,7 @@ export default function DiscoverProjectsPage() {
           <ArrowLeft24Regular className="w-5 h-5 rtl:rotate-180" />
         </Link>
         <h1 className="text-2xl font-bold text-th-text flex items-center gap-2">
-          <Globe24Regular className="w-7 h-7 text-emerald-400" />
+          <Globe24Regular className="w-7 h-7 text-[#93c5fd]" />
           {t.projects?.discoverProjects || 'Discover Projects'}
         </h1>
       </div>
@@ -613,7 +613,7 @@ export default function DiscoverProjectsPage() {
           onClick={() => setSelectedStage(null)}
           className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
             !selectedStage
-              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25'
+              ? 'bg-[#3b82f633] text-white shadow-lg shadow-[#3b82f6]/25'
               : 'bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'
           }`}
         >
@@ -625,7 +625,7 @@ export default function DiscoverProjectsPage() {
             onClick={() => setSelectedStage(stage.id as ProjectStage)}
             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
               selectedStage === stage.id
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25'
+                ? 'bg-[#3b82f633] text-white shadow-lg shadow-[#3b82f6]/25'
                 : 'bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'
             }`}
           >
@@ -694,7 +694,7 @@ export default function DiscoverProjectsPage() {
           onClick={() => setStatusFilter('from_network')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
             statusFilter === 'from_network'
-              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+              ? 'bg-emerald-500/20 text-[#93c5fd] border border-emerald-500/30'
               : 'bg-th-surface border border-th-border text-th-text-t hover:bg-th-surface-h'
           }`}
         >

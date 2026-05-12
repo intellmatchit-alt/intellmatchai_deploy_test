@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useI18n } from '@/lib/i18n';
 import {
   Lightbulb24Regular,
@@ -20,6 +20,9 @@ import {
   Dismiss16Regular,
   Globe24Regular,
   Sparkle24Regular,
+  ArrowUpload24Regular,
+  Document24Regular,
+  Dismiss24Regular,
 } from '@fluentui/react-icons';
 import {
   extractFromDocument,
@@ -67,12 +70,6 @@ export interface ProjectFormProps {
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-const NEEDS_SUGGESTIONS = [
-  'Funding', 'Technical Co-founder', 'Marketing Support', 'Partnership',
-  'Mentorship', 'Legal Advice', 'Sales Strategy', 'Product Development',
-  'Market Access', 'Team Hiring', 'Go-to-Market Strategy', 'Investment',
-];
 
 const TRACTION_SUGGESTIONS = [
   'Users', 'Revenue', 'Pilots', 'Partnerships', 'Letters of Intent',
@@ -136,6 +133,51 @@ function smartSort<T>(items: T[], getId: (item: T) => string, selectedIds: strin
   });
 }
 
+/**
+ * Expandable textarea field. Hoisted to module scope so its component
+ * identity is stable across ProjectForm renders — declaring it inside the
+ * parent caused React to unmount and remount the <textarea> on every
+ * keystroke, blowing away focus after one character.
+ */
+function Textarea({
+  label,
+  value,
+  onChange,
+  placeholder,
+  expanded,
+  onToggle,
+  sm,
+  lg,
+  required,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  expanded: boolean;
+  onToggle: () => void;
+  sm?: boolean;
+  lg?: boolean;
+  required?: boolean;
+}) {
+  return (
+    <div className={s.field}>
+      <div className={s.fieldLabelRow}>
+        <span className={s.lbl}>{label}{required && <span className={s.req}>*</span>}</span>
+        <button type="button" onClick={onToggle} className={s.expLink}>{expanded ? 'Less' : 'Expand'}</button>
+      </div>
+      <textarea
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={expanded ? 10 : (lg ? 6 : sm ? 3 : 4)}
+        className={lg ? s.taLg : sm ? s.taSm : s.ta}
+        required={required}
+      />
+    </div>
+  );
+}
+
 export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting }: ProjectFormProps) {
   const { t } = useI18n();
   const isEditMode = !!project;
@@ -146,6 +188,7 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
 
   // Custom entries
   const [customSkills, setCustomSkills] = useState<Skill[]>([]);
+  const [customSectors, setCustomSectors] = useState<Sector[]>([]);
 
   // Document state
   const [documentUrl, setDocumentUrl] = useState<string | null>(project?.documentUrl || null);
@@ -155,6 +198,8 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
   const [showAllSectors, setShowAllSectors] = useState(false);
   const [showAllSkills, setShowAllSkills] = useState(false);
   const [showAllMarkets, setShowAllMarkets] = useState(false);
+  const [showAllCategories, setShowAllCategories] = useState(false);
+  const [showAllLookingFor, setShowAllLookingFor] = useState(false);
 
   // AI suggestion tracking
   const [suggestedSectorIds, setSuggestedSectorIds] = useState<string[]>([]);
@@ -167,6 +212,15 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [fundingSource, setFundingSource] = useState<'manual' | 'document' | 'ai'>('manual');
   const [marketsSource, setMarketsSource] = useState<'manual' | 'document' | 'ai'>('manual');
+
+  // Unified top AI section state (create mode)
+  const [ideaText, setIdeaText] = useState('');
+  const [aiFile, setAiFile] = useState<File | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiLoadingMsgIdx, setAiLoadingMsgIdx] = useState(0);
+  const [highlightDetails, setHighlightDetails] = useState(false);
+  const aiFileRef = useRef<HTMLInputElement>(null);
+  const basicInfoRef = useRef<HTMLElement>(null);
 
   // Form state
   const [title, setTitle] = useState('');
@@ -184,8 +238,6 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
   const [isActive, setIsActive] = useState(true);
 
   // New structured fields
-  const [needs, setNeeds] = useState<string[]>(project?.needs || []);
-  const [needsInput, setNeedsInput] = useState('');
   const [markets, setMarkets] = useState<string[]>(project?.markets || []);
   const [fundingAskMin, setFundingAskMin] = useState<string>(
     project?.fundingAskMin != null ? String(project.fundingAskMin) : ''
@@ -219,7 +271,18 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
     setCategories(project.category ? project.category.split(',').map(c => c.trim()).filter(Boolean) : ['other']);
     setStage(project.stage || 'IDEA');
     setTimeline(project.timeline || '');
-    setSelectedLookingFor(project.lookingFor || []);
+    {
+      // Split stored lookingFor into predefined IDs vs free-text customs,
+      // and fold any legacy project.needs values into the custom set so they
+      // surface in the unified Looking For chip grid.
+      const stored = (project.lookingFor as string[] | undefined) || [];
+      const knownIds = new Set<string>(LOOKING_FOR_OPTIONS.map(o => o.id));
+      const predefined = stored.filter(v => knownIds.has(v));
+      const customFromLookingFor = stored.filter(v => !knownIds.has(v));
+      const customFromNeeds = (project.needs as string[] | undefined) || [];
+      setSelectedLookingFor(predefined);
+      setCustomLookingFor(Array.from(new Set([...customFromLookingFor, ...customFromNeeds])));
+    }
     setSelectedSectorIds(project.sectors?.map(s => s.id) || []);
     setSelectedSkills(
       project.skillsNeeded?.map(s => ({
@@ -229,7 +292,6 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
     );
     setVisibility(project.visibility || 'PUBLIC');
     setIsActive(project.isActive !== false);
-    setNeeds(project.needs || []);
     setMarkets(project.markets || []);
     setFundingAskMin(project.fundingAskMin != null ? String(project.fundingAskMin) : '');
     setFundingAskMax(project.fundingAskMax != null ? String(project.fundingAskMax) : '');
@@ -268,7 +330,7 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
   }, []);
 
   // Combined items (real + custom)
-  const allSectors = useMemo(() => [...sectors], [sectors]);
+  const allSectors = useMemo(() => [...sectors, ...customSectors], [sectors, customSectors]);
   const allSkills = useMemo(() => [...skills, ...customSkills], [skills, customSkills]);
   const allLookingForOptions = useMemo(() => {
     return LOOKING_FOR_OPTIONS.map(o => ({ id: o.id, name: o.label }));
@@ -297,6 +359,20 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
     setCustomSkills(prev => [...prev, { id: customId, name }]);
     setSelectedSkills(prev => [...prev, { skillId: customId, importance: 'REQUIRED' as SkillImportance }]);
   }, []);
+  const handleAddCustomCategory = useCallback((name: string) => {
+    setCategories(prev => prev.includes(name) ? prev : [...prev.filter(x => x !== 'other' && x !== 'Other'), name]);
+  }, []);
+  const handleAddCustomLookingForValue = useCallback((name: string) => {
+    setCustomLookingFor(prev => prev.includes(name) ? prev : [...prev, name]);
+  }, []);
+  const handleAddCustomSector = useCallback((name: string) => {
+    const customId = `custom_${Date.now()}`;
+    setCustomSectors(prev => [...prev, { id: customId, name }]);
+    setSelectedSectorIds(prev => [...prev, customId]);
+  }, []);
+  const handleAddCustomMarket = useCallback((name: string) => {
+    setCustomMarkets(prev => prev.includes(name) ? prev : [...prev, name]);
+  }, []);
 
   // Document extraction handler (create mode only)
   const handleDocumentExtracted = useCallback((extracted: ExtractedProjectData) => {
@@ -308,8 +384,8 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
       setCategories(prev => prev.includes(cat) ? prev : [...prev.filter(c => c === 'other' || c === 'Other' ? false : true), cat]);
     }
     if (extracted.stage) setStage(extracted.stage);
-    if (extracted.needs?.length) setNeeds(extracted.needs);
-    else if (extracted.whatYouNeed) setNeeds([extracted.whatYouNeed]); // backward compat
+    if (extracted.needs?.length) setCustomLookingFor(prev => Array.from(new Set([...prev, ...extracted.needs!])));
+    else if (extracted.whatYouNeed) setCustomLookingFor(prev => Array.from(new Set([...prev, extracted.whatYouNeed!]))); // backward compat
     if (extracted.timeline) setTimeline(extracted.timeline);
     if (extracted.markets?.length || extracted.operatingMarkets?.length) {
       const raw = extracted.markets?.length ? extracted.markets : extracted.operatingMarkets!;
@@ -399,7 +475,7 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
         });
         setSuggestedSkillIds(prev => [...new Set([...prev, ...result.skills.map(s => s.skillId)])]);
       }
-      if (result.needs?.length) setNeeds(result.needs);
+      if (result.needs?.length) setCustomLookingFor(prev => Array.from(new Set([...prev, ...result.needs!])));
       if (result.markets?.length) {
         const mapped = result.markets.map(m => mapMarketValue(m)).filter(Boolean) as string[];
         if (mapped.length) { setMarkets(prev => [...new Set([...prev, ...mapped])]); setMarketsSource('ai'); }
@@ -426,6 +502,112 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
         description: error.message || 'AI analysis failed',
         variant: 'error',
       });
+    } finally {
+      clearInterval(progressInterval);
+      setIsAnalyzing(false);
+    }
+  };
+
+  // Rotating loading messages for the unified Generate Project Details flow
+  const AI_LOADING_MESSAGES = ['Analyzing your project...', 'Generating project structure...', 'Matching categories and skills...'];
+  useEffect(() => {
+    if (!isAnalyzing) { setAiLoadingMsgIdx(0); return; }
+    const id = setInterval(() => setAiLoadingMsgIdx(i => (i + 1) % AI_LOADING_MESSAGES.length), 1600);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAnalyzing]);
+
+  // Validate uploaded file for the unified AI section
+  const AI_ALLOWED_MIME = [
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'application/vnd.ms-powerpoint',
+    'text/plain',
+  ];
+  const AI_MAX_SIZE_MB = 10;
+  const handleAiFileSelect = useCallback((f: File) => {
+    setAiError(null);
+    if (!AI_ALLOWED_MIME.includes(f.type) && !/\.(pdf|docx|doc|pptx|ppt|txt)$/i.test(f.name)) {
+      setAiError('Please upload PDF, DOCX, PPTX, or TXT files.');
+      return;
+    }
+    if (f.size > AI_MAX_SIZE_MB * 1024 * 1024) {
+      setAiError(`File size must be less than ${AI_MAX_SIZE_MB}MB.`);
+      return;
+    }
+    setAiFile(f);
+  }, []);
+
+  // Unified Generate Project Details handler — routes to extractFromDocument or analyzeProjectText
+  const handleGenerateDetails = async () => {
+    if (!aiFile && !ideaText.trim()) return;
+    setIsAnalyzing(true);
+    setAnalysisProgress(0);
+    setAiError(null);
+    const progressInterval = setInterval(() => {
+      setAnalysisProgress(prev => Math.min(prev + Math.random() * 15, 90));
+    }, 500);
+    try {
+      if (aiFile) {
+        const data = await extractFromDocument(aiFile);
+        handleDocumentExtracted(data);
+      } else {
+        const idea = ideaText.trim();
+        const result = await analyzeProjectText({ title: title.trim(), summary: idea });
+        // Title/summary/desc/timeline/funding now come from AI; fall back to idea text
+        if (result.title && !title.trim()) setTitle(result.title);
+        if (result.summary) setSummary(result.summary);
+        else if (!summary.trim()) setSummary(idea);
+        if (result.detailedDesc) setDetailedDesc(result.detailedDesc);
+        else if (!detailedDesc.trim()) setDetailedDesc(idea);
+        if (result.timeline) setTimeline(result.timeline);
+        if (result.fundingAskMin != null) { setFundingAskMin(String(result.fundingAskMin)); setFundingSource('ai'); }
+        if (result.fundingAskMax != null) { setFundingAskMax(String(result.fundingAskMax)); setFundingSource('ai'); }
+        if (result.category && result.category !== 'Other') {
+          const cat = result.category;
+          setCategories(prev => prev.includes(cat) ? prev : [...prev.filter(c => c === 'other' || c === 'Other' ? false : true), cat]);
+        }
+        if (result.stage) setStage(result.stage as ProjectStage);
+        if (result.lookingFor?.length) {
+          setSelectedLookingFor(prev => [...new Set([...prev, ...result.lookingFor])]);
+          setSuggestedLookingFor(prev => [...new Set([...prev, ...result.lookingFor])]);
+        }
+        if (result.sectorIds?.length) {
+          setSelectedSectorIds(prev => [...new Set([...prev, ...result.sectorIds])]);
+          setSuggestedSectorIds(prev => [...new Set([...prev, ...result.sectorIds])]);
+        }
+        if (result.skills?.length) {
+          setSelectedSkills(prev => {
+            const existingIds = new Set(prev.map(s => s.skillId));
+            return [...prev, ...result.skills.filter((s: any) => !existingIds.has(s.skillId))];
+          });
+          setSuggestedSkillIds(prev => [...new Set([...prev, ...result.skills.map((s: any) => s.skillId)])]);
+        }
+        if (result.needs?.length) setCustomLookingFor(prev => Array.from(new Set([...prev, ...result.needs!])));
+        if (result.markets?.length) {
+          const mapped = result.markets.map((m: string) => mapMarketValue(m)).filter(Boolean) as string[];
+          if (mapped.length) { setMarkets(prev => [...new Set([...prev, ...mapped])]); setMarketsSource('ai'); }
+        }
+        if (result.idealCounterpartProfile) setIdealCounterpartProfile(result.idealCounterpartProfile);
+        if (result.partnerTypeNeeded?.length) setPartnerTypeNeeded(result.partnerTypeNeeded);
+        if (result.commitmentLevelNeeded) setCommitmentLevelNeeded(result.commitmentLevelNeeded);
+        if (result.engagementModel?.length) setEngagementModel(result.engagementModel);
+        if (result.targetCustomerTypes?.length) setTargetCustomerTypes(result.targetCustomerTypes);
+        if (result.tractionSignals?.length) setTractionSignals(result.tractionSignals);
+        if (result.advisoryTopics?.length) setAdvisoryTopics(result.advisoryTopics);
+        if (result.tractionSignals?.length || result.advisoryTopics?.length || result.partnerTypeNeeded?.length) setAdvancedOpen(true);
+      }
+      setAnalysisProgress(100);
+      setHasAnalyzed(true);
+      toast({ title: 'AI Generation Complete', description: 'Project details have been generated. Review and edit below.', variant: 'success' });
+      setHighlightDetails(true);
+      setTimeout(() => setHighlightDetails(false), 2500);
+      setTimeout(() => basicInfoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 250);
+    } catch (err: any) {
+      setAiError(err.message || 'AI generation failed');
+      toast({ title: 'Error', description: err.message || 'AI generation failed', variant: 'error' });
     } finally {
       clearInterval(progressInterval);
       setIsAnalyzing(false);
@@ -461,7 +643,6 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
         skills: validSkills,
         visibility,
         isActive,
-        needs,
         markets: [...markets, ...customMarkets],
         fundingAskMin: fundingAskMin ? Number(fundingAskMin) : undefined,
         fundingAskMax: fundingAskMax ? Number(fundingAskMax) : undefined,
@@ -489,7 +670,6 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
         sectorIds: validSectorIds,
         skills: validSkills,
         visibility,
-        ...(needs.length > 0 && { needs }),
         ...((markets.length > 0 || customMarkets.length > 0) && { markets: [...markets, ...customMarkets] }),
         ...(fundingAskMin && { fundingAskMin: Number(fundingAskMin) }),
         ...(fundingAskMax && { fundingAskMax: Number(fundingAskMax) }),
@@ -522,8 +702,6 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
     setSelectedSkills([]);
     setVisibility('PRIVATE');
     setIsActive(true);
-    setNeeds([]);
-    setNeedsInput('');
     setMarkets([]);
     setFundingAskMin('');
     setFundingAskMax('');
@@ -542,23 +720,18 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
     setSuggestedSkillIds([]);
     setSuggestedLookingFor([]);
     setCustomSkills([]);
+    setCustomSectors([]);
     setHasAnalyzed(false);
+    setIdeaText('');
+    setAiFile(null);
+    setAiError(null);
+    setAiLoadingMsgIdx(0);
+    setHighlightDetails(false);
   }, []);
 
   // Expose resetForm via a ref-like pattern (attach to component)
   // The parent can call this via key prop remounting instead
   (ProjectForm as any).__resetForm = resetForm;
-
-  // Helper: expandable textarea using CSS module classes
-  const Textarea = ({ label: fl, value: fv, onChange: fo, placeholder: fp, expanded: fe, onToggle: ft, sm, lg, required: fr }: { label: string; value: string; onChange: (v: string) => void; placeholder: string; expanded: boolean; onToggle: () => void; sm?: boolean; lg?: boolean; required?: boolean }) => (
-    <div className={s.field}>
-      <div className={s.fieldLabelRow}>
-        <span className={s.lbl}>{fl}{fr && <span className={s.req}>*</span>}</span>
-        <button type="button" onClick={ft} className={s.expLink}>{fe ? 'Less' : 'Expand'}</button>
-      </div>
-      <textarea value={fv} onChange={e => fo(e.target.value)} placeholder={fp} rows={fe ? 10 : (lg ? 6 : sm ? 3 : 4)} className={lg ? s.taLg : sm ? s.taSm : s.ta} required={fr} />
-    </div>
-  );
 
 
   // Extra search states for inline chip selectors
@@ -568,6 +741,10 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
   const [customLookingFor, setCustomLookingFor] = useState<string[]>([]);
   const [customMarkets, setCustomMarkets] = useState<string[]>([]);
   const [customSkillInput, setCustomSkillInput] = useState('');
+  const [customCategoryInput, setCustomCategoryInput] = useState('');
+  const [customLookingForInput, setCustomLookingForInput] = useState('');
+  const [customSectorInput, setCustomSectorInput] = useState('');
+  const [customMarketInput, setCustomMarketInput] = useState('');
 
   const filteredLF = useMemo(() => smartSort(allLookingForOptions.filter(o => selectedLookingFor.includes(o.id) || !lookingForSearch || o.name.toLowerCase().includes(lookingForSearch.toLowerCase())), o => o.id, selectedLookingFor, suggestedLookingFor), [allLookingForOptions, lookingForSearch, selectedLookingFor, suggestedLookingFor]);
   const filteredSec = useMemo(() => smartSort(allSectors.filter(o => selectedSectorIds.includes(o.id) || !sectorSearch || o.name.toLowerCase().includes(sectorSearch.toLowerCase())), o => o.id, selectedSectorIds, suggestedSectorIds), [allSectors, sectorSearch, selectedSectorIds, suggestedSectorIds]);
@@ -576,24 +753,142 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
   return (
     <form onSubmit={handleSubmit} className={`${s.formWrap} ${s.formStack}`}>
 
-      {/* ════ Upload ═══════════════════════════════════════════════════ */}
-      <DocumentUploadSection
-        extractFn={extractFromDocument}
-        onExtracted={handleDocumentExtracted}
-        title="Upload Project Document"
-        description="Upload a proposal or business plan. AI will extract details and suggest relevant options."
-        accentColor="emerald"
-        existingDocumentUrl={documentUrl}
-        existingDocumentName={documentName}
-        onDocumentRemoved={() => { setDocumentUrl(null); setDocumentName(null); }}
-      />
+      {/* ════ Upload / Start with AI ═══════════════════════════════════ */}
+      {isEditMode ? (
+        <DocumentUploadSection
+          extractFn={extractFromDocument}
+          onExtracted={handleDocumentExtracted}
+          title="Upload Project Document"
+          description="Upload a proposal or business plan. AI will extract details and suggest relevant options."
+          accentColor="emerald"
+          existingDocumentUrl={documentUrl}
+          existingDocumentName={documentName}
+          onDocumentRemoved={() => { setDocumentUrl(null); setDocumentName(null); }}
+        />
+      ) : (
+        <section className={s.card}>
+          <div className={s.hdr}>
+            <div className={s.hdrLeft}>
+              <div className={s.ibE}><Sparkle24Regular style={{width:20,height:20}} /></div>
+              <div>
+                <h2 className={s.hTitle}>Start Your Project with AI</h2>
+                <p className={s.hDesc}>Upload a document or describe your idea to automatically generate project details.</p>
+              </div>
+            </div>
+          </div>
+          <div className={s.fieldGrid}>
+            {/* Upload dropzone */}
+            <div
+              onClick={() => { if (!aiFile) aiFileRef.current?.click(); }}
+              onDragOver={(e) => { e.preventDefault(); }}
+              onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleAiFileSelect(f); }}
+              className="group border-2 border-dashed border-white/[0.18] hover:border-emerald-500/60 hover:bg-emerald-500/[0.06] rounded-[20px] min-h-[148px] flex flex-col items-center justify-center gap-2 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))] text-center p-5 cursor-pointer transition-all"
+              tabIndex={0}
+              role="button"
+              aria-label="Upload project document"
+            >
+              <input
+                ref={aiFileRef}
+                type="file"
+                accept=".pdf,.docx,.doc,.pptx,.ppt,.txt"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAiFileSelect(f); }}
+                className="hidden"
+              />
+              {aiFile ? (
+                <div className="flex items-center justify-center gap-3 px-4 py-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] w-full max-w-md">
+                  <Document24Regular className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                  <div className="min-w-0 flex-1 text-start">
+                    <p className="text-sm font-semibold text-th-text truncate">{aiFile.name}</p>
+                    <p className="text-xs text-th-text-m">{(aiFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setAiFile(null); if (aiFileRef.current) aiFileRef.current.value = ''; }}
+                    className="p-1.5 rounded-lg text-th-text-m hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    aria-label="Remove file"
+                  >
+                    <Dismiss24Regular className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="w-11 h-11 rounded-[14px] bg-emerald-500/[0.12] border border-emerald-500/25 text-emerald-400 flex items-center justify-center">
+                    <ArrowUpload24Regular className="w-5 h-5" />
+                  </div>
+                  <strong className="text-[1rem] font-extrabold text-th-text">Drop your file here or click to upload</strong>
+                  <span className="text-th-text-s text-[0.94rem] leading-relaxed max-w-[620px]">
+                    Supports PDF, DOCX, PPTX, TXT — up to {AI_MAX_SIZE_MB}MB
+                  </span>
+                </>
+              )}
+            </div>
+            {aiError && <p className="text-xs text-red-400 font-medium">{aiError}</p>}
+
+            {/* OR divider */}
+            <div className="flex items-center gap-3 my-1" aria-hidden="true">
+              <div className="flex-1 h-px bg-white/10" />
+              <span className="text-xs font-extrabold text-th-text-m tracking-[0.2em]">OR</span>
+              <div className="flex-1 h-px bg-white/10" />
+            </div>
+
+            {/* Describe Your Idea */}
+            <div className={s.field}>
+              <span className={s.lbl}>Describe Your Idea</span>
+              <textarea
+                value={ideaText}
+                onChange={(e) => setIdeaText(e.target.value)}
+                onInput={(e) => {
+                  const el = e.currentTarget;
+                  el.style.height = 'auto';
+                  el.style.height = Math.min(el.scrollHeight, 420) + 'px';
+                }}
+                placeholder="Describe your project, startup, business idea, goals, or problem you are solving..."
+                className={s.ta}
+              />
+            </div>
+
+            {/* Single shared AI button */}
+            <button
+              type="button"
+              onClick={handleGenerateDetails}
+              disabled={isAnalyzing || (!aiFile && !ideaText.trim())}
+              className={s.btnP}
+            >
+              {isAnalyzing ? (
+                <span style={{display:'flex',alignItems:'center',gap:10}}>
+                  <ArrowSync24Regular style={{width:18,height:18,animation:'spin 1s linear infinite'}} />
+                  {AI_LOADING_MESSAGES[aiLoadingMsgIdx]}
+                </span>
+              ) : (
+                <span style={{display:'flex',alignItems:'center',gap:10}}>
+                  <Sparkle24Regular style={{width:18,height:18}} />
+                  Generate Project Details
+                </span>
+              )}
+            </button>
+
+            {isAnalyzing && (
+              <div style={{height:6,background:'rgba(255,255,255,0.06)',borderRadius:999,overflow:'hidden'}}>
+                <div style={{height:'100%',background:'linear-gradient(90deg,#18d2a4,#1fc8c9)',borderRadius:999,transition:'width 0.5s',width:`${analysisProgress}%`}} />
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* ════ Basic Information ═════════════════════════════════════════ */}
-      <section className={s.card}>
+      <section
+        ref={basicInfoRef}
+        className={s.card}
+        style={{
+          boxShadow: highlightDetails ? '0 0 0 3px rgba(24,210,164,0.55), 0 0 32px rgba(24,210,164,0.25)' : undefined,
+          transition: 'box-shadow 0.6s ease',
+        }}
+      >
         <div className={s.hdr}>
           <div className={s.hdrLeft}>
             <div className={s.ibE}><Lightbulb24Regular style={{width:20,height:20}} /></div>
-            <div><h2 className={s.hTitle}>{t.projects?.basicInfo || 'Basic Information'}</h2><p className={s.hDesc}>Define the project clearly so AI and collaborators understand the opportunity quickly.</p></div>
+            <div><h2 className={s.hTitle}>{isEditMode ? (t.projects?.basicInfo || 'Basic Information') : 'Project Details'}</h2><p className={s.hDesc}>Define the project clearly so AI and collaborators understand the opportunity quickly.</p></div>
           </div>
           <div className={s.meta}>Required</div>
         </div>
@@ -605,7 +900,7 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
           <Textarea label={t.projects?.summary || 'Summary'} value={summary} onChange={setSummary} placeholder={t.projects?.summaryPlaceholder || 'Describe the project idea in 2–3 clear sentences.'} expanded={summaryExpanded} onToggle={() => setSummaryExpanded(!summaryExpanded)} sm required />
           <Textarea label={t.projects?.detailedDescription || 'Detailed Description'} value={detailedDesc} onChange={setDetailedDesc} placeholder={t.projects?.detailedPlaceholder || 'Add more detail about your product, users, goals, business model, and requirements.'} expanded={detailsExpanded} onToggle={() => setDetailsExpanded(!detailsExpanded)} lg required />
         </div>
-        {(title.trim() || summary.trim()) && (
+        {isEditMode && (title.trim() || summary.trim()) && (
           <>
             <div className={s.azBanner}>
               <div className={s.azCopy}><strong>{hasAnalyzed ? 'Re-analyze with AI' : 'Auto-fill with AI'}</strong><span>Analyze title and summary to suggest category, sectors, skills, needs, and matching preferences.</span></div>
@@ -633,34 +928,71 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
         <div className={s.fieldGrid}>
           <div className={s.field}>
             <span className={s.lbl}>{t.projects?.stage || 'Project Stage'}</span>
-            <div className={s.pillGrid}>
+            <div className={s.cw}>
               {STAGE_OPTIONS.map(o => (
-                <button key={o.id} type="button" onClick={() => setStage(o.id as ProjectStage)} className={stage === o.id ? s.pillSel : s.pill}>
-                  {stage === o.id && '✓ '}{o.label}
+                <button key={o.id} type="button" onClick={() => setStage(o.id as ProjectStage)} className={stage === o.id ? 'px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-[#3b82f633] text-[#93c5fd]' : 'px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'}>
+                  {o.label}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Category — tag-select-box with autocomplete */}
+          {/* Category — search + toggle chip grid (mirrors Industry Sectors flow) */}
           <div className={s.field}>
             <div className={s.fieldLabelRow}>
               <span className={s.lbl}>{t.projects?.category || 'Category'}<span className={s.req}>*</span></span>
-              {categories.length > 0 && categories[0] !== 'other' && categories[0] !== 'Other' && <div className={s.count}>{categories.length} selected</div>}
+              {categories.filter(c => c !== 'other' && c !== 'Other').length > 0 && <div className={s.count}>{categories.filter(c => c !== 'other' && c !== 'Other').length} selected</div>}
             </div>
+            <div className={s.srch}><span className={s.srchIco}>⌕</span><input type="text" value={categorySearch} onChange={e => setCategorySearch(e.target.value)} placeholder="Search categories..." className={s.inp} /></div>
             <div className={s.ca}>
-              {categories.length > 0 && categories[0] !== 'other' && categories[0] !== 'Other' && (
-                <div className={s.cw}>
-                  {categories.map(cat => (
-                    <span key={cat} className={s.chipI}>{cat} <button type="button" onClick={() => setCategories(p => p.filter(c => c !== cat))} className={s.dismiss}>×</button></span>
-                  ))}
-                </div>
-              )}
-              <AutocompleteTagInput value={categorySearch} onChange={setCategorySearch} onAdd={v => { if (!categories.some(c => c.toLowerCase() === v.toLowerCase())) setCategories(p => [...p.filter(c => c !== 'other' && c !== 'Other'), v]); setCategorySearch(''); }} suggestions={CATEGORY_SUGGESTIONS} existingTags={categories} placeholder="Search or create category..." />
-              <div className={s.ts}>
-                {CATEGORY_SUGGESTIONS.filter(c => !categories.some(sel => sel.toLowerCase() === c.toLowerCase())).filter(c => !categorySearch || c.toLowerCase().includes(categorySearch.toLowerCase())).slice(0, 10).map(c => (
-                  <button key={c} type="button" onClick={() => { setCategories(p => [...p.filter(x => x !== 'other' && x !== 'Other'), c]); setCategorySearch(''); }} className={s.tsg}>{c}</button>
-                ))}
+              <div className={s.cw}>
+                {(() => {
+                  const allCategoryChips = smartSort(
+                    Array.from(new Set([...CATEGORY_SUGGESTIONS, ...categories.filter(c => c !== 'other' && c !== 'Other')]))
+                      .filter(c => !categorySearch || c.toLowerCase().includes(categorySearch.toLowerCase())),
+                    c => c,
+                    categories,
+                    []
+                  );
+                  const visibleCategoryChips = categorySearch ? allCategoryChips : allCategoryChips.slice(0, showAllCategories ? allCategoryChips.length : 5);
+                  return (
+                    <>
+                      {visibleCategoryChips.map(c => {
+                        const isSelected = categories.includes(c);
+                        return (
+                          <div key={c} className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setCategories(p => p.includes(c) ? p.filter(x => x !== c) : [...p.filter(x => x !== 'other' && x !== 'Other'), c])}
+                              className={isSelected ? 'px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-[#3b82f633] text-[#93c5fd] pe-6' : 'px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'}
+                            >
+                              {c}
+                            </button>
+                            {isSelected && (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setCategories(p => p.filter(x => x !== c)); }}
+                                className="absolute top-1/2 -translate-y-1/2 end-1.5 w-4 h-4 flex items-center justify-center rounded-full bg-th-surface-h text-th-text hover:bg-th-surface-h transition-all"
+                                aria-label={`Remove ${c}`}
+                              >
+                                <Dismiss16Regular className="w-2.5 h-2.5" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {!categorySearch && allCategoryChips.length > 5 && (
+                        <button type="button" onClick={() => setShowAllCategories(p => !p)} className="px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h">
+                          {showAllCategories ? 'Show less' : `+${allCategoryChips.length - 5} more`}
+                        </button>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+              <div className={s.te}>
+                <input type="text" value={customCategoryInput} onChange={e => setCustomCategoryInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && customCategoryInput.trim()) { e.preventDefault(); handleAddCustomCategory(customCategoryInput.trim()); setCustomCategoryInput(''); } }} placeholder="Add custom category..." className={s.inp} />
+                <button type="button" onClick={() => { if (customCategoryInput.trim()) { handleAddCustomCategory(customCategoryInput.trim()); setCustomCategoryInput(''); } }} disabled={!customCategoryInput.trim()} className={s.tp}>+</button>
               </div>
             </div>
           </div>
@@ -678,52 +1010,79 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
           </div>
           {(selectedLookingFor.length + customLookingFor.length) > 0 && <div className={s.count}>{selectedLookingFor.length + customLookingFor.length} selected</div>}
         </div>
-        <div className={s.ca}>
-          {(selectedLookingFor.length > 0 || customLookingFor.length > 0) && (
+        <div className={s.fieldGrid}>
+          <div className={s.srch}><span className={s.srchIco}>⌕</span><input type="text" value={lookingForSearch} onChange={e => setLookingForSearch(e.target.value)} placeholder="Search roles..." className={s.inp} /></div>
+          <div className={s.ca}>
             <div className={s.cw}>
-              {selectedLookingFor.map(id => {
-                const opt = allLookingForOptions.find(o => o.id === id);
-                return opt ? (
-                  <span key={id} className={s.chipC}>
-                    {suggestedLookingFor.includes(id) && <span className={s.star}>★</span>}
-                    {opt.name} <button type="button" onClick={() => setSelectedLookingFor(p => p.filter(x => x !== id))} className={s.dismiss}>×</button>
-                  </span>
-                ) : null;
-              })}
-              {customLookingFor.map((v, i) => (
-                <span key={`custom-${i}`} className={s.chipI}>{v} <button type="button" onClick={() => setCustomLookingFor(p => p.filter((_, j) => j !== i))} className={s.dismiss}>×</button></span>
-              ))}
+              {(() => {
+                const predefinedLFSorted = smartSort(
+                  allLookingForOptions.filter(o => !lookingForSearch || o.name.toLowerCase().includes(lookingForSearch.toLowerCase())),
+                  o => o.id,
+                  selectedLookingFor,
+                  suggestedLookingFor
+                );
+                const selectedPredefLF = predefinedLFSorted.filter(o => selectedLookingFor.includes(o.id));
+                const restPredefLF = predefinedLFSorted.filter(o => !selectedLookingFor.includes(o.id));
+                const customLF = customLookingFor.filter(v => !lookingForSearch || v.toLowerCase().includes(lookingForSearch.toLowerCase()));
+                type LFEntry = { kind: 'predef'; o: { id: string; name: string } } | { kind: 'custom'; v: string };
+                const ordered: LFEntry[] = [
+                  ...selectedPredefLF.map(o => ({ kind: 'predef' as const, o })),
+                  ...customLF.map(v => ({ kind: 'custom' as const, v })),
+                  ...restPredefLF.map(o => ({ kind: 'predef' as const, o })),
+                ];
+                const limit = 5;
+                const expanded = !!lookingForSearch || showAllLookingFor;
+                const visible = expanded ? ordered : ordered.slice(0, limit);
+                return (
+                  <>
+                    {visible.map((entry, i) => {
+                      if (entry.kind === 'predef') {
+                        const o = entry.o;
+                        const isSelected = selectedLookingFor.includes(o.id);
+                        return (
+                          <div key={o.id} className="relative">
+                            <button type="button" onClick={() => toggleLookingFor(o.id)} className={isSelected ? 'px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-[#3b82f633] text-[#93c5fd] pe-6' : 'px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'}>
+                              {suggestedLookingFor.includes(o.id) && <span className={s.star}>★</span>}
+                              {o.name}
+                            </button>
+                            {isSelected && (
+                              <button type="button" onClick={(e) => { e.stopPropagation(); toggleLookingFor(o.id); }} className="absolute top-1/2 -translate-y-1/2 end-1.5 w-4 h-4 flex items-center justify-center rounded-full bg-th-surface-h text-th-text hover:bg-th-surface-h transition-all" aria-label={`Remove ${o.name}`}>
+                                <Dismiss16Regular className="w-2.5 h-2.5" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      }
+                      const v = entry.v;
+                      return (
+                        <div key={`custom-${i}-${v}`} className="relative">
+                          <span className="px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-[#3b82f633] text-[#93c5fd] pe-6 inline-flex items-center">{v}</span>
+                          <button type="button" onClick={() => setCustomLookingFor(p => p.filter(x => x !== v))} className="absolute top-1/2 -translate-y-1/2 end-1.5 w-4 h-4 flex items-center justify-center rounded-full bg-th-surface-h text-th-text hover:bg-th-surface-h transition-all" aria-label={`Remove ${v}`}>
+                            <Dismiss16Regular className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {!lookingForSearch && ordered.length > limit && (
+                      <button type="button" onClick={() => setShowAllLookingFor(p => !p)} className="px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h">
+                        {showAllLookingFor ? 'Show less' : `+${ordered.length - limit} more`}
+                      </button>
+                    )}
+                  </>
+                );
+              })()}
             </div>
-          )}
-          <AutocompleteTagInput value={lookingForSearch} onChange={setLookingForSearch} onAdd={v => { if (!customLookingFor.some(c => c.toLowerCase() === v.toLowerCase())) setCustomLookingFor(p => [...p, v]); setLookingForSearch(''); }} suggestions={LOOKING_FOR_SUGGESTIONS} existingTags={customLookingFor} placeholder="Search or add custom role..." />
-          <div className={s.ts}>
-            {allLookingForOptions.filter(o => !selectedLookingFor.includes(o.id)).filter(o => !lookingForSearch || o.name.toLowerCase().includes(lookingForSearch.toLowerCase())).map(o => (
-              <button key={o.id} type="button" onClick={() => { toggleLookingFor(o.id); setLookingForSearch(''); }} className={s.tsg}>
-                {suggestedLookingFor.includes(o.id) && <span className={s.star}>★</span>}
-                {o.name}
-              </button>
-            ))}
+            <div className={s.te}>
+              <input type="text" value={customLookingForInput} onChange={e => setCustomLookingForInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && customLookingForInput.trim()) { e.preventDefault(); handleAddCustomLookingForValue(customLookingForInput.trim()); setCustomLookingForInput(''); } }} placeholder="Add custom role..." className={s.inp} />
+              <button type="button" onClick={() => { if (customLookingForInput.trim()) { handleAddCustomLookingForValue(customLookingForInput.trim()); setCustomLookingForInput(''); } }} disabled={!customLookingForInput.trim()} className={s.tp}>+</button>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ════ Project Needs ═════════════════════════════════════════════ */}
-      <section className={s.card}>
-        <div className={s.hdr}>
-          <div className={s.hdrLeft}>
-            <div className={s.ibC}><Tag24Regular style={{width:20,height:20}} /></div>
-            <div><h2 className={s.hTitle}>{t.projects?.needs || 'Project Needs'}</h2><p className={s.hDesc}>Clarify what the project currently needs to succeed.</p></div>
-          </div>
-        </div>
-        <div className={s.ca}>
-          {needs.length > 0 && (
-            <div className={s.cw}>
-              {needs.map((n, i) => <span key={i} className={s.chipC}>{n} <button type="button" onClick={() => setNeeds(needs.filter((_, j) => j !== i))} className={s.dismiss}>×</button></span>)}
-            </div>
-          )}
-          <AutocompleteTagInput value={needsInput} onChange={setNeedsInput} onAdd={v => { if (!needs.map(x => x.toLowerCase()).includes(v.toLowerCase())) setNeeds([...needs, v]); setNeedsInput(''); }} suggestions={NEEDS_SUGGESTIONS} existingTags={needs} placeholder="Add project need..." />
-        </div>
-      </section>
+      {/* Project Needs section removed; its options are now part of LOOKING_FOR_OPTIONS
+          and any legacy project.needs values are folded into customLookingFor on load
+          so they surface in the Looking For chip grid. */}
 
       {/* ════ Industry Sectors ══════════════════════════════════════════ */}
       <section className={s.card}>
@@ -738,17 +1097,31 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
           <div className={s.srch}><span className={s.srchIco}>⌕</span><input type="text" value={sectorSearch} onChange={e => setSectorSearch(e.target.value)} placeholder="Search sectors..." className={s.inp} /></div>
           <div className={s.ca}>
             <div className={s.cw}>
-              {(sectorSearch ? filteredSec : filteredSec.slice(0, showAllSectors ? filteredSec.length : 30)).map(o => (
-                <button key={o.id} type="button" onClick={() => toggleSector(o.id)} className={selectedSectorIds.includes(o.id) ? s.chipC : s.chip}>
-                  {suggestedSectorIds.includes(o.id) && <span className={s.star}>★</span>}
-                  {o.name}
-                </button>
-              ))}
-              {!sectorSearch && filteredSec.length > 30 && (
-                <button type="button" onClick={() => setShowAllSectors(p => !p)} className={s.chip} style={{borderStyle:'dashed', opacity: 0.8}}>
-                  {showAllSectors ? 'Show less' : `+${filteredSec.length - 30} more`}
+              {(sectorSearch ? filteredSec : filteredSec.slice(0, showAllSectors ? filteredSec.length : 5)).map(o => {
+                const isSelected = selectedSectorIds.includes(o.id);
+                return (
+                  <div key={o.id} className="relative">
+                    <button type="button" onClick={() => toggleSector(o.id)} className={isSelected ? 'px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-[#3b82f633] text-[#93c5fd] pe-6' : 'px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'}>
+                      {suggestedSectorIds.includes(o.id) && <span className={s.star}>★</span>}
+                      {o.name}
+                    </button>
+                    {isSelected && (
+                      <button type="button" onClick={(e) => { e.stopPropagation(); toggleSector(o.id); }} className="absolute top-1/2 -translate-y-1/2 end-1.5 w-4 h-4 flex items-center justify-center rounded-full bg-th-surface-h text-th-text hover:bg-th-surface-h transition-all" aria-label={`Remove ${o.name}`}>
+                        <Dismiss16Regular className="w-2.5 h-2.5" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+              {!sectorSearch && filteredSec.length > 5 && (
+                <button type="button" onClick={() => setShowAllSectors(p => !p)} className="px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h">
+                  {showAllSectors ? 'Show less' : `+${filteredSec.length - 5} more`}
                 </button>
               )}
+            </div>
+            <div className={s.te}>
+              <input type="text" value={customSectorInput} onChange={e => setCustomSectorInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && customSectorInput.trim()) { e.preventDefault(); handleAddCustomSector(customSectorInput.trim()); setCustomSectorInput(''); } }} placeholder="Add custom sector..." className={s.inp} />
+              <button type="button" onClick={() => { if (customSectorInput.trim()) { handleAddCustomSector(customSectorInput.trim()); setCustomSectorInput(''); } }} disabled={!customSectorInput.trim()} className={s.tp}>+</button>
             </div>
           </div>
         </div>
@@ -767,15 +1140,25 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
           <div className={s.srch}><span className={s.srchIco}>⌕</span><input type="text" value={skillSearch} onChange={e => setSkillSearch(e.target.value)} placeholder="Search skills..." className={s.inp} /></div>
           <div className={s.ca}>
             <div className={s.cw}>
-              {(skillSearch ? filteredSk : filteredSk.slice(0, showAllSkills ? filteredSk.length : 30)).map(o => (
-                <button key={o.id} type="button" onClick={() => toggleSkill(o.id)} className={selectedSkills.some(sk => sk.skillId === o.id) ? s.chipC : s.chip}>
-                  {suggestedSkillIds.includes(o.id) && <span className={s.star}>★</span>}
-                  {o.name}
-                </button>
-              ))}
-              {!skillSearch && filteredSk.length > 30 && (
-                <button type="button" onClick={() => setShowAllSkills(p => !p)} className={s.chip} style={{borderStyle:'dashed', opacity: 0.8}}>
-                  {showAllSkills ? 'Show less' : `+${filteredSk.length - 30} more`}
+              {(skillSearch ? filteredSk : filteredSk.slice(0, showAllSkills ? filteredSk.length : 5)).map(o => {
+                const isSelected = selectedSkills.some(sk => sk.skillId === o.id);
+                return (
+                  <div key={o.id} className="relative">
+                    <button type="button" onClick={() => toggleSkill(o.id)} className={isSelected ? 'px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-[#3b82f633] text-[#93c5fd] pe-6' : 'px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'}>
+                      {suggestedSkillIds.includes(o.id) && <span className={s.star}>★</span>}
+                      {o.name}
+                    </button>
+                    {isSelected && (
+                      <button type="button" onClick={(e) => { e.stopPropagation(); toggleSkill(o.id); }} className="absolute top-1/2 -translate-y-1/2 end-1.5 w-4 h-4 flex items-center justify-center rounded-full bg-th-surface-h text-th-text hover:bg-th-surface-h transition-all" aria-label={`Remove ${o.name}`}>
+                        <Dismiss16Regular className="w-2.5 h-2.5" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+              {!skillSearch && filteredSk.length > 5 && (
+                <button type="button" onClick={() => setShowAllSkills(p => !p)} className="px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h">
+                  {showAllSkills ? 'Show less' : `+${filteredSk.length - 5} more`}
                 </button>
               )}
             </div>
@@ -798,25 +1181,52 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
           {marketsSource === 'ai' && <div className={s.meta} style={{background:'rgba(109,140,255,0.12)',borderColor:'rgba(109,140,255,0.28)',color:'#c7d4ff',fontSize:'0.78rem'}}>AI Estimation</div>}
           {(MARKET_OPTIONS.filter(o => markets.includes(o.value)).length + customMarkets.length) > 0 && <div className={s.count}>{MARKET_OPTIONS.filter(o => markets.includes(o.value)).length + customMarkets.length} selected</div>}
         </div>
-        <div className={s.ca}>
-          {(markets.length > 0 || customMarkets.length > 0) && (
+        <div className={s.fieldGrid}>
+          <div className={s.srch}><span className={s.srchIco}>⌕</span><input type="text" value={marketSearch} onChange={e => setMarketSearch(e.target.value)} placeholder="Search markets..." className={s.inp} /></div>
+          <div className={s.ca}>
             <div className={s.cw}>
-              {markets.map(v => { const opt = MARKET_OPTIONS.find(o => o.value === v); return opt ? <span key={v} className={s.chipC}>{opt.label} <button type="button" onClick={() => setMarkets(p => p.filter(x => x !== v))} className={s.dismiss}>×</button></span> : null; })}
-              {customMarkets.map((v, i) => <span key={`cm-${i}`} className={s.chipI}>{v} <button type="button" onClick={() => setCustomMarkets(p => p.filter((_, j) => j !== i))} className={s.dismiss}>×</button></span>)}
+              {(() => {
+                const sortedMarkets = smartSort(MARKET_OPTIONS.filter(o => !marketSearch || o.label.toLowerCase().includes(marketSearch.toLowerCase())), o => o.value, markets, []);
+                const visibleMarkets = marketSearch ? sortedMarkets : sortedMarkets.slice(0, showAllMarkets ? sortedMarkets.length : 5);
+                return (
+                  <>
+                    {visibleMarkets.map(o => {
+                      const isSelected = markets.includes(o.value);
+                      return (
+                        <div key={o.value} className="relative">
+                          <button type="button" onClick={() => { setMarkets(p => p.includes(o.value) ? p.filter(v => v !== o.value) : [...p, o.value]); setMarketsSource('manual'); }} className={isSelected ? 'px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-[#3b82f633] text-[#93c5fd] pe-6' : 'px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'}>
+                            {o.label}
+                          </button>
+                          {isSelected && (
+                            <button type="button" onClick={(e) => { e.stopPropagation(); setMarkets(p => p.filter(v => v !== o.value)); }} className="absolute top-1/2 -translate-y-1/2 end-1.5 w-4 h-4 flex items-center justify-center rounded-full bg-th-surface-h text-th-text hover:bg-th-surface-h transition-all" aria-label={`Remove ${o.label}`}>
+                              <Dismiss16Regular className="w-2.5 h-2.5" />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {customMarkets.filter(v => !marketSearch || v.toLowerCase().includes(marketSearch.toLowerCase())).map((v, i) => (
+                      <div key={`cm-${i}`} className="relative">
+                        <span className="px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-[#3b82f633] text-[#93c5fd] pe-6 inline-flex items-center">{v}</span>
+                        <button type="button" onClick={() => setCustomMarkets(p => p.filter(x => x !== v))} className="absolute top-1/2 -translate-y-1/2 end-1.5 w-4 h-4 flex items-center justify-center rounded-full bg-th-surface-h text-th-text hover:bg-th-surface-h transition-all" aria-label={`Remove ${v}`}>
+                          <Dismiss16Regular className="w-2.5 h-2.5" />
+                        </button>
+                      </div>
+                    ))}
+                    {!marketSearch && sortedMarkets.length > 5 && (
+                      <button type="button" onClick={() => setShowAllMarkets(p => !p)} className="px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h" style={{borderStyle:'dashed', opacity: 0.8}}>
+                        {showAllMarkets ? 'Show less' : `+${sortedMarkets.length - 5} more`}
+                      </button>
+                    )}
+                  </>
+                );
+              })()}
             </div>
-          )}
-          <AutocompleteTagInput value={marketSearch} onChange={setMarketSearch} onAdd={v => { const mapped = mapMarketValue(v); if (mapped && !markets.includes(mapped)) { setMarkets(p => [...p, mapped]); } else if (!mapped && !customMarkets.some(c => c.toLowerCase() === v.toLowerCase())) { setCustomMarkets(p => [...p, v]); } setMarketSearch(''); }} suggestions={[...MARKET_OPTIONS.filter(o => !markets.includes(o.value)).map(o => o.label), ...MARKET_SUGGESTIONS]} existingTags={[...markets.map(v => MARKET_OPTIONS.find(o => o.value === v)?.label || v), ...customMarkets]} placeholder="Search or add market..." />
-        </div>
-        <div className={s.msr} style={{marginTop:12}}>
-          {(() => { const sortedMarkets = smartSort(MARKET_OPTIONS.filter(o => !marketSearch || o.label.toLowerCase().includes(marketSearch.toLowerCase())), o => o.value, markets, []); const visibleMarkets = marketSearch ? sortedMarkets : sortedMarkets.slice(0, showAllMarkets ? sortedMarkets.length : 20); return (<>{visibleMarkets.map(o => (
-            <button key={o.value} type="button" onClick={() => { setMarkets(p => p.includes(o.value) ? p.filter(v => v !== o.value) : [...p, o.value]); setMarketsSource('manual'); }} className={markets.includes(o.value) ? s.pillBlu : s.pill}>
-              {markets.includes(o.value) && '✓ '}{o.label}
-            </button>
-          ))}{!marketSearch && sortedMarkets.length > 20 && (
-            <button type="button" onClick={() => setShowAllMarkets(p => !p)} className={s.pill} style={{borderStyle:'dashed', opacity: 0.8}}>
-              {showAllMarkets ? 'Show less' : `+${sortedMarkets.length - 20} more`}
-            </button>
-          )}</>); })()}
+            <div className={s.te}>
+              <input type="text" value={customMarketInput} onChange={e => setCustomMarketInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && customMarketInput.trim()) { e.preventDefault(); handleAddCustomMarket(customMarketInput.trim()); setCustomMarketInput(''); setMarketsSource('manual'); } }} placeholder="Add custom market..." className={s.inp} />
+              <button type="button" onClick={() => { if (customMarketInput.trim()) { handleAddCustomMarket(customMarketInput.trim()); setCustomMarketInput(''); setMarketsSource('manual'); } }} disabled={!customMarketInput.trim()} className={s.tp}>+</button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -842,53 +1252,10 @@ export default function ProjectForm({ project, onSubmit, onCancel, isSubmitting 
         </div>
       </section>
 
-      {/* ════ Advanced / Matching Preferences ═══════════════════════════ */}
-      <section className={s.advCard}>
-        <div className={s.hdr} style={{padding:'18px 22px 0',marginBottom:0,cursor:'pointer'}} onClick={() => setAdvancedOpen(!advancedOpen)}>
-          <div className={s.hdrLeft}>
-            <div className={s.ibI}><Sparkle24Regular style={{width:20,height:20}} /></div>
-            <div><h2 className={s.hTitle}>{t.projects?.advancedSection || 'Advanced / Matching Preferences'}</h2><p className={s.hDesc}>Optional settings for more precise matching.</p></div>
-          </div>
-          <div className={s.meta}>AI-assisted</div>
-        </div>
-        {(advancedOpen || tractionSignals.length > 0 || advisoryTopics.length > 0) && (
-          <div style={{padding:22,display:'grid',gap:18}}>
-            {/* Traction Signals */}
-            <div className={s.field}>
-              <span className={s.lbl}>Traction Signals</span>
-              <div className={s.ca}>
-                {tractionSignals.length > 0 && <div className={s.cw}>{tractionSignals.map((v, i) => <span key={i} className={s.chipI}>{v} <button type="button" onClick={() => setTractionSignals(tractionSignals.filter((_, j) => j !== i))} className={s.dismiss}>×</button></span>)}</div>}
-                <AutocompleteTagInput value={tractionInput} onChange={setTractionInput} onAdd={v => { if (!tractionSignals.map(x => x.toLowerCase()).includes(v.toLowerCase())) setTractionSignals([...tractionSignals, v]); setTractionInput(''); }} suggestions={TRACTION_SUGGESTIONS} existingTags={tractionSignals} placeholder="Add traction signal..." />
-              </div>
-            </div>
-
-            {/* Advisory Topics */}
-            <div className={s.field}>
-              <span className={s.lbl}>Advisory Topics</span>
-              <div className={s.ca}>
-                {advisoryTopics.length > 0 && <div className={s.cw}>{advisoryTopics.map((v, i) => <span key={i} className={s.chipI}>{v} <button type="button" onClick={() => setAdvisoryTopics(advisoryTopics.filter((_, j) => j !== i))} className={s.dismiss}>×</button></span>)}</div>}
-                <AutocompleteTagInput value={advisoryInput} onChange={setAdvisoryInput} onAdd={v => { if (!advisoryTopics.map(x => x.toLowerCase()).includes(v.toLowerCase())) setAdvisoryTopics([...advisoryTopics, v]); setAdvisoryInput(''); }} suggestions={ADVISORY_SUGGESTIONS} existingTags={advisoryTopics} placeholder="Add advisory topic..." />
-              </div>
-            </div>
-
-            {/* Ideal Counterpart */}
-            <div className={s.field}>
-              <span className={s.lbl}>Ideal Counterpart</span>
-              <textarea value={idealCounterpartProfile} onChange={e => setIdealCounterpartProfile(e.target.value)} rows={3} placeholder="Describe the ideal partner, advisor, investor, or collaborator." className={s.taSm} />
-            </div>
-
-            {/* Matching Mode */}
-            <div className={s.field}>
-              <span className={s.lbl}>Matching Mode</span>
-              <div className={s.segRow}>
-                <button type="button" onClick={() => setStrictLookingFor(false)} className={!strictLookingFor ? s.segF : s.seg}>{t.projects?.flexibleMatching || 'Flexible'}</button>
-                <button type="button" onClick={() => setStrictLookingFor(true)} className={strictLookingFor ? s.segS : s.seg}>{t.projects?.strictMatching || 'Strict'}</button>
-              </div>
-              <p className={s.note}>{t.projects?.strictLookingForDesc || 'Strict = only exact role matches. Flexible = broader matching.'}</p>
-            </div>
-          </div>
-        )}
-      </section>
+      {/* Advanced / Matching Preferences section removed; underlying state
+          (tractionSignals, advisoryTopics, idealCounterpartProfile,
+          strictLookingFor, advancedOpen) is intentionally preserved so AI
+          auto-fill and save payloads continue to work without UI editing. */}
 
       {/* ════ CTA ══════════════════════════════════════════════════════ */}
       <div className={s.cta}>

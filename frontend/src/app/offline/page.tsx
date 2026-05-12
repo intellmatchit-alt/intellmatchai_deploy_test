@@ -25,7 +25,7 @@ export default function OfflinePage() {
       <div className="relative text-center max-w-md">
         {/* Icon */}
         <div className="relative mx-auto w-24 h-24 mb-8">
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full blur-lg opacity-50" />
+          <div className="absolute inset-0 bg-[#3b82f633] rounded-full blur-lg opacity-50" />
           <div className="relative w-full h-full rounded-full bg-th-surface backdrop-blur-sm border border-th-border flex items-center justify-center">
             <WifiOff24Regular className="w-12 h-12 text-th-text-t" />
           </div>
@@ -46,7 +46,7 @@ export default function OfflinePage() {
           className="relative group inline-flex items-center gap-2"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl blur-lg opacity-50 group-hover:opacity-80 transition-opacity" />
-          <span className="relative flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all">
+          <span className="relative flex items-center gap-2 px-8 py-3 bg-[#3b82f633] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all">
             <ArrowClockwise24Regular className="w-5 h-5" />
             Try Again
           </span>
@@ -57,19 +57,19 @@ export default function OfflinePage() {
           <h3 className="text-th-text font-semibold mb-3">Things to try:</h3>
           <ul className="space-y-2 text-sm text-th-text-t">
             <li className="flex items-start gap-2">
-              <span className="text-emerald-400">•</span>
+              <span className="text-[#93c5fd]">•</span>
               Check your WiFi or mobile data connection
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-emerald-400">•</span>
+              <span className="text-[#93c5fd]">•</span>
               Try moving to an area with better signal
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-emerald-400">•</span>
+              <span className="text-[#93c5fd]">•</span>
               Disable airplane mode if enabled
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-emerald-400">•</span>
+              <span className="text-[#93c5fd]">•</span>
               Restart your router or device
             </li>
           </ul>

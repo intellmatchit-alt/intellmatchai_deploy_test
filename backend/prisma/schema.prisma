@@ -639,6 +639,7 @@ model Project {
   isActive        Boolean           @default(true) @map("is_active")
   organizationId  String?           @map("organization_id")
   isTeamShared    Boolean           @default(false) @map("is_team_shared")
+  matchesViewedAt DateTime?         @map("matches_viewed_at")
   createdAt       DateTime          @default(now()) @map("created_at")
   updatedAt       DateTime          @updatedAt @map("updated_at")
   matches         ProjectMatch[]

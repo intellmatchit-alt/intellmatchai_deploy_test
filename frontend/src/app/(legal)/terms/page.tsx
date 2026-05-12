@@ -139,7 +139,7 @@ function TermsContent() {
               <Link href="/login" className="hidden sm:inline-flex text-th-text-s hover:text-th-text transition-colors font-medium px-4 py-2">{t.nav.signIn}</Link>
               <Link href="/register" className="relative group">
                 <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-full blur-lg opacity-50 group-hover:opacity-80 transition-opacity" />
-                <span className="relative flex items-center justify-center bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-emerald-500/25 transition-all text-sm sm:text-base whitespace-nowrap">{t.nav.getStarted}</span>
+                <span className="relative flex items-center justify-center bg-[#3b82f633] text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all text-sm sm:text-base whitespace-nowrap">{t.nav.getStarted}</span>
               </Link>
             </div>
           </div>
@@ -157,7 +157,7 @@ function TermsContent() {
 
           {/* Last Updated */}
           <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-2 mb-8">
-            <span className="text-emerald-400 text-sm font-medium">{legal.lastUpdated}: {legal.effectiveDate}</span>
+            <span className="text-[#93c5fd] text-sm font-medium">{legal.lastUpdated}: {legal.effectiveDate}</span>
           </div>
 
           {/* Sections */}
@@ -178,7 +178,7 @@ function TermsContent() {
           <div className="mt-12 pt-8 border-t border-th-border">
             <button
               onClick={() => router.back()}
-              className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors group"
+              className="inline-flex items-center gap-2 text-[#93c5fd] hover:text-[#93c5fd] transition-colors group"
             >
               <ArrowLeft24Regular className="w-5 h-5 rtl:rotate-180 group-hover:-translate-x-1 rtl:group-hover:translate-x-1 transition-transform" />
               {legal.back || t.common?.back || 'Back'}

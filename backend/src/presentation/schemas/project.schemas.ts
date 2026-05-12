@@ -36,6 +36,7 @@ export const ProjectMatchStatusEnum = z.enum([
   'SAVED',
   'DISMISSED',
   'CONNECTED',
+  'ARCHIVED',
 ]);
 
 export const LookingForEnum = z.enum([

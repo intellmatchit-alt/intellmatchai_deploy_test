@@ -114,7 +114,7 @@ export default function PrivacySettingsPage() {
       {/* Data Consent */}
       <div className="bg-th-surface backdrop-blur-sm border border-th-border rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-th-border flex items-center gap-2">
-          <Shield24Regular className="w-5 h-5 text-emerald-400" />
+          <Shield24Regular className="w-5 h-5 text-[#93c5fd]" />
           <h2 className="text-sm font-medium text-th-text-s">{t.settings?.dataConsent || 'Data Consent'}</h2>
         </div>
 
@@ -122,7 +122,7 @@ export default function PrivacySettingsPage() {
         <div className="flex items-center justify-between p-4 hover:bg-th-surface transition-colors">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-              <Eye24Regular className="w-5 h-5 text-emerald-400" />
+              <Eye24Regular className="w-5 h-5 text-[#93c5fd]" />
             </div>
             <div>
               <p className="font-medium text-th-text">{t.settings?.aiEnrichment || 'AI Enrichment'}</p>
@@ -131,7 +131,7 @@ export default function PrivacySettingsPage() {
           </div>
           <button
             onClick={() => setConsent(prev => ({ ...prev, enrichment: !prev.enrichment }))}
-            className="text-emerald-400"
+            className="text-[#93c5fd]"
           >
             {consent.enrichment ? (
               <ToggleRight24Filled className="w-8 h-8" />
@@ -156,7 +156,7 @@ export default function PrivacySettingsPage() {
           </div>
           <button
             onClick={() => setConsent(prev => ({ ...prev, contacts: !prev.contacts }))}
-            className="text-emerald-400"
+            className="text-[#93c5fd]"
           >
             {consent.contacts ? (
               <ToggleRight24Filled className="w-8 h-8" />
@@ -181,7 +181,7 @@ export default function PrivacySettingsPage() {
           </div>
           <button
             onClick={() => setConsent(prev => ({ ...prev, analytics: !prev.analytics }))}
-            className="text-emerald-400"
+            className="text-[#93c5fd]"
           >
             {consent.analytics ? (
               <ToggleRight24Filled className="w-8 h-8" />
@@ -196,7 +196,7 @@ export default function PrivacySettingsPage() {
       <button
         onClick={handleSave}
         disabled={isSaving}
-        className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+        className="w-full py-3 bg-[#3b82f633] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
       >
         {isSaving ? (
           <>

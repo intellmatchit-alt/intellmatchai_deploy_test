@@ -18,7 +18,7 @@ import {
 
 const ROLE_COLORS: Record<string, string> = {
   OWNER: 'bg-emerald-500/20 text-indigo-300 border-emerald-500/30',
-  ADMIN: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+  ADMIN: 'bg-emerald-500/20 text-[#93c5fd] border-emerald-500/30',
   MEMBER: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   VIEWER: 'bg-white/[0.03]0/20 text-th-text-t border-neutral-500/30',
 };
@@ -140,7 +140,7 @@ export default function MembersPage() {
         </button>
         <h1 className="text-2xl font-bold text-th-text">{t.organization?.members || 'Members'}</h1>
         {isAdmin && (
-          <button onClick={() => setShowInvite(true)} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-emerald-500/25 transition-all">
+          <button onClick={() => setShowInvite(true)} className="flex items-center gap-2 px-4 py-2 bg-[#3b82f633] text-white rounded-xl text-sm font-thin hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all">
             <PersonAdd24Regular className="w-4 h-4" />
             {t.organization?.invite || 'Invite'}
           </button>
@@ -155,7 +155,7 @@ export default function MembersPage() {
         </div>
         <div className="h-2 bg-th-surface-h rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500"
+            className="h-full bg-[#3b82f633] rounded-full transition-all duration-500"
             style={{ width: `${Math.min(seatPercentage, 100)}%` }}
           />
         </div>
@@ -187,7 +187,7 @@ export default function MembersPage() {
           >
             {t.organization?.pendingInvitations || 'Pending Invitations'}
             {invitations.length > 0 && (
-              <span className="ml-2 px-1.5 py-0.5 text-xs bg-emerald-500/20 text-emerald-400 rounded-full">
+              <span className="ml-2 px-1.5 py-0.5 text-xs bg-emerald-500/20 text-[#93c5fd] rounded-full">
                 {invitations.length}
               </span>
             )}
@@ -362,7 +362,7 @@ export default function MembersPage() {
                       onClick={() => setInviteRole(role)}
                       className={`py-2 px-3 rounded-xl text-sm font-medium border transition-all ${
                         inviteRole === role
-                          ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
+                          ? 'bg-emerald-500/20 border-emerald-500/50 text-[#93c5fd]'
                           : 'bg-th-surface border-th-border text-th-text-t hover:bg-th-surface-h'
                       }`}
                     >
@@ -376,7 +376,7 @@ export default function MembersPage() {
             <button
               onClick={handleInvite}
               disabled={inviting || !inviteEmail.trim()}
-              className="w-full mt-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50"
+              className="w-full mt-6 py-3 bg-[#3b82f633] text-white font-thin rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all disabled:opacity-50"
             >
               {inviting ? (
                 <span className="flex items-center justify-center gap-2">

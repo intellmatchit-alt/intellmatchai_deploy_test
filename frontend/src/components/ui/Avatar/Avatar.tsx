@@ -82,6 +82,7 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
       className,
       size,
       shape,
+      intent,
       bordered,
       src,
       alt,
@@ -108,16 +109,18 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
     return (
       <div
         ref={ref}
-        className={cn(avatarVariants({ size, shape, bordered }), className)}
+        className={cn(avatarVariants({ size, shape, intent, bordered }), className)}
         style={fallbackColor ? { backgroundColor: fallbackColor } : undefined}
         {...props}
       >
-        {/* Image */}
+        {/* Image — absolutely positioned so it can overlay the fallback without
+            altering the flex layout while loading. */}
         {showImage && (
           <img
             src={src}
             alt={alt || name || 'Avatar'}
             className={cn(
+              'absolute inset-0',
               avatarImageVariants(),
               isLoading && 'opacity-0'
             )}
@@ -129,8 +132,9 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
           />
         )}
 
-        {/* Fallback (initials or custom) */}
-        {(!showImage || isLoading) && (
+        {/* Fallback (initials or custom) — always renders when there's no
+            usable image, so initials never collide with the <img> in the flex row. */}
+        {!showImage && (
           <span className={avatarFallbackVariants()}>
             {initials || '?'}
           </span>

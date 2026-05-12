@@ -145,7 +145,7 @@ export default function AcceptInvitationPage() {
           </p>
           <Link
             href="/register"
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-3 font-medium text-white transition-opacity hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#3b82f633] px-6 py-3 font-thin text-white transition-opacity hover:opacity-90"
           >
             {t.invitation?.signUpInstead || 'Sign up for a new account'}
           </Link>
@@ -300,7 +300,7 @@ export default function AcceptInvitationPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-3 font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-xl bg-[#3b82f633] px-4 py-3 font-thin text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? (
               <div className="flex items-center justify-center gap-2">
@@ -315,11 +315,11 @@ export default function AcceptInvitationPage() {
           {/* Terms */}
           <p className="text-center text-xs text-th-text-m">
             {t.invitation?.termsNotice || 'By activating your account, you agree to our'}{' '}
-            <Link href="/terms" className="text-emerald-400 hover:underline">
+            <Link href="/terms" className="text-[#93c5fd] hover:underline">
               {t.common?.termsOfService || 'Terms of Service'}
             </Link>{' '}
             {t.common?.and || 'and'}{' '}
-            <Link href="/privacy" className="text-emerald-400 hover:underline">
+            <Link href="/privacy" className="text-[#93c5fd] hover:underline">
               {t.common?.privacyPolicy || 'Privacy Policy'}
             </Link>
           </p>

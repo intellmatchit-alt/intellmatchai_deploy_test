@@ -786,6 +786,115 @@ export class AuthController {
       });
     }
   }
+
+  /**
+   * Google OAuth authentication
+   * Register new user or login existing user with Google profile.
+   * Auto-links to existing email-only accounts (Google email is verified).
+   */
+  async googleAuth(data: {
+    googleId: string;
+    email: string;
+    name: string;
+    avatarUrl?: string;
+    userAgent?: string;
+    ipAddress?: string;
+  }): Promise<any> {
+    const { email, name, avatarUrl } = data;
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+      include: {
+        userSectors: true,
+        userSkills: true,
+        userInterests: true,
+      },
+    });
+
+    const { generateTokenPair } =
+      await import("../../infrastructure/auth/jwt.js");
+
+    if (existingUser) {
+      // Auto-link by verified email: backfill avatar if missing.
+      if (!existingUser.avatarUrl && avatarUrl) {
+        await prisma.user.update({
+          where: { id: existingUser.id },
+          data: { avatarUrl },
+        });
+      }
+
+      const tokenPair = generateTokenPair(existingUser.id, existingUser.email);
+      await prisma.refreshToken.create({
+        data: {
+          token: tokenPair.refreshToken,
+          userId: existingUser.id,
+          expiresAt: tokenPair.refreshTokenExpiresAt,
+        },
+      });
+
+      const hasCompletedOnboarding =
+        (existingUser as any).userSectors?.length > 0 &&
+        (existingUser as any).userSkills?.length > 0 &&
+        (existingUser as any).userInterests?.length > 0;
+
+      return {
+        user: {
+          id: existingUser.id,
+          email: existingUser.email,
+          name: existingUser.fullName,
+          avatarUrl: avatarUrl || existingUser.avatarUrl,
+          isEmailVerified: existingUser.emailVerified,
+          hasCompletedOnboarding,
+        },
+        accessToken: tokenPair.accessToken,
+        refreshToken: tokenPair.refreshToken,
+        expiresAt: tokenPair.accessTokenExpiresAt,
+      };
+    } else {
+      const crypto = await import("crypto");
+      const userId = crypto.randomUUID();
+      const randomPassword = crypto.randomBytes(32).toString("hex");
+      const hashedPassword = await hashPassword(randomPassword);
+
+      const newUser = await prisma.user.create({
+        data: {
+          id: userId,
+          email: email.toLowerCase(),
+          fullName: name,
+          passwordHash: hashedPassword,
+          avatarUrl: avatarUrl || null,
+          emailVerified: true, // Google emails are verified
+          isActive: true,
+        },
+      });
+
+      const tokenPair = generateTokenPair(newUser.id, newUser.email);
+      await prisma.refreshToken.create({
+        data: {
+          token: tokenPair.refreshToken,
+          userId: newUser.id,
+          expiresAt: tokenPair.refreshTokenExpiresAt,
+        },
+      });
+
+      logger.info("User registered via Google", { userId: newUser.id });
+
+      return {
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          name: newUser.fullName,
+          avatarUrl: newUser.avatarUrl,
+          isEmailVerified: newUser.emailVerified,
+          hasCompletedOnboarding: false,
+        },
+        accessToken: tokenPair.accessToken,
+        refreshToken: tokenPair.refreshToken,
+        expiresAt: tokenPair.accessTokenExpiresAt,
+      };
+    }
+  }
+
 }
 
 // Export singleton instance

@@ -229,7 +229,7 @@ export default function SellSmarterPage() {
                   onClick={() => setFormData((prev) => ({ ...prev, productType: option.id }))}
                   className={`px-4 py-2 rounded-lg border transition-all ${
                     formData.productType === option.id
-                      ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
+                      ? 'bg-emerald-500/20 border-emerald-500 text-[#93c5fd]'
                       : 'bg-th-surface border-th-border text-th-text-t hover:border-white/30'
                   }`}
                 >
@@ -282,7 +282,7 @@ export default function SellSmarterPage() {
                   onClick={() => setFormData((prev) => ({ ...prev, targetCompanySize: option.id }))}
                   className={`px-4 py-3 rounded-lg border transition-all text-start ${
                     formData.targetCompanySize === option.id
-                      ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
+                      ? 'bg-emerald-500/20 border-emerald-500 text-[#93c5fd]'
                       : 'bg-th-surface border-th-border text-th-text-t hover:border-white/30'
                   }`}
                 >
@@ -342,7 +342,7 @@ export default function SellSmarterPage() {
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-[#3b82f633] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSaving ? (
               <>

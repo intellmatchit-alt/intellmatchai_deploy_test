@@ -149,7 +149,7 @@ function UseCaseContent({ useCaseKey, icon, gradient }: UseCaseContentProps) {
               <Link href="/login" className="hidden sm:inline-flex text-th-text-s hover:text-th-text transition-colors font-medium px-4 py-2">{t.nav.signIn}</Link>
               <Link href="/register" className="relative group">
                 <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-full blur-lg opacity-50 group-hover:opacity-80 transition-opacity" />
-                <span className="relative flex items-center justify-center bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-emerald-500/25 transition-all text-sm sm:text-base whitespace-nowrap">{t.nav.getStarted}</span>
+                <span className="relative flex items-center justify-center bg-[#3b82f633] text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all text-sm sm:text-base whitespace-nowrap">{t.nav.getStarted}</span>
               </Link>
             </div>
           </div>
@@ -190,7 +190,7 @@ function UseCaseContent({ useCaseKey, icon, gradient }: UseCaseContentProps) {
           <div className="mt-12 text-center">
             <Link href="/register" className="relative group inline-flex items-center justify-center">
               <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl blur-lg opacity-60 group-hover:opacity-100 transition-opacity" />
-              <span className="relative flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-xl hover:shadow-emerald-500/25 transition-all group-hover:-translate-y-0.5">
+              <span className="relative flex items-center gap-2 bg-[#3b82f633] text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-xl hover:shadow-[#3b82f6]/25 transition-all group-hover:-translate-y-0.5">
                 {t.useCases?.getStarted || 'Get Started Now'}
                 <ArrowRight24Regular className="w-5 h-5 group-hover:translate-x-1 transition-transform rtl:rotate-180" />
               </span>
@@ -201,7 +201,7 @@ function UseCaseContent({ useCaseKey, icon, gradient }: UseCaseContentProps) {
           <div className="mt-12 pt-8 border-t border-th-border">
             <Link
               href="/"
-              className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors group"
+              className="inline-flex items-center gap-2 text-[#93c5fd] hover:text-[#93c5fd] transition-colors group"
             >
               <ArrowLeft24Regular className="w-5 h-5 rtl:rotate-180 group-hover:-translate-x-1 rtl:group-hover:translate-x-1 transition-transform" />
               {t.useCases?.backToHome || 'Back to Home'}

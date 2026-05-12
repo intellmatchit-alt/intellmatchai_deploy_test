@@ -97,7 +97,7 @@ export function TaskWidget() {
 
   const tabs: { key: TabKey; label: string; count: number; color: string }[] = [
     { key: 'today', label: tw?.today || 'Today', count: stats.today, color: 'text-blue-400' },
-    { key: 'thisWeek', label: tw?.thisWeek || 'This Week', count: stats.thisWeek, color: 'text-emerald-400' },
+    { key: 'thisWeek', label: tw?.thisWeek || 'This Week', count: stats.thisWeek, color: 'text-[#93c5fd]' },
     { key: 'overdue', label: tw?.overdue || 'Overdue', count: stats.overdue, color: 'text-red-400' },
   ];
 
@@ -120,12 +120,12 @@ export function TaskWidget() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
         <div className="flex items-center gap-2">
-          <TaskListSquareLtr24Regular className="w-5 h-5 text-emerald-400" />
+          <TaskListSquareLtr24Regular className="w-5 h-5 text-[#93c5fd]" />
           <h3 className="text-sm font-semibold text-th-text">{tw?.tasks || 'Tasks'}</h3>
         </div>
         <Link
           href="/tasks"
-          className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+          className="flex items-center gap-1 text-xs text-[#93c5fd] hover:text-[#93c5fd] transition-colors"
         >
           {tw?.viewAll || 'View all'}
           <ArrowRight24Regular className="w-3.5 h-3.5 rtl:rotate-180" />
@@ -152,7 +152,7 @@ export function TaskWidget() {
       <div className="px-4 pb-3">
         <div className="h-1.5 bg-th-surface-hover rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all"
+            className="h-full bg-[#3b82f633] rounded-full transition-all"
             style={{ width: `${completionRate}%` }}
           />
         </div>

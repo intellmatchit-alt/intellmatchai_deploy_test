@@ -204,12 +204,12 @@ export default function CheckoutPage() {
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-semibold text-th-text">{PLAN_INFO[p].name}</span>
                     {p === 'TEAM' && (
-                      <span className="px-2 py-0.5 bg-gradient-to-r from-emerald-500/20 to-emerald-500/20 text-emerald-400 text-xs font-medium rounded-full border border-emerald-500/30">
+                      <span className="px-2 py-0.5 bg-gradient-to-r from-emerald-500/20 to-emerald-500/20 text-[#93c5fd] text-xs font-medium rounded-full border border-emerald-500/30">
                         Teams
                       </span>
                     )}
                   </div>
-                  <div className="text-sm text-emerald-400 font-medium">{PLAN_INFO[p].tagline}</div>
+                  <div className="text-sm text-[#93c5fd] font-medium">{PLAN_INFO[p].tagline}</div>
                   <div className="text-xs text-th-text-t mt-1">{PLAN_INFO[p].description}</div>
                   <div className="text-lg font-bold text-th-text mt-3">
                     ${p === 'TEAM' ? PRICING.TEAM[billingInterval] : PRICING.PRO[billingInterval]}
@@ -227,7 +227,7 @@ export default function CheckoutPage() {
           {plan === 'TEAM' && (
             <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6">
               <div className="flex items-center gap-2 mb-4">
-                <People24Regular className="w-5 h-5 text-emerald-400" />
+                <People24Regular className="w-5 h-5 text-[#93c5fd]" />
                 <h2 className="text-lg font-semibold text-th-text">Team Size</h2>
               </div>
               <div className="flex items-center justify-between">
@@ -366,7 +366,7 @@ export default function CheckoutPage() {
             <button
               onClick={handleCheckout}
               disabled={isProcessing}
-              className="w-full mt-6 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full mt-6 py-4 bg-[#3b82f633] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isProcessing ? (
                 <span className="flex items-center justify-center gap-2">

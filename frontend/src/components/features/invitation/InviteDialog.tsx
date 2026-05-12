@@ -128,7 +128,7 @@ export function InviteDialog({ isOpen, onClose, contact, onSuccess }: InviteDial
                   disabled={!canSendEmail}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 transition-colors ${
                     method === 'email'
-                      ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/50'
+                      ? 'bg-emerald-500/20 text-[#93c5fd] ring-1 ring-emerald-500/50'
                       : canSendEmail
                         ? 'bg-th-surface text-th-text-t hover:bg-th-surface-h'
                         : 'cursor-not-allowed bg-th-surface text-white/70'
@@ -142,7 +142,7 @@ export function InviteDialog({ isOpen, onClose, contact, onSuccess }: InviteDial
                   disabled={!canSendSms}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 transition-colors ${
                     method === 'sms'
-                      ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/50'
+                      ? 'bg-emerald-500/20 text-[#93c5fd] ring-1 ring-emerald-500/50'
                       : canSendSms
                         ? 'bg-th-surface text-th-text-t hover:bg-th-surface-h'
                         : 'cursor-not-allowed bg-th-surface text-white/70'
@@ -192,7 +192,7 @@ export function InviteDialog({ isOpen, onClose, contact, onSuccess }: InviteDial
               <button
                 onClick={handleSubmit}
                 disabled={loading || (!canSendEmail && !canSendSms)}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-3 font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#3b82f633] px-4 py-3 font-thin text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? (
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />

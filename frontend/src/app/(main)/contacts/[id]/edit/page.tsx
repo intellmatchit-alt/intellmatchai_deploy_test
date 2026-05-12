@@ -154,7 +154,7 @@ function BioPreviewDialog({
           <button type="button" onClick={onClose} className="px-4 py-2 text-th-text-s hover:text-th-text hover:bg-th-surface-h rounded-lg transition-colors">
             {t.common?.cancel || 'Cancel'}
           </button>
-          <button type="button" onClick={handleSave} className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-lg hover:shadow-lg hover:shadow-emerald-500/25 transition-all">
+          <button type="button" onClick={handleSave} className="px-4 py-2 bg-[#3b82f633] text-white font-thin rounded-lg hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all">
             {t.common?.save || 'Save'}
           </button>
         </div>
@@ -731,7 +731,7 @@ export default function EditContactPage() {
             <button
               type="button"
               onClick={() => setIsBioDialogOpen(true)}
-              className="flex items-center gap-1.5 px-2 py-1 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-2 py-1 text-xs text-[#93c5fd] hover:text-[#93c5fd] hover:bg-emerald-500/10 rounded-lg transition-colors"
             >
               <FullScreenMaximize24Regular className="w-4 h-4" />
               {t.onboarding?.bioPreview?.expand || 'Expand'}
@@ -805,7 +805,7 @@ export default function EditContactPage() {
           {formData.customSectors.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
               {formData.customSectors.map((sector, idx) => (
-                <span key={`custom-${idx}`} className="px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-full text-sm font-medium flex items-center gap-1">
+                <span key={`custom-${idx}`} className="px-3 py-1.5 bg-[#3b82f633] text-white rounded-full text-sm font-thin flex items-center gap-1">
                   {sector}
                   <button onClick={() => removeCustomSector(sector)} className="hover:bg-th-surface-h rounded-full p-0.5">
                     <Dismiss24Regular className="w-3 h-3" />
@@ -823,8 +823,8 @@ export default function EditContactPage() {
                 return (
                   <div key={sector.id} className="relative">
                     <button type="button" onClick={() => toggleSector(sector.id)}
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${isSelected
-                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white pe-7'
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${isSelected
+                        ? 'bg-[#3b82f633] text-[#93c5fd] pe-6'
                         : 'bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'}`}>
                       {lang === 'ar' && sector.nameAr ? sector.nameAr : sector.name}
                     </button>
@@ -866,7 +866,7 @@ export default function EditContactPage() {
           {formData.customSkills.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
               {formData.customSkills.map((skill, idx) => (
-                <span key={`custom-${idx}`} className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full text-sm font-medium flex items-center gap-1">
+                <span key={`custom-${idx}`} className="px-3 py-1.5 bg-[#3b82f633] text-[#93c5fd] rounded-full text-sm font-thin flex items-center gap-1">
                   {skill}
                   <button onClick={() => removeCustomSkill(skill)} className="hover:bg-th-surface-h rounded-full p-0.5">
                     <Dismiss24Regular className="w-3 h-3" />
@@ -885,7 +885,7 @@ export default function EditContactPage() {
                   <div key={skill.id} className="relative">
                     <button type="button" onClick={() => toggleSkill(skill.id)}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${isSelected
-                        ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white pe-6'
+                        ? 'bg-[#3b82f633] text-[#93c5fd] pe-6'
                         : 'bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'}`}>
                       {lang === 'ar' && skill.nameAr ? skill.nameAr : skill.name}
                     </button>
@@ -931,7 +931,7 @@ export default function EditContactPage() {
             <div className="flex flex-wrap gap-2 mb-3">
               {formData.customInterests.map((interest) => (
                 <div key={interest} className="relative">
-                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-yellow-500 to-cyan-500 text-white pe-6">
+                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-thin bg-[#3b82f633] text-[#93c5fd] pe-6">
                     {interest}
                   </span>
                   <button type="button" onClick={() => removeCustomInterest(interest)}
@@ -952,7 +952,7 @@ export default function EditContactPage() {
                   <div key={interest.id} className="relative">
                     <button type="button" onClick={() => toggleInterest(interest.id)}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${isSelected
-                        ? 'bg-gradient-to-r from-yellow-500 to-cyan-500 text-white pe-6'
+                        ? 'bg-[#3b82f633] text-[#93c5fd] pe-6'
                         : 'bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'}`}>
                       {lang === 'ar' && interest.nameAr ? interest.nameAr : interest.name}
                     </button>
@@ -998,7 +998,7 @@ export default function EditContactPage() {
             <div className="flex flex-wrap gap-2 mb-3">
               {formData.customHobbies.map((hobby) => (
                 <div key={hobby} className="relative">
-                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-red-500 to-emerald-500 text-white pe-6">
+                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-[#3b82f633] text-[#93c5fd] pe-6">
                     {hobby}
                   </span>
                   <button type="button" onClick={() => removeCustomHobby(hobby)}
@@ -1019,7 +1019,7 @@ export default function EditContactPage() {
                   <div key={hobby.id} className="relative">
                     <button type="button" onClick={() => toggleHobby(hobby.id)}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${isSelected
-                        ? 'bg-gradient-to-r from-red-500 to-emerald-500 text-white pe-6'
+                        ? 'bg-[#3b82f633] text-[#93c5fd] pe-6'
                         : 'bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'}`}>
                       {lang === 'ar' && hobby.nameAr ? hobby.nameAr : hobby.name}
                     </button>
@@ -1053,13 +1053,13 @@ export default function EditContactPage() {
         <div className="border-t border-th-border pt-5">
           <div className="flex items-center justify-between mb-3">
             <label className="flex items-center gap-2 text-sm font-medium text-th-text-s">
-              <Note24Regular className="w-4 h-4 text-emerald-400" />
+              <Note24Regular className="w-4 h-4 text-[#93c5fd]" />
               {t.mediaNotes?.title || 'Media Notes'} ({contactNotes.length})
             </label>
             <button
               type="button"
               onClick={() => setShowNoteDialog(true)}
-              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg text-sm text-emerald-300 transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg text-sm text-[#93c5fd] transition-colors"
             >
               <Add24Regular className="w-4 h-4" />
               {t.common?.add || 'Add'}
@@ -1081,7 +1081,7 @@ export default function EditContactPage() {
                       )}
                       {note.type === 'VOICE' && note.mediaUrl && (
                         <div className="flex items-center gap-3">
-                          <Mic24Regular className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                          <Mic24Regular className="w-5 h-5 text-[#93c5fd] flex-shrink-0" />
                           <audio controls className="flex-1 h-8">
                             <source src={note.mediaUrl} type={note.mimeType || 'audio/webm'} />
                           </audio>
@@ -1101,7 +1101,7 @@ export default function EditContactPage() {
                           className="flex items-center gap-3 p-2 bg-th-surface rounded-lg hover:bg-th-surface-h transition-colors"
                         >
                           <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                            <span className="text-xs font-bold text-emerald-300">
+                            <span className="text-xs font-bold text-[#93c5fd]">
                               {note.mimeType?.includes('pdf') ? 'PDF' :
                                note.mimeType?.includes('word') || note.mimeType?.includes('document') ? 'DOC' :
                                note.mimeType?.includes('powerpoint') || note.mimeType?.includes('presentation') ? 'PPT' :
@@ -1140,13 +1140,13 @@ export default function EditContactPage() {
         <div className="border-t border-th-border pt-5">
           <div className="flex items-center justify-between mb-3">
             <label className="flex items-center gap-2 text-sm font-medium text-th-text-s">
-              <Clock24Regular className="w-4 h-4 text-emerald-400" />
+              <Clock24Regular className="w-4 h-4 text-[#93c5fd]" />
               Reminders ({reminders.filter(r => !r.isCompleted).length})
             </label>
             <button
               type="button"
               onClick={() => setShowReminderForm(!showReminderForm)}
-              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg text-sm text-emerald-300 transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg text-sm text-[#93c5fd] transition-colors"
             >
               <Add24Regular className="w-4 h-4" />
               Add
@@ -1185,7 +1185,7 @@ export default function EditContactPage() {
               {reminders.map((reminder) => (
                 <div key={reminder.id} className={`flex items-center justify-between bg-th-surface border border-th-border rounded-lg p-3 ${reminder.isCompleted ? 'opacity-50' : ''}`}>
                   <div className="flex items-center gap-3">
-                    <button type="button" onClick={() => handleToggleReminderStatus(reminder)} className={`p-1 rounded ${reminder.isCompleted ? 'text-green-400' : 'text-th-text-t hover:text-emerald-400'}`}>
+                    <button type="button" onClick={() => handleToggleReminderStatus(reminder)} className={`p-1 rounded ${reminder.isCompleted ? 'text-green-400' : 'text-th-text-t hover:text-[#93c5fd]'}`}>
                       <CheckmarkCircle24Regular className="w-5 h-5" />
                     </button>
                     <div>
@@ -1306,7 +1306,7 @@ export default function EditContactPage() {
         {/* Save Button */}
         <button onClick={handleUpdateContact} disabled={isLoading || !formData.fullName.trim()} className="relative w-full group mt-4">
           <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl blur-lg opacity-50 group-hover:opacity-80 transition-opacity" />
-          <span className="relative flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50">
+          <span className="relative flex items-center justify-center gap-2 w-full py-3 bg-[#3b82f633] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all disabled:opacity-50">
             {isLoading ? (
               <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving...</>
             ) : (

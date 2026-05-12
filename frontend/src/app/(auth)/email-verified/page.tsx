@@ -74,7 +74,7 @@ function EmailVerifiedContent() {
 
             <Link
               href="/login"
-              className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+              className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-[#3b82f633] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all"
             >
               Continue to Login
             </Link>
@@ -94,7 +94,7 @@ function EmailVerifiedContent() {
             <div className="space-y-4">
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center gap-2 w-full px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+                className="inline-flex items-center justify-center gap-2 w-full px-8 py-3 bg-[#3b82f633] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all"
               >
                 Go to Login
               </Link>
@@ -119,7 +119,7 @@ function EmailVerifiedContent() {
           Need help?{" "}
           <a
             href="mailto:support@p2pnetwork.com"
-            className="text-emerald-400 hover:text-emerald-300"
+            className="text-[#93c5fd] hover:text-[#93c5fd]"
           >
             Contact Support
           </a>

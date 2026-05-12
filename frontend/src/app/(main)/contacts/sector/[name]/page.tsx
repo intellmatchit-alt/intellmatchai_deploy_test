@@ -227,7 +227,7 @@ export default function SectorStatsPage() {
         </div>
         <Link
           href={`/contacts?sector=${encodeURIComponent(sectorName)}`}
-          className="flex items-center gap-1 px-3 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 text-sm font-medium hover:bg-emerald-500/20 transition-colors"
+          className="flex items-center gap-1 px-3 py-2 rounded-xl bg-emerald-500/10 text-[#93c5fd] text-sm font-medium hover:bg-emerald-500/20 transition-colors"
         >
           {ts?.viewContacts || t.common?.viewAll || 'View All'}
           <ChevronRight24Regular className="w-4 h-4 rtl:rotate-180" />
@@ -314,7 +314,7 @@ export default function SectorStatsPage() {
             </h2>
             <Link
               href={`/contacts?sector=${encodeURIComponent(sectorName)}`}
-              className="flex items-center gap-1 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+              className="flex items-center gap-1 text-sm text-[#93c5fd] hover:text-[#93c5fd] transition-colors"
             >
               {t.common?.viewAll || 'View All'}
               <ChevronRight24Regular className="w-4 h-4 rtl:rotate-180" />
@@ -335,7 +335,7 @@ export default function SectorStatsPage() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate group-hover:text-emerald-400 transition-colors">
+                  <p className="text-sm font-medium text-white truncate group-hover:text-[#93c5fd] transition-colors">
                     {contact.name}
                   </p>
                   <p className="text-xs text-white/50 truncate">
@@ -344,9 +344,9 @@ export default function SectorStatsPage() {
                 </div>
                 {contact.matchScore != null && contact.matchScore > 0 && (
                   <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
-                    contact.matchScore >= 75 ? 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10' :
+                    contact.matchScore >= 75 ? 'border-emerald-500/40 text-[#93c5fd] bg-emerald-500/10' :
                     contact.matchScore >= 50 ? 'border-blue-500/40 text-blue-400 bg-blue-500/10' :
-                    'border-emerald-500/40 text-emerald-400 bg-emerald-500/10'
+                    'border-emerald-500/40 text-[#93c5fd] bg-emerald-500/10'
                   }`}>
                     {contact.matchScore}%
                   </div>

@@ -271,7 +271,7 @@ export function TaskDetailPanel({ task, isOpen, onClose, onEdit }: TaskDetailPan
 
               {task.recurrence && (
                 <div className="flex items-center gap-2.5 text-sm">
-                  <ArrowRepeatAll24Regular className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  <ArrowRepeatAll24Regular className="w-4 h-4 text-[#93c5fd] flex-shrink-0" />
                   <span className="text-white/50">Repeats:</span>
                   <span className="text-white">
                     {task.recurrence.pattern.charAt(0) + task.recurrence.pattern.slice(1).toLowerCase()}
@@ -290,14 +290,14 @@ export function TaskDetailPanel({ task, isOpen, onClose, onEdit }: TaskDetailPan
                 className={cn(
                   'flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors',
                   activeTab === 'comments'
-                    ? 'text-emerald-400 border-emerald-400'
+                    ? 'text-[#93c5fd] border-emerald-400'
                     : 'text-white/50 border-transparent hover:text-white'
                 )}
               >
                 <Chat24Regular className="w-4 h-4" />
                 {(t as any).tasksPage?.comments || 'Comments'}
                 {comments.length > 0 && (
-                  <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">
+                  <span className="text-[10px] bg-emerald-500/20 text-[#93c5fd] px-1.5 py-0.5 rounded-full">
                     {comments.length}
                   </span>
                 )}
@@ -307,7 +307,7 @@ export function TaskDetailPanel({ task, isOpen, onClose, onEdit }: TaskDetailPan
                 className={cn(
                   'flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors',
                   activeTab === 'activity'
-                    ? 'text-emerald-400 border-emerald-400'
+                    ? 'text-[#93c5fd] border-emerald-400'
                     : 'text-white/50 border-transparent hover:text-white'
                 )}
               >

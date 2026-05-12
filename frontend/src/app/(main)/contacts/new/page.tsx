@@ -360,7 +360,7 @@ function BioPreviewDialog({
           <button
             type="button"
             onClick={handleSave}
-            className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-lg hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+            className="px-4 py-2 bg-[#3b82f633] text-white font-thin rounded-lg hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all"
           >
             {t.common?.save || "Save"}
           </button>
@@ -1891,7 +1891,7 @@ export default function AddContactPage() {
 
             {/* Header */}
             <div className="flex items-center gap-2 mb-4 relative">
-              <Sparkle24Regular className="w-5 h-5 text-emerald-400" />
+              <Sparkle24Regular className="w-5 h-5 text-[#93c5fd]" />
               <h2 className="text-lg font-bold text-th-text">
                 {t.contacts?.matchDetails?.matchBreakdown || "Match Analysis"}
               </h2>
@@ -1938,7 +1938,7 @@ export default function AddContactPage() {
                       <span>
                         {t.contacts?.matchDetails?.scores?.goals || "Goals"}
                       </span>
-                      <span className="text-emerald-400">
+                      <span className="text-[#93c5fd]">
                         {t.contacts?.matchDetails?.weights?.goals || "25%"}
                       </span>
                     </div>
@@ -1964,7 +1964,7 @@ export default function AddContactPage() {
                           "AI Semantic"}
                         *
                       </span>
-                      <span className="text-emerald-400">
+                      <span className="text-[#93c5fd]">
                         {t.contacts?.matchDetails?.weights?.aiSemantic || "10%"}
                       </span>
                     </div>
@@ -1972,7 +1972,7 @@ export default function AddContactPage() {
                       <span>
                         {t.contacts?.matchDetails?.scores?.network || "Network"}
                       </span>
-                      <span className="text-emerald-400">
+                      <span className="text-[#93c5fd]">
                         {t.contacts?.matchDetails?.weights?.network || "8%"}
                       </span>
                     </div>
@@ -2006,7 +2006,7 @@ export default function AddContactPage() {
                         {t.contacts?.matchDetails?.scores?.interests ||
                           "Interests"}
                       </span>
-                      <span className="text-emerald-400">
+                      <span className="text-[#93c5fd]">
                         {t.contacts?.matchDetails?.weights?.interests || "5%"}
                       </span>
                     </div>
@@ -2259,15 +2259,15 @@ export default function AddContactPage() {
                         <item.Icon
                           className={`w-4 h-4 ${
                             item.color === "purple"
-                              ? "text-emerald-400"
+                              ? "text-[#93c5fd]"
                               : item.color === "blue"
                                 ? "text-blue-400"
                                 : item.color === "cyan"
                                   ? "text-cyan-400"
                                   : item.color === "violet"
-                                    ? "text-emerald-400"
+                                    ? "text-[#93c5fd]"
                                     : item.color === "indigo"
-                                      ? "text-emerald-400"
+                                      ? "text-[#93c5fd]"
                                       : item.color === "green"
                                         ? "text-green-400"
                                         : item.color === "yellow"
@@ -2275,7 +2275,7 @@ export default function AddContactPage() {
                                           : item.color === "lime"
                                             ? "text-lime-400"
                                             : item.color === "pink"
-                                              ? "text-emerald-400"
+                                              ? "text-[#93c5fd]"
                                               : "text-red-400"
                           }`}
                         />
@@ -2468,12 +2468,12 @@ export default function AddContactPage() {
                       key={i}
                       className={`px-3 py-1.5 rounded-full text-sm border ${
                         intersection.type === "sector"
-                          ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                          ? "bg-emerald-500/20 text-[#93c5fd] border-emerald-500/30"
                           : intersection.type === "skill"
                             ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
                             : intersection.type === "hobby"
                               ? "bg-yellow-500/20 text-yellow-300 border-yellow-500/30"
-                              : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                              : "bg-emerald-500/20 text-[#93c5fd] border-emerald-500/30"
                       }`}
                     >
                       {intersection.label}
@@ -2619,13 +2619,13 @@ export default function AddContactPage() {
         <div className="bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-semibold text-th-text flex items-center gap-2">
-              <Note24Regular className="w-5 h-5 text-emerald-400" />
+              <Note24Regular className="w-5 h-5 text-[#93c5fd]" />
               {t.contactDetails?.notes?.title || "Notes"}
             </h3>
             <button
               type="button"
               onClick={() => setShowPostSaveNoteDialog(true)}
-              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg text-sm text-emerald-300 transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg text-sm text-[#93c5fd] transition-colors"
             >
               <Add24Regular className="w-4 h-4" />
               {t.common?.add || "Add"}
@@ -2644,7 +2644,7 @@ export default function AddContactPage() {
                   )}
                   {note.type === "VOICE" && note.mediaUrl && (
                     <div className="flex items-center gap-3">
-                      <Mic24Regular className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                      <Mic24Regular className="w-5 h-5 text-[#93c5fd] flex-shrink-0" />
                       <audio controls className="flex-1 h-8">
                         <source src={note.mediaUrl} type="audio/webm" />
                       </audio>
@@ -2672,7 +2672,7 @@ export default function AddContactPage() {
                       className="flex items-center gap-3 p-2 bg-th-surface rounded-lg hover:bg-th-surface-h transition-colors"
                     >
                       <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-emerald-300">
+                        <span className="text-xs font-bold text-[#93c5fd]">
                           {note.mimeType?.includes("pdf")
                             ? "PDF"
                             : note.mimeType?.includes("word") ||
@@ -2831,7 +2831,7 @@ export default function AddContactPage() {
             className="relative w-full group"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl blur-lg opacity-50 group-hover:opacity-80 transition-opacity" />
-            <span className="relative flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all">
+            <span className="relative flex items-center justify-center gap-2 w-full py-3 bg-[#3b82f633] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all">
               View Contact Details
             </span>
           </button>
@@ -2931,7 +2931,7 @@ export default function AddContactPage() {
           {t.contacts?.addContact || "Add Contact"}
         </h1>
         {isFromScan && (
-          <span className="px-2 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-xs text-emerald-300">
+          <span className="px-2 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-xs text-[#93c5fd]">
             From Scan
           </span>
         )}
@@ -3137,7 +3137,7 @@ export default function AddContactPage() {
             (enrichmentData.education?.length ?? 0) > 0) && (
             <div className="bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-4 space-y-4">
               <div className="flex items-center gap-2 mb-2">
-                <BrainCircuit24Regular className="w-5 h-5 text-emerald-400" />
+                <BrainCircuit24Regular className="w-5 h-5 text-[#93c5fd]" />
                 <h3 className="text-sm font-semibold text-th-text">
                   LinkedIn Profile Data
                 </h3>
@@ -3253,7 +3253,7 @@ export default function AddContactPage() {
                               onClick={() =>
                                 navigator.clipboard.writeText(iceBreaker)
                               }
-                              className="mt-1 text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                              className="mt-1 text-xs text-[#93c5fd] hover:text-[#93c5fd] flex items-center gap-1"
                             >
                               <Copy24Regular className="w-3 h-3" /> Copy
                             </button>
@@ -3275,7 +3275,7 @@ export default function AddContactPage() {
             <button
               type="button"
               onClick={() => setIsBioDialogOpen(true)}
-              className="flex items-center gap-1.5 px-2 py-1 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-2 py-1 text-xs text-[#93c5fd] hover:text-[#93c5fd] hover:bg-emerald-500/10 rounded-lg transition-colors"
             >
               <FullScreenMaximize24Regular className="w-4 h-4" />
               {t.onboarding?.bioPreview?.expand || "Expand"}
@@ -3371,7 +3371,7 @@ export default function AddContactPage() {
                     bioFull: aiSuggestions.bio,
                   }))
                 }
-                className="mt-2 text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                className="mt-2 text-xs text-[#93c5fd] hover:text-[#93c5fd] flex items-center gap-1"
               >
                 <LightbulbFilament24Regular className="w-3 h-3" />
                 Use AI suggestion
@@ -3402,7 +3402,7 @@ export default function AddContactPage() {
             <label className="text-sm font-medium text-th-text-s flex items-center gap-2">
               {t.contacts?.form?.sectors || "Sectors"}
               {formData.sectorIds.length > 0 && (
-                <span className="text-xs text-emerald-400">
+                <span className="text-xs text-[#93c5fd]">
                   ({formData.sectorIds.length})
                 </span>
               )}
@@ -3410,7 +3410,7 @@ export default function AddContactPage() {
             <button
               type="button"
               onClick={() => setSectorsExpanded(!sectorsExpanded)}
-              className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+              className="text-xs text-[#93c5fd] hover:text-[#93c5fd] flex items-center gap-1"
             >
               {sectorsExpanded ? (
                 <>
@@ -3455,7 +3455,7 @@ export default function AddContactPage() {
               {formData.customSectors.map((sector, idx) => (
                 <span
                   key={`custom-${idx}`}
-                  className="px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-full text-sm font-medium flex items-center gap-1"
+                  className="px-3 py-1.5 bg-[#3b82f633] text-white rounded-full text-sm font-thin flex items-center gap-1"
                 >
                   {sector}
                   <button
@@ -3472,7 +3472,7 @@ export default function AddContactPage() {
           {/* AI suggestions for sectors */}
           {aiSuggestions?.sectors && aiSuggestions.sectors.length > 0 && (
             <div className="mb-3">
-              <p className="text-xs text-emerald-400 mb-2 flex items-center gap-1">
+              <p className="text-xs text-[#93c5fd] mb-2 flex items-center gap-1">
                 <Sparkle24Regular className="w-3 h-3" />
                 AI Suggestions:
               </p>
@@ -3483,7 +3483,7 @@ export default function AddContactPage() {
                     <button
                       key={`ai-${idx}`}
                       onClick={() => applySuggestion("sector", sector)}
-                      className="px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-sm text-emerald-300 hover:bg-emerald-500/30 transition-colors"
+                      className="px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-sm text-[#93c5fd] hover:bg-emerald-500/30 transition-colors"
                     >
                       + {sector}
                     </button>
@@ -3504,9 +3504,9 @@ export default function AddContactPage() {
                     <button
                       type="button"
                       onClick={() => toggleSector(sector.id)}
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                         isSelected
-                          ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white pe-7"
+                          ? "bg-[#3b82f633] text-[#93c5fd] pe-6"
                           : "bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h"
                       }`}
                     >
@@ -3547,7 +3547,7 @@ export default function AddContactPage() {
             <button
               type="button"
               onClick={() => setSkillsExpanded(!skillsExpanded)}
-              className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+              className="text-xs text-[#93c5fd] hover:text-[#93c5fd] flex items-center gap-1"
             >
               {skillsExpanded ? (
                 <>
@@ -3592,7 +3592,7 @@ export default function AddContactPage() {
               {formData.customSkills.map((skill, idx) => (
                 <span
                   key={`custom-${idx}`}
-                  className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full text-sm font-medium flex items-center gap-1"
+                  className="px-3 py-1.5 bg-[#3b82f633] text-[#93c5fd] rounded-full text-sm font-thin flex items-center gap-1"
                 >
                   {skill}
                   <button
@@ -3643,7 +3643,7 @@ export default function AddContactPage() {
                       onClick={() => toggleSkill(skill.id)}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                         isSelected
-                          ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white pe-6"
+                          ? "bg-[#3b82f633] text-[#93c5fd] pe-6"
                           : "bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h"
                       }`}
                     >
@@ -3684,7 +3684,7 @@ export default function AddContactPage() {
             <button
               type="button"
               onClick={() => setInterestsExpanded(!interestsExpanded)}
-              className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+              className="text-xs text-[#93c5fd] hover:text-[#93c5fd] flex items-center gap-1"
             >
               {interestsExpanded ? (
                 <>
@@ -3729,7 +3729,7 @@ export default function AddContactPage() {
               {formData.customInterests.map((interest, idx) => (
                 <span
                   key={`custom-${idx}`}
-                  className="px-3 py-1.5 bg-gradient-to-r from-yellow-500 to-lime-500 text-white rounded-full text-sm font-medium flex items-center gap-1"
+                  className="px-3 py-1.5 bg-[#3b82f633] text-[#93c5fd] rounded-full text-xs font-medium flex items-center gap-1"
                 >
                   {interest}
                   <button
@@ -3780,7 +3780,7 @@ export default function AddContactPage() {
                       onClick={() => toggleInterest(interest.id)}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                         isSelected
-                          ? "bg-gradient-to-r from-yellow-500 to-lime-500 text-white pe-6"
+                          ? "bg-[#3b82f633] text-[#93c5fd] pe-6"
                           : "bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h"
                       }`}
                     >
@@ -3821,7 +3821,7 @@ export default function AddContactPage() {
             <button
               type="button"
               onClick={() => setHobbiesExpanded(!hobbiesExpanded)}
-              className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+              className="text-xs text-[#93c5fd] hover:text-[#93c5fd] flex items-center gap-1"
             >
               {hobbiesExpanded ? (
                 <>
@@ -3862,7 +3862,7 @@ export default function AddContactPage() {
               {formData.customHobbies.map((hobby, idx) => (
                 <span
                   key={`custom-${idx}`}
-                  className="px-3 py-1.5 bg-gradient-to-r from-red-500 to-emerald-500 text-white rounded-full text-sm font-medium flex items-center gap-1"
+                  className="px-3 py-1.5 bg-[#3b82f633] text-[#93c5fd] rounded-full text-xs font-medium flex items-center gap-1"
                 >
                   {hobby}
                   <button
@@ -3890,7 +3890,7 @@ export default function AddContactPage() {
                       onClick={() => toggleHobby(hobby.id)}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                         isSelected
-                          ? "bg-gradient-to-r from-red-500 to-emerald-500 text-white pe-6"
+                          ? "bg-[#3b82f633] text-[#93c5fd] pe-6"
                           : "bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h"
                       }`}
                     >
@@ -3924,7 +3924,7 @@ export default function AddContactPage() {
           className="relative w-full group mt-4"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl blur-lg opacity-50 group-hover:opacity-80 transition-opacity" />
-          <span className="relative flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50">
+          <span className="relative flex items-center justify-center gap-2 w-full py-3 bg-[#3b82f633] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all disabled:opacity-50">
             {isLoading ? (
               uploadProgress ? (
                 <div className="flex flex-col items-center gap-1 py-1">

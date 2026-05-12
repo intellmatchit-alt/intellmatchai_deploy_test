@@ -450,7 +450,7 @@ export default function TeamGraphPage() {
               </div>
               {selectedNodeData.type === 'Contact' && (
                 <Link href={`/contacts/${selectedNodeData.id}`}>
-                  <button className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-medium rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all">
+                  <button className="px-4 py-2 bg-[#3b82f633] text-white text-sm font-thin rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all">
                     {t.networkMap?.node?.view || 'View'}
                   </button>
                 </Link>

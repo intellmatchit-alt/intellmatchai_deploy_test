@@ -48,7 +48,7 @@ import { updateMatchIceBreakers as updateOpportunityMatchIceBreakers } from '@/l
 const INTENT_COLORS: Record<OpportunityIntentType, string> = {
   HIRING: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   OPEN_TO_OPPORTUNITIES: 'bg-green-500/20 text-green-400 border-green-500/30',
-  ADVISORY_BOARD: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+  ADVISORY_BOARD: 'bg-emerald-500/20 text-[#93c5fd] border-emerald-500/30',
   REFERRALS_ONLY: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
 };
 
@@ -58,7 +58,7 @@ const INTENT_COLORS: Record<OpportunityIntentType, string> = {
 function getScoreColor(score: number): string {
   if (score >= 90) return 'text-green-400 bg-green-500/20 border-green-500/30';
   if (score >= 75) return 'text-blue-400 bg-blue-500/20 border-blue-500/30';
-  if (score >= 60) return 'text-emerald-400 bg-emerald-500/20 border-emerald-500/30';
+  if (score >= 60) return 'text-[#93c5fd] bg-emerald-500/20 border-emerald-500/30';
   return 'text-yellow-400 bg-yellow-500/20 border-yellow-500/30';
 }
 
@@ -239,7 +239,7 @@ export default function AllMatchesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <ArrowSync24Regular className="w-8 h-8 text-emerald-400 animate-spin" />
+        <ArrowSync24Regular className="w-8 h-8 text-[#93c5fd] animate-spin" />
       </div>
     );
   }
@@ -400,7 +400,7 @@ export default function AllMatchesPage() {
               setOpportunityFilter('ALL');
               setMinScore(0);
             }}
-            className="mt-4 text-sm text-emerald-400 hover:text-emerald-300"
+            className="mt-4 text-sm text-[#93c5fd] hover:text-[#93c5fd]"
           >
             Clear all filters
           </button>
@@ -462,8 +462,8 @@ export default function AllMatchesPage() {
               {selectedMatch.intentAlignment && (
                 <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <Sparkle24Regular className="w-5 h-5 text-emerald-400" />
-                    <h3 className="text-sm font-medium text-emerald-400">Intent Alignment</h3>
+                    <Sparkle24Regular className="w-5 h-5 text-[#93c5fd]" />
+                    <h3 className="text-sm font-medium text-[#93c5fd]">Intent Alignment</h3>
                   </div>
                   <p className="text-sm text-th-text-s">{selectedMatch.intentAlignment}</p>
                 </div>
@@ -550,7 +550,7 @@ export default function AllMatchesPage() {
                   <div className="space-y-2">
                     {selectedMatch.nextSteps.map((step, i) => (
                       <div key={i} className="flex items-start gap-2 text-sm">
-                        <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs flex-shrink-0">
+                        <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-[#93c5fd] flex items-center justify-center text-xs flex-shrink-0">
                           {i + 1}
                         </span>
                         <span className="text-th-text-s">{step}</span>
@@ -588,7 +588,7 @@ export default function AllMatchesPage() {
                   // Navigate to messages or trigger message action
                   router.push(`/messages?contact=${selectedMatch.candidate.id}`);
                 }}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-[#3b82f633] text-white font-thin rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all"
               >
                 <Chat24Regular className="w-4 h-4" />
                 Message

@@ -594,9 +594,9 @@ export function NoteDialog({
                     className="w-10 h-10 rounded-full bg-emerald-500/30 hover:bg-emerald-500/40 flex items-center justify-center transition-colors"
                   >
                     {playingVoiceId === voice.id ? (
-                      <Pause24Regular className="w-5 h-5 text-emerald-300" />
+                      <Pause24Regular className="w-5 h-5 text-[#93c5fd]" />
                     ) : (
-                      <Play24Regular className="w-5 h-5 text-emerald-300" />
+                      <Play24Regular className="w-5 h-5 text-[#93c5fd]" />
                     )}
                   </button>
                   <div className="flex-1">
@@ -654,7 +654,7 @@ export function NoteDialog({
                   className="flex items-center gap-3 p-3 bg-th-surface border border-th-border rounded-lg"
                 >
                   <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs font-bold text-emerald-300">
+                    <span className="text-xs font-bold text-[#93c5fd]">
                       {getFileIcon(file.file.type)}
                     </span>
                   </div>
@@ -685,7 +685,7 @@ export function NoteDialog({
                 </div>
                 <div className="w-full h-1.5 bg-th-surface-h rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-300"
+                    className="h-full bg-[#3b82f633] rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress.percent}%` }}
                   />
                 </div>
@@ -704,7 +704,7 @@ export function NoteDialog({
               <button
                 type="submit"
                 disabled={isSubmitting || isRecording}
-                className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-emerald-600 text-white font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-6 py-2.5 bg-[#3b82f633] hover:from-emerald-600 hover:to-emerald-600 text-white font-thin rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isSubmitting && !uploadProgress && (
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

@@ -125,7 +125,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                var BUILD_ID = 'v20260509-match-prose';
+                var BUILD_ID = 'v20260512-logo-update';
                 var storedBuild = localStorage.getItem('app_build');
                 if (storedBuild !== BUILD_ID) {
                   localStorage.setItem('app_build', BUILD_ID);

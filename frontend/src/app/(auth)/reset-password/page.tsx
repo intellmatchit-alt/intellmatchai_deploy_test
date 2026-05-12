@@ -13,6 +13,7 @@ import {
   LockClosed24Regular,
   Eye20Regular,
   EyeOff20Regular,
+  Checkmark20Regular,
   Checkmark24Regular,
   Dismiss24Regular,
   ArrowLeft24Regular,
@@ -33,7 +34,6 @@ function ResetPasswordForm() {
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string }>({});
 
-  // Password strength indicators
   const [passwordStrength, setPasswordStrength] = useState({
     hasMinLength: false,
     hasUppercase: false,
@@ -113,21 +113,24 @@ function ResetPasswordForm() {
     }
   };
 
+  const inputBase =
+    'w-full ps-12 pe-12 py-3 bg-white/[0.05] border rounded-xl text-white placeholder-[#56657a] focus:outline-none focus:bg-white/[0.07] focus:ring-2 focus:ring-[#00d084]/30 focus:border-[#00d084]/60 transition-all duration-200';
+
   if (!token) {
     return (
       <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 to-orange-500/20 rounded-3xl blur-xl" />
-        <div className="relative bg-th-surface backdrop-blur-xl border border-th-border rounded-2xl p-8 shadow-2xl text-center">
-          <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-r from-red-500 to-orange-500 flex items-center justify-center mb-6">
-            <Dismiss24Regular className="w-10 h-10 text-th-text" />
+        <div className="absolute -inset-4 bg-[radial-gradient(ellipse,rgba(0,208,132,0.08)_0%,transparent_70%)] rounded-3xl" />
+        <div className="relative bg-[#131b2e]/85 backdrop-blur-xl border border-white/[0.10] rounded-2xl p-8 shadow-2xl ring-1 ring-[#00d084]/[0.06] text-center">
+          <div className="mx-auto w-16 h-16 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center mb-6">
+            <Dismiss24Regular className="w-8 h-8 text-red-400" />
           </div>
-          <h1 className="text-3xl font-bold text-th-text mb-4">Invalid Link</h1>
-          <p className="text-th-text-t mb-8">
+          <h1 className="text-2xl font-bold text-white mb-2">Invalid Link</h1>
+          <p className="text-white/70 mb-8">
             This password reset link is invalid or has expired. Please request a new one.
           </p>
           <Link
             href="/forgot-password"
-            className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+            className="inline-flex items-center justify-center gap-2 w-full py-3.5 px-5 rounded-xl font-semibold text-base text-[#051a12] bg-gradient-to-br from-[#00e896] via-[#00d084] to-[#00b870] shadow-[0_8px_24px_rgba(0,208,132,0.28),inset_0_1px_0_rgba(255,255,255,0.25)] hover:shadow-[0_14px_36px_rgba(0,208,132,0.42),inset_0_1px_0_rgba(255,255,255,0.30)] hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0 transition-all duration-200"
           >
             Request New Link
           </Link>
@@ -139,18 +142,18 @@ function ResetPasswordForm() {
   if (isSuccess) {
     return (
       <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-3xl blur-xl" />
-        <div className="relative bg-th-surface backdrop-blur-xl border border-th-border rounded-2xl p-8 shadow-2xl text-center">
-          <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center mb-6">
-            <Checkmark24Regular className="w-10 h-10 text-th-text" />
+        <div className="absolute -inset-4 bg-[radial-gradient(ellipse,rgba(0,208,132,0.10)_0%,transparent_70%)] rounded-3xl" />
+        <div className="relative bg-[#131b2e]/85 backdrop-blur-xl border border-white/[0.10] rounded-2xl p-8 shadow-2xl ring-1 ring-[#00d084]/[0.06] text-center">
+          <div className="mx-auto w-16 h-16 rounded-full bg-[#00d084] flex items-center justify-center mb-6">
+            <Checkmark24Regular className="w-8 h-8 text-[#060b18]" />
           </div>
-          <h1 className="text-3xl font-bold text-th-text mb-4">Password Reset!</h1>
-          <p className="text-th-text-t mb-8">
+          <h1 className="text-2xl font-bold text-white mb-2">Password Reset!</h1>
+          <p className="text-white/70 mb-8">
             Your password has been successfully reset. You can now login with your new password.
           </p>
           <Link
             href="/login"
-            className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+            className="inline-flex items-center justify-center gap-2 w-full py-3.5 px-5 rounded-xl font-semibold text-base text-[#051a12] bg-gradient-to-br from-[#00e896] via-[#00d084] to-[#00b870] shadow-[0_8px_24px_rgba(0,208,132,0.28),inset_0_1px_0_rgba(255,255,255,0.25)] hover:shadow-[0_14px_36px_rgba(0,208,132,0.42),inset_0_1px_0_rgba(255,255,255,0.30)] hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0 transition-all duration-200"
           >
             Continue to Login
           </Link>
@@ -161,13 +164,13 @@ function ResetPasswordForm() {
 
   return (
     <div className="relative">
-      <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-emerald-500/20 rounded-3xl blur-xl" />
-      <div className="relative bg-th-surface backdrop-blur-xl border border-th-border rounded-2xl p-8 shadow-2xl">
+      <div className="absolute -inset-4 bg-[radial-gradient(ellipse,rgba(0,208,132,0.08)_0%,transparent_70%)] rounded-3xl" />
+      <div className="relative bg-[#131b2e]/85 backdrop-blur-xl border border-white/[0.10] rounded-2xl p-8 shadow-2xl ring-1 ring-[#00d084]/[0.06]">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-th-text mb-2">
+          <h1 className="text-3xl font-bold text-white mb-2">
             {t.auth?.resetPassword?.title || 'Reset Your Password'}
           </h1>
-          <p className="text-th-text-t">
+          <p className="text-white/70">
             {t.auth?.resetPassword?.subtitle || 'Enter your new password below'}
           </p>
         </div>
@@ -181,12 +184,12 @@ function ResetPasswordForm() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* New Password */}
           <div>
-            <label className="block text-sm font-medium text-th-text-s mb-2">
+            <label className="block text-sm font-medium text-white/80 mb-2">
               {t.auth?.resetPassword?.newPassword || 'New Password'}
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 start-0 ps-4 flex items-center pointer-events-none">
-                <LockClosed24Regular className="w-5 h-5 text-th-text-m" />
+                <LockClosed24Regular className="w-5 h-5 text-white/50" />
               </div>
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -194,14 +197,12 @@ function ResetPasswordForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={t.auth?.resetPassword?.newPasswordPlaceholder || 'Enter new password'}
                 disabled={isLoading}
-                className={`w-full ps-12 pe-12 py-3 bg-th-surface border ${
-                  errors.password ? 'border-red-500' : 'border-th-border'
-                } rounded-xl text-th-text placeholder-th-text-m focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all`}
+                className={`${inputBase} ${errors.password ? 'border-red-500' : 'border-white/[0.08]'}`}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 end-0 pe-4 flex items-center text-th-text-m hover:text-th-text transition-colors"
+                className="absolute inset-y-0 end-0 pe-4 flex items-center text-white/50 hover:text-white transition-colors"
               >
                 {showPassword ? (
                   <EyeOff20Regular className="w-5 h-5" />
@@ -212,75 +213,35 @@ function ResetPasswordForm() {
             </div>
             {errors.password && <p className="mt-2 text-sm text-red-400">{errors.password}</p>}
 
-            {/* Password strength indicators */}
-            <div className="mt-3 space-y-2">
-              <div className="flex items-center gap-2 text-sm">
+            {/* Password strength indicators — matches Register screen */}
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {[
+                { check: passwordStrength.hasMinLength, label: 'At least 8 characters' },
+                { check: passwordStrength.hasUppercase, label: 'One uppercase letter' },
+                { check: passwordStrength.hasLowercase, label: 'One lowercase letter' },
+                { check: passwordStrength.hasNumber, label: 'One number' },
+              ].map((item) => (
                 <div
-                  className={`w-4 h-4 rounded-full flex items-center justify-center ${
-                    passwordStrength.hasMinLength ? 'bg-green-500' : 'bg-th-surface-h'
-                  }`}
+                  key={item.label}
+                  className={`flex items-center gap-2 text-xs ${item.check ? 'text-[#00d084]' : 'text-white/50'}`}
                 >
-                  {passwordStrength.hasMinLength && (
-                    <Checkmark24Regular className="w-3 h-3 text-th-text" />
-                  )}
+                  <Checkmark20Regular
+                    className={`w-4 h-4 ${item.check ? 'opacity-100' : 'opacity-30'}`}
+                  />
+                  {item.label}
                 </div>
-                <span className={passwordStrength.hasMinLength ? 'text-green-400' : 'text-th-text-m'}>
-                  At least 8 characters
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <div
-                  className={`w-4 h-4 rounded-full flex items-center justify-center ${
-                    passwordStrength.hasUppercase ? 'bg-green-500' : 'bg-th-surface-h'
-                  }`}
-                >
-                  {passwordStrength.hasUppercase && (
-                    <Checkmark24Regular className="w-3 h-3 text-th-text" />
-                  )}
-                </div>
-                <span className={passwordStrength.hasUppercase ? 'text-green-400' : 'text-th-text-m'}>
-                  One uppercase letter
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <div
-                  className={`w-4 h-4 rounded-full flex items-center justify-center ${
-                    passwordStrength.hasLowercase ? 'bg-green-500' : 'bg-th-surface-h'
-                  }`}
-                >
-                  {passwordStrength.hasLowercase && (
-                    <Checkmark24Regular className="w-3 h-3 text-th-text" />
-                  )}
-                </div>
-                <span className={passwordStrength.hasLowercase ? 'text-green-400' : 'text-th-text-m'}>
-                  One lowercase letter
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <div
-                  className={`w-4 h-4 rounded-full flex items-center justify-center ${
-                    passwordStrength.hasNumber ? 'bg-green-500' : 'bg-th-surface-h'
-                  }`}
-                >
-                  {passwordStrength.hasNumber && (
-                    <Checkmark24Regular className="w-3 h-3 text-th-text" />
-                  )}
-                </div>
-                <span className={passwordStrength.hasNumber ? 'text-green-400' : 'text-th-text-m'}>
-                  One number
-                </span>
-              </div>
+              ))}
             </div>
           </div>
 
           {/* Confirm Password */}
           <div>
-            <label className="block text-sm font-medium text-th-text-s mb-2">
+            <label className="block text-sm font-medium text-white/80 mb-2">
               {t.auth?.resetPassword?.confirmPassword || 'Confirm Password'}
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 start-0 ps-4 flex items-center pointer-events-none">
-                <LockClosed24Regular className="w-5 h-5 text-th-text-m" />
+                <LockClosed24Regular className="w-5 h-5 text-white/50" />
               </div>
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
@@ -288,14 +249,12 @@ function ResetPasswordForm() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder={t.auth?.resetPassword?.confirmPasswordPlaceholder || 'Confirm new password'}
                 disabled={isLoading}
-                className={`w-full ps-12 pe-12 py-3 bg-th-surface border ${
-                  errors.confirmPassword ? 'border-red-500' : 'border-th-border'
-                } rounded-xl text-th-text placeholder-th-text-m focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all`}
+                className={`${inputBase} ${errors.confirmPassword ? 'border-red-500' : 'border-white/[0.08]'}`}
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute inset-y-0 end-0 pe-4 flex items-center text-th-text-m hover:text-th-text transition-colors"
+                className="absolute inset-y-0 end-0 pe-4 flex items-center text-white/50 hover:text-white transition-colors"
               >
                 {showConfirmPassword ? (
                   <EyeOff20Regular className="w-5 h-5" />
@@ -309,23 +268,24 @@ function ResetPasswordForm() {
             )}
           </div>
 
-          <button type="submit" disabled={isLoading} className="relative w-full group">
-            <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl blur-lg opacity-50 group-hover:opacity-80 transition-opacity" />
-            <span className="relative block w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50">
-              {isLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  {t.auth?.resetPassword?.resetting || 'Resetting...'}
-                </span>
-              ) : (
-                t.auth?.resetPassword?.submit || 'Reset Password'
-              )}
-            </span>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full py-3.5 px-5 flex items-center justify-center gap-2 rounded-xl font-semibold text-base text-[#051a12] bg-gradient-to-br from-[#00e896] via-[#00d084] to-[#00b870] shadow-[0_8px_24px_rgba(0,208,132,0.28),inset_0_1px_0_rgba(255,255,255,0.25)] hover:shadow-[0_14px_36px_rgba(0,208,132,0.42),inset_0_1px_0_rgba(255,255,255,0.30)] hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0 transition-all duration-200 disabled:opacity-50 disabled:hover:translate-y-0"
+          >
+            {isLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <div className="w-5 h-5 border-2 border-[#051a12] border-t-transparent rounded-full animate-spin" />
+                {t.auth?.resetPassword?.resetting || 'Resetting...'}
+              </span>
+            ) : (
+              t.auth?.resetPassword?.submit || 'Reset Password'
+            )}
           </button>
 
           <Link
             href="/login"
-            className="flex items-center justify-center gap-2 text-th-text-t hover:text-th-text transition-colors mt-6"
+            className="flex items-center justify-center gap-2 text-[#00d084] hover:text-[#00e896] hover:underline underline-offset-4 transition-all duration-200 mt-6"
           >
             <ArrowLeft24Regular className="w-5 h-5 rtl:rotate-180" />
             {t.auth?.resetPassword?.backToLogin || 'Back to Login'}
@@ -339,7 +299,7 @@ function ResetPasswordForm() {
 function ResetPasswordFallback() {
   return (
     <div className="flex items-center justify-center min-h-[400px]">
-      <div className="animate-spin h-10 w-10 border-4 border-emerald-500 border-t-transparent rounded-full" />
+      <div className="animate-spin h-10 w-10 border-4 border-[#00d084] border-t-transparent rounded-full" />
     </div>
   );
 }

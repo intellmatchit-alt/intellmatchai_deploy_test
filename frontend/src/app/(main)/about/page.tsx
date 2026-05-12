@@ -36,7 +36,7 @@ export default function AboutPage() {
       {/* App Logo & Info */}
       <div className="bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-8 text-center">
         <div className="relative inline-block mb-4">
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl blur-lg opacity-50" />
+          <div className="absolute inset-0 bg-[#3b82f633] rounded-2xl blur-lg opacity-50" />
           <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
             <Sparkle24Regular className="w-10 h-10 text-th-text" />
           </div>
@@ -49,7 +49,7 @@ export default function AboutPage() {
       {/* Description */}
       <div className="bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Info24Regular className="w-5 h-5 text-emerald-400" />
+          <Info24Regular className="w-5 h-5 text-[#93c5fd]" />
           <h3 className="font-medium text-th-text">{t.about?.description || 'About IntellMatch'}</h3>
         </div>
         <p className="text-th-text-t text-sm leading-relaxed">

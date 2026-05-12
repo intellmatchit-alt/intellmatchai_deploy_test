@@ -63,7 +63,7 @@ function VoicePlayer({ url }: { url: string }) {
   return (
     <button
       onClick={toggle}
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/15 border border-emerald-500/30 rounded-full text-xs text-emerald-300 hover:bg-emerald-500/25 transition-colors"
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/15 border border-emerald-500/30 rounded-full text-xs text-[#93c5fd] hover:bg-emerald-500/25 transition-colors"
     >
       {isPlaying ? <Stop24Regular className="w-3 h-3" /> : <Play24Regular className="w-3 h-3" />}
       <Mic24Regular className="w-3 h-3" />
@@ -263,7 +263,7 @@ function RequestCard({
               </div>
             )}
             {(request.status === 'ACCEPTED' || request.status === 'COMPLETED') && (
-              <div className="flex items-center gap-1 text-emerald-400">
+              <div className="flex items-center gap-1 text-[#93c5fd]">
                 <span className="text-sm">{t.collaborations?.viewSession || 'View'}</span>
                 <ArrowRight24Regular className="w-4 h-4" />
               </div>

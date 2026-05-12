@@ -224,13 +224,13 @@ export default function NetworkMapPage() {
         <div className="flex bg-th-surface border border-th-border rounded-xl overflow-hidden">
           <button
             onClick={() => setViewMode('graph')}
-            className={`p-2.5 transition-colors ${viewMode === 'graph' ? 'bg-emerald-500/20 text-emerald-400' : 'text-th-text-m hover:text-th-text-s'}`}
+            className={`p-2.5 transition-colors ${viewMode === 'graph' ? 'bg-emerald-500/20 text-[#93c5fd]' : 'text-th-text-m hover:text-th-text-s'}`}
           >
             <Grid24Regular className="w-5 h-5" />
           </button>
           <button
             onClick={() => setViewMode('list')}
-            className={`p-2.5 transition-colors ${viewMode === 'list' ? 'bg-emerald-500/20 text-emerald-400' : 'text-th-text-m hover:text-th-text-s'}`}
+            className={`p-2.5 transition-colors ${viewMode === 'list' ? 'bg-emerald-500/20 text-[#93c5fd]' : 'text-th-text-m hover:text-th-text-s'}`}
           >
             <List24Regular className="w-5 h-5" />
           </button>
@@ -247,7 +247,7 @@ export default function NetworkMapPage() {
             onClick={() => router.push('/map/team')}
             className="flex items-center gap-2 px-4 py-3 bg-th-surface border border-th-border rounded-xl hover:bg-th-surface-h transition-all"
           >
-            <PeopleTeam24Regular className="w-5 h-5 text-emerald-400" />
+            <PeopleTeam24Regular className="w-5 h-5 text-[#93c5fd]" />
             <span className="text-sm text-th-text-s font-medium">{t.organization?.teamGraph?.title || 'Team Graph'}</span>
           </button>
         </div>
@@ -285,7 +285,7 @@ export default function NetworkMapPage() {
           onClick={() => setFilter(null)}
           className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
             filter === null
-              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25'
+              ? 'bg-[#3b82f633] text-white shadow-lg shadow-[#3b82f6]/25'
               : 'bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'
           }`}
         >
@@ -298,7 +298,7 @@ export default function NetworkMapPage() {
             onClick={() => setFilter(sector === filter ? null : sector)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${
               filter === sector
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25'
+                ? 'bg-[#3b82f633] text-white shadow-lg shadow-[#3b82f6]/25'
                 : 'bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'
             }`}
           >
@@ -334,7 +334,7 @@ export default function NetworkMapPage() {
                 <People24Regular className="w-12 h-12 text-white/70 mb-3" />
                 <p className="text-th-text-t text-center">{t.contacts?.noContacts || 'No contacts yet'}</p>
                 <Link href="/contacts">
-                  <button className="mt-4 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-xl">
+                  <button className="mt-4 px-6 py-2.5 bg-[#3b82f633] text-white font-thin rounded-xl">
                     {t.contacts?.addContact || 'Add Contact'}
                   </button>
                 </Link>
@@ -487,7 +487,7 @@ export default function NetworkMapPage() {
                         className="flex items-center gap-2 text-xs w-full text-left hover:text-th-text-s"
                       >
                         <div className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${sectorBgColors[sector] || sectorBgColors.default}`} />
-                        <span className={`text-th-text-t ${filter === sector ? 'text-emerald-400 font-medium' : ''}`}>
+                        <span className={`text-th-text-t ${filter === sector ? 'text-[#93c5fd] font-medium' : ''}`}>
                           {sectorTranslations[sector] || sector}
                         </span>
                       </button>
@@ -515,7 +515,7 @@ export default function NetworkMapPage() {
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <Link href={`/contacts/${selectedNodeData.id}`}>
-                      <button type="button" className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-medium rounded-lg active:scale-95 transition-transform">
+                      <button type="button" className="flex items-center gap-1.5 px-3 py-2 bg-[#3b82f633] text-white text-xs font-thin rounded-lg active:scale-95 transition-transform">
                         {t.networkMap.node.view}
                         <ArrowRight24Regular className="w-3.5 h-3.5 rtl:rotate-180" />
                       </button>
@@ -589,7 +589,7 @@ export default function NetworkMapPage() {
         className="fixed bottom-24 end-6 z-40 group"
       >
         <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-full blur-lg opacity-60 group-hover:opacity-80 transition-opacity" />
-        <div className="relative flex items-center justify-center h-14 w-14 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25 active:scale-90 transition-transform">
+        <div className="relative flex items-center justify-center h-14 w-14 rounded-full bg-[#3b82f633] text-white shadow-lg shadow-[#3b82f6]/25 active:scale-90 transition-transform">
           <Add24Regular className="w-6 h-6" />
         </div>
       </button>

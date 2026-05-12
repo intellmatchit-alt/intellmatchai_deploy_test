@@ -63,28 +63,28 @@ function ModeToggle({
         onClick={() => onChange('ALL')}
         className={`relative overflow-hidden px-3 py-3 rounded-xl text-sm font-medium transition-all flex flex-col items-center gap-1.5 border ${
           mode === 'ALL'
-            ? 'bg-gradient-to-br from-emerald-500/20 to-emerald-500/20 border-emerald-500/40 text-white shadow-lg shadow-emerald-500/10'
+            ? 'bg-gradient-to-br from-emerald-500/20 to-emerald-500/20 border-emerald-500/40 text-white shadow-lg shadow-[#3b82f6]/10'
             : 'bg-th-surface border-th-border text-th-text-t hover:bg-th-surface-h hover:text-th-text'
         }`}
       >
         {mode === 'ALL' && (
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-emerald-500/10" />
         )}
-        <Apps24Regular className={`w-5 h-5 relative ${mode === 'ALL' ? 'text-emerald-400' : ''}`} />
+        <Apps24Regular className={`w-5 h-5 relative ${mode === 'ALL' ? 'text-[#93c5fd]' : ''}`} />
         <span className="relative">{t.deals?.allModes || 'All'}</span>
       </button>
       <button
         onClick={() => onChange('SELL')}
         className={`relative overflow-hidden px-3 py-3 rounded-xl text-sm font-medium transition-all flex flex-col items-center gap-1.5 border ${
           mode === 'SELL'
-            ? 'bg-gradient-to-br from-emerald-500/20 to-green-500/20 border-emerald-500/40 text-emerald-400 shadow-lg shadow-emerald-500/10'
+            ? 'bg-gradient-to-br from-emerald-500/20 to-green-500/20 border-emerald-500/40 text-[#93c5fd] shadow-lg shadow-[#3b82f6]/10'
             : 'bg-th-surface border-th-border text-th-text-t hover:bg-th-surface-h hover:text-th-text'
         }`}
       >
         {mode === 'SELL' && (
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-green-500/10" />
         )}
-        <Money24Regular className={`w-5 h-5 relative ${mode === 'SELL' ? 'text-emerald-400' : ''}`} />
+        <Money24Regular className={`w-5 h-5 relative ${mode === 'SELL' ? 'text-[#93c5fd]' : ''}`} />
         <span className="relative">{t.deals?.sell || 'Sell'}</span>
       </button>
       <button
@@ -259,7 +259,7 @@ function DealCard({
     ? 'from-emerald-500 to-green-400'
     : 'from-blue-500 to-cyan-400';
   const hoverGlow = isSell
-    ? 'hover:shadow-emerald-500/5'
+    ? 'hover:shadow-[#3b82f6]/5'
     : 'hover:shadow-blue-500/5';
 
   const getStatusIcon = (status: DealStatus) => {
@@ -294,7 +294,7 @@ function DealCard({
                   </h3>
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${
                     isSell
-                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                      ? 'bg-emerald-500/20 text-[#93c5fd] border-emerald-500/30'
                       : 'bg-blue-500/20 text-blue-400 border-blue-500/30'
                   }`}>
                     {deal.mode === 'SELL' ? (t.deals?.sell || 'Sell') : (t.deals?.buy || 'Buy')}
@@ -376,7 +376,7 @@ function TeamDealCard({ deal }: { deal: TeamDeal }) {
                 </h3>
                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${
                   isSell
-                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                    ? 'bg-emerald-500/20 text-[#93c5fd] border-emerald-500/30'
                     : 'bg-blue-500/20 text-blue-400 border-blue-500/30'
                 }`}>
                   {deal.mode === 'SELL' ? (t.deals?.sell || 'Sell') : (t.deals?.buy || 'Buy')}
@@ -521,7 +521,7 @@ export default function DealsPage() {
             <h1 className="text-2xl font-bold text-th-text">{t.deals?.title || 'Deal Matching'}</h1>
             <Link
               href="/deals/new"
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-semibold rounded-lg hover:shadow-lg hover:shadow-emerald-500/25 hover:scale-105 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#3b82f633] text-white text-sm font-semibold rounded-lg hover:shadow-lg hover:shadow-[#3b82f6]/25 hover:scale-105 transition-all"
             >
               <Add24Regular className="w-4 h-4" />
               {t.deals?.newDeal || 'New Deal'}
@@ -603,7 +603,7 @@ export default function DealsPage() {
             onClick={() => setShowTeam(true)}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${
               showTeam
-                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                ? 'bg-emerald-500/20 border-emerald-500/40 text-[#93c5fd]'
                 : 'bg-th-surface border-th-border text-th-text-t hover:bg-th-surface-h'
             }`}
           >
@@ -673,7 +673,7 @@ export default function DealsPage() {
 
           <div className="relative">
             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
-              <Briefcase24Regular className="w-8 h-8 text-emerald-400" />
+              <Briefcase24Regular className="w-8 h-8 text-[#93c5fd]" />
             </div>
             <p className="text-th-text-s text-lg font-medium">{t.deals?.noDeals || 'No deals yet'}</p>
             <p className="text-sm text-th-text-m mt-1">
@@ -684,7 +684,7 @@ export default function DealsPage() {
             {!searchQuery && (
               <Link
                 href="/deals/new"
-                className="inline-flex items-center gap-2 mt-5 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 hover:scale-105 transition-all"
+                className="inline-flex items-center gap-2 mt-5 px-6 py-3 bg-[#3b82f633] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 hover:scale-105 transition-all"
               >
                 <Add24Regular className="w-5 h-5" />
                 {t.deals?.createDeal || 'Create Deal'}

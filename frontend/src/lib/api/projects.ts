@@ -45,6 +45,20 @@ export const LOOKING_FOR_OPTIONS = [
   { id: "channel_distribution", label: "Channel / Distribution" },
   { id: "technical_partner", label: "Technical Partner" },
   { id: "cofounder_talent", label: "Co-founder / Talent" },
+  // Merged from former Project Needs taxonomy — these now live alongside the
+  // partner/role options so the form has a single Looking For surface.
+  { id: "funding", label: "Funding" },
+  { id: "technical_cofounder", label: "Technical Co-founder" },
+  { id: "marketing_support", label: "Marketing Support" },
+  { id: "partnership", label: "Partnership" },
+  { id: "mentorship", label: "Mentorship" },
+  { id: "legal_advice", label: "Legal Advice" },
+  { id: "sales_strategy", label: "Sales Strategy" },
+  { id: "product_development", label: "Product Development" },
+  { id: "market_access", label: "Market Access" },
+  { id: "team_hiring", label: "Team Hiring" },
+  { id: "gtm_strategy", label: "Go-to-Market Strategy" },
+  { id: "investment", label: "Investment" },
 ] as const;
 
 /**
@@ -178,6 +192,9 @@ export interface Project {
   visibility: ProjectVisibility;
   isActive: boolean;
   matchCount?: number;
+  matchesByRole?: Record<string, number>;
+  newMatchCount?: number;
+  matchStrength?: number | null;
   metadata?: Record<string, any> | null;
   needs?: string[] | null;
   markets?: string[] | null;
@@ -193,6 +210,7 @@ export interface Project {
   strictLookingFor?: boolean;
   documentUrl?: string | null;
   documentName?: string | null;
+  matchesViewedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -497,6 +515,12 @@ export async function updateMatchIceBreakers(
  * AI-analyzed project suggestions
  */
 export interface AnalyzedProjectData {
+  title?: string;
+  summary?: string;
+  detailedDesc?: string;
+  timeline?: string;
+  fundingAskMin?: number | null;
+  fundingAskMax?: number | null;
   category: string;
   stage: string;
   idealCounterpartProfile?: string;

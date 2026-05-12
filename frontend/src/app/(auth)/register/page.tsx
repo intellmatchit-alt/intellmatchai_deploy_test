@@ -112,12 +112,12 @@ export default function RegisterPage() {
     }
   };
 
-  const inputBase = "w-full ps-12 pe-4 py-3 bg-white/[0.03] border rounded-xl text-white placeholder-[#56657a] focus:outline-none focus:ring-2 focus:ring-[#00d084]/30 focus:border-[#00d084]/50 transition-all";
+  const inputBase = "w-full ps-12 pe-4 py-3 bg-white/[0.05] border rounded-xl text-white placeholder-[#56657a] focus:outline-none focus:bg-white/[0.07] focus:ring-2 focus:ring-[#00d084]/30 focus:border-[#00d084]/60 transition-all duration-200";
 
   return (
     <div className="relative">
       <div className="absolute -inset-4 bg-[radial-gradient(ellipse,rgba(0,208,132,0.08)_0%,transparent_70%)] rounded-3xl" />
-      <div className="relative bg-[#0c1222]/80 backdrop-blur-xl border border-white/[0.06] rounded-2xl p-8 shadow-2xl">
+      <div className="relative bg-[#131b2e]/85 backdrop-blur-xl border border-white/[0.10] rounded-2xl p-8 shadow-2xl ring-1 ring-[#00d084]/[0.06]">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">{t.auth.register.title}</h1>
           <p className="text-white/70">{t.auth.register.subtitle}</p>
@@ -139,7 +139,7 @@ export default function RegisterPage() {
                 window.location.href = linkedInAuthUrl;
               }}
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-[#0A66C2] hover:bg-[#004182] text-white font-semibold rounded-xl transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-[#0A66C2] hover:bg-[#004182] text-white font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 shadow-[0_4px_14px_rgba(10,102,194,0.20)] hover:shadow-[0_8px_22px_rgba(10,102,194,0.40)] hover:-translate-y-0.5"
             >
               <LinkedInIcon className="w-5 h-5" />
               {t.auth.register.continueWithLinkedIn || 'Continue with LinkedIn'}
@@ -147,9 +147,22 @@ export default function RegisterPage() {
 
             <button
               type="button"
-              onClick={() => toast({ title: 'Coming soon', description: 'Google sign-in will be available soon', variant: 'info' })}
+              onClick={() => {
+                const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+                if (!clientId) {
+                  toast({ title: 'Google sign-in unavailable', description: 'Google OAuth is not configured', variant: 'error' });
+                  return;
+                }
+                const redirectUri = `${window.location.origin}/auth/google/callback`;
+                const scope = 'openid email profile';
+                const state = Math.random().toString(36).substring(7);
+                sessionStorage.setItem('google_oauth_state', state);
+                if (returnTo) sessionStorage.setItem('google_oauth_returnTo', returnTo);
+                const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=${encodeURIComponent(scope)}&access_type=online&prompt=select_account`;
+                window.location.href = googleAuthUrl;
+              }}
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white hover:bg-white/5 text-white font-semibold rounded-xl transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white hover:bg-gray-50 text-[#3c4043] font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 shadow-[0_4px_14px_rgba(0,0,0,0.18)] hover:shadow-[0_8px_22px_rgba(0,0,0,0.25)] hover:-translate-y-0.5"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -164,7 +177,7 @@ export default function RegisterPage() {
           {/* Divider */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/10"></div>
+              <div className="w-full border-t border-white/[0.08]"></div>
             </div>
             <div className="relative flex justify-center text-sm">
               <span className="px-4 bg-[#0c1222] text-white/50">{t.auth.register.orRegisterWith || 'or register with email'}</span>
@@ -187,7 +200,7 @@ export default function RegisterPage() {
             <div className="relative">
               <div className="absolute inset-y-0 start-0 ps-4 flex items-center pointer-events-none"><Mail24Regular className="w-5 h-5 text-white/50" /></div>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.auth.register.emailPlaceholder} disabled={isLoading}
-                className={`${inputBase} ${errors.email ? 'border-red-500' : 'border-white/10'}`} />
+                className={`${inputBase} ${errors.email ? 'border-red-500' : 'border-white/[0.08]'}`} />
             </div>
             {errors.email && <p className="mt-2 text-sm text-red-400">{errors.email}</p>}
           </div>
@@ -197,7 +210,7 @@ export default function RegisterPage() {
             <div className="relative">
               <div className="absolute inset-y-0 start-0 ps-4 flex items-center pointer-events-none"><LockClosed24Regular className="w-5 h-5 text-white/50" /></div>
               <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t.auth.register.passwordPlaceholder} disabled={isLoading}
-                className={`${inputBase} !pe-12 ${errors.password ? 'border-red-500' : 'border-white/10'}`} />
+                className={`${inputBase} !pe-12 ${errors.password ? 'border-red-500' : 'border-white/[0.08]'}`} />
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 end-0 pe-4 flex items-center text-white/50 hover:text-white transition-colors">
                 {showPassword ? <EyeOff20Regular className="w-5 h-5" /> : <Eye20Regular className="w-5 h-5" />}
               </button>
@@ -223,7 +236,7 @@ export default function RegisterPage() {
             <div className="relative">
               <div className="absolute inset-y-0 start-0 ps-4 flex items-center pointer-events-none"><LockClosed24Regular className="w-5 h-5 text-white/50" /></div>
               <input type={showPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder={t.auth.register.confirmPasswordPlaceholder} disabled={isLoading}
-                className={`${inputBase} ${errors.confirmPassword ? 'border-red-500' : 'border-white/10'}`} />
+                className={`${inputBase} ${errors.confirmPassword ? 'border-red-500' : 'border-white/[0.08]'}`} />
             </div>
             {errors.confirmPassword && <p className="mt-2 text-sm text-red-400">{errors.confirmPassword}</p>}
           </div>
@@ -252,7 +265,7 @@ export default function RegisterPage() {
                 }}
                 placeholder="Enter referral code"
                 disabled={isLoading}
-                className={`${inputBase} ${referralValid === true ? 'border-green-500' : referralValid === false ? 'border-red-500' : 'border-white/10'}`}
+                className={`${inputBase} ${referralValid === true ? 'border-green-500' : referralValid === false ? 'border-red-500' : 'border-white/[0.08]'}`}
               />
             </div>
             {referralValid === true && referralDiscount && (
@@ -263,10 +276,14 @@ export default function RegisterPage() {
             )}
           </div>
 
-          <button type="submit" disabled={isLoading} className="btn-accent w-full py-3.5 text-base disabled:opacity-50 mt-6 flex items-center justify-center gap-2">
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full mt-6 py-3.5 px-5 flex items-center justify-center gap-2 rounded-xl font-semibold text-base text-[#051a12] bg-gradient-to-br from-[#00e896] via-[#00d084] to-[#00b870] shadow-[0_8px_24px_rgba(0,208,132,0.28),inset_0_1px_0_rgba(255,255,255,0.25)] hover:shadow-[0_14px_36px_rgba(0,208,132,0.42),inset_0_1px_0_rgba(255,255,255,0.30)] hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0 transition-all duration-200 disabled:opacity-50 disabled:hover:translate-y-0"
+          >
             {isLoading ? (
               <>
-                <div className="w-5 h-5 border-2 border-[#060b18] border-t-transparent rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-[#051a12] border-t-transparent rounded-full animate-spin" />
                 {t.auth.register.submitting}
               </>
             ) : email && password ? (

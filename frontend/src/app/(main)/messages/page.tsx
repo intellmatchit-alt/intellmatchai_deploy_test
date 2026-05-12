@@ -193,7 +193,7 @@ function NewMessageModal({ onClose, onSelect }: { onClose: () => void; onSelect:
                   </span>
                 )}
               </div>
-              <Send24Regular className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+              <Send24Regular className="w-5 h-5 text-[#93c5fd] flex-shrink-0" />
             </button>
           ))}
         </div>
@@ -253,7 +253,7 @@ export default function MessagesPage() {
         </div>
         <button
           onClick={() => setShowNewMessage(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-medium text-sm hover:opacity-90 transition-opacity"
+          className="flex items-center gap-2 px-4 py-2 bg-[#3b82f633] text-white rounded-xl font-thin text-sm hover:opacity-90 transition-opacity"
         >
           <Add24Regular className="w-5 h-5" />
           <span className="hidden sm:inline">{msgs.newMessage || 'New Message'}</span>
@@ -292,7 +292,7 @@ export default function MessagesPage() {
           </p>
           <button
             onClick={() => setShowNewMessage(true)}
-            className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-medium text-sm hover:opacity-90 transition-opacity"
+            className="px-6 py-2.5 bg-[#3b82f633] text-white rounded-xl font-thin text-sm hover:opacity-90 transition-opacity"
           >
             {msgs.startConversation || 'Start Conversation'}
           </button>

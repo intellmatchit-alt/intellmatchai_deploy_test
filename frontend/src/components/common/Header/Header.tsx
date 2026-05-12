@@ -76,13 +76,14 @@ export function Header({
       )}
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
-      <div className="page-container flex items-center justify-between h-14">
+      <div className="page-container flex items-center justify-between h-16">
         {/* Left side */}
         <div className="flex items-center gap-3">
           {showBack ? (
             <Link
               href={backHref || '/dashboard'}
               className="p-1.5 -ml-1.5 rounded-lg hover:bg-th-surface-h transition-colors text-th-text-t hover:text-th-text"
+              aria-label="Back"
             >
               <ChevronLeft24Regular className="w-6 h-6" />
             </Link>
@@ -102,7 +103,7 @@ export function Header({
         </div>
 
         {/* Right side */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {rightContent}
 
           <LanguageSwitcher />
@@ -111,19 +112,31 @@ export function Header({
             <>
               <Link
                 href="/wallet"
-                className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-th-surface-h transition-colors text-th-text-t hover:text-th-text"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-th-surface-h active:scale-[0.97] transition-all duration-150 text-th-text-t hover:text-th-text"
+                aria-label="Wallet"
               >
                 <Wallet24Regular className="w-5 h-5" />
-                <span className="text-sm font-medium">{Number.isInteger(balance) ? balance : balance.toFixed(2)}</span>
+                <span className="text-sm font-medium leading-none">
+                  {Number.isInteger(balance) ? balance : balance.toFixed(2)}
+                </span>
               </Link>
 
               <NotificationDropdown />
 
-              <Link href="/profile" className="ms-1">
+              <Link
+                href="/profile"
+                className="ms-1 rounded-full active:scale-[0.97] transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00d084]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-th-bg"
+                aria-label="Profile"
+              >
                 <Avatar
                   src={user?.avatarUrl}
-                  name={user?.name || 'User'}
-                  size="sm"
+                  name={
+                    user?.firstName && user?.lastName
+                      ? `${user.firstName} ${user.lastName}`
+                      : user?.firstName || user?.lastName || user?.name || 'User'
+                  }
+                  size="header"
+                  intent="header"
                 />
               </Link>
             </>

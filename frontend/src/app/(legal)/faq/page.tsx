@@ -108,7 +108,7 @@ const FAQItem = ({
         </span>
       </div>
       <ChevronDown24Regular
-        className={`w-6 h-6 text-th-text-t transition-transform duration-300 shrink-0 ${isOpen ? 'rotate-180 text-emerald-400' : ''}`}
+        className={`w-6 h-6 text-th-text-t transition-transform duration-300 shrink-0 ${isOpen ? 'rotate-180 text-[#93c5fd]' : ''}`}
       />
     </button>
     <div className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-96' : 'max-h-0'}`}>
@@ -211,8 +211,8 @@ function FAQPageContent() {
 
         <div className="relative max-w-4xl mx-auto px-6 lg:px-8 text-center">
           <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-2 mb-6">
-            <QuestionCircle24Regular className="w-5 h-5 text-emerald-400" />
-            <span className="text-emerald-400 text-sm font-medium">{t.faq.badge}</span>
+            <QuestionCircle24Regular className="w-5 h-5 text-[#93c5fd]" />
+            <span className="text-[#93c5fd] text-sm font-medium">{t.faq.badge}</span>
           </div>
 
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
@@ -276,7 +276,7 @@ function FAQPageContent() {
                 className="relative group inline-flex items-center justify-center"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl blur-lg opacity-60 group-hover:opacity-100 transition-opacity" />
-                <span className="relative flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-xl hover:shadow-emerald-500/25 transition-all group-hover:-translate-y-0.5">
+                <span className="relative flex items-center gap-2 bg-[#3b82f633] text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-xl hover:shadow-[#3b82f6]/25 transition-all group-hover:-translate-y-0.5">
                   {t.faq.cta.button}
                 </span>
               </Link>
@@ -299,7 +299,7 @@ function FAQPageContent() {
           <p className="text-th-text-m mb-2">{t.faq.stillHaveQuestions}</p>
           <a
             href="mailto:support@intellmatch.com"
-            className="text-emerald-400 hover:text-emerald-300 transition-colors font-medium"
+            className="text-[#93c5fd] hover:text-[#93c5fd] transition-colors font-medium"
           >
             support@intellmatch.com
           </a>

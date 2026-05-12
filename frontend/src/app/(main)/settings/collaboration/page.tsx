@@ -140,7 +140,7 @@ export default function CollaborationSettingsPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-start gap-3">
               <div className="p-2 rounded-lg bg-emerald-500/20">
-                <Shield24Regular className="w-6 h-6 text-emerald-400" />
+                <Shield24Regular className="w-6 h-6 text-[#93c5fd]" />
               </div>
               <div>
                 <h3 className="font-semibold text-th-text">
@@ -175,7 +175,7 @@ export default function CollaborationSettingsPage() {
             </div>
             <button
               onClick={toggleAllTypes}
-              className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+              className="text-sm text-[#93c5fd] hover:text-[#93c5fd] transition-colors"
             >
               {allowedTypes.length === SOURCE_TYPE_OPTIONS.length
                 ? (t.settings?.deselectAll || 'Deselect All')
@@ -195,7 +195,7 @@ export default function CollaborationSettingsPage() {
                   onClick={() => toggleSourceType(option.id)}
                   className={`flex items-center gap-2 p-3 rounded-xl transition-all ${
                     isSelected
-                      ? 'bg-emerald-500/20 border-2 border-emerald-500/50 text-emerald-300'
+                      ? 'bg-emerald-500/20 border-2 border-emerald-500/50 text-[#93c5fd]'
                       : 'bg-th-surface border border-th-border text-th-text-t hover:bg-th-surface-h'
                   }`}
                 >
@@ -249,7 +249,7 @@ export default function CollaborationSettingsPage() {
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="px-12 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50 text-center"
+            className="px-12 py-4 bg-[#3b82f633] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all disabled:opacity-50 text-center"
           >
             {isSaving ? (
               <span className="flex items-center justify-center gap-2">

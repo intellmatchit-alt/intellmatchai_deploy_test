@@ -104,7 +104,7 @@ export default function CheckoutSuccessPage() {
 
         <div className="bg-th-surface border border-th-border rounded-2xl p-6 mb-8 text-left">
           <div className="flex items-center gap-2 mb-4">
-            <Receipt24Regular className="w-5 h-5 text-emerald-400" />
+            <Receipt24Regular className="w-5 h-5 text-[#93c5fd]" />
             <h2 className="text-lg font-semibold text-th-text">Payment Details</h2>
           </div>
           <div className="space-y-3 text-sm">
@@ -139,7 +139,7 @@ export default function CheckoutSuccessPage() {
 
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+          className="inline-flex items-center gap-2 px-8 py-4 bg-[#3b82f633] text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all"
         >
           Go to Dashboard
           <ArrowRight24Regular className="w-5 h-5" />
@@ -216,7 +216,7 @@ export default function CheckoutSuccessPage() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
             href="/checkout"
-            className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+            className="px-6 py-3 bg-[#3b82f633] text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all"
           >
             Try Again
           </Link>

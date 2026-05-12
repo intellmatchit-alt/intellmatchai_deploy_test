@@ -330,4 +330,149 @@ authRoutes.post(
   },
 );
 
+/**
+ * POST /api/v1/auth/google
+ * Exchange a Google authorization code for the user's profile.
+ */
+authRoutes.post("/google", authRateLimiter, async (req, res, next) => {
+  try {
+    const { code, redirectUri } = req.body;
+
+    if (!code) {
+      res.status(400).json({
+        success: false,
+        error: { code: "MISSING_CODE", message: "Authorization code is required" },
+      });
+      return;
+    }
+
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      logger.error("Google OAuth not configured");
+      res.status(500).json({
+        success: false,
+        error: { code: "NOT_CONFIGURED", message: "Google OAuth not configured" },
+      });
+      return;
+    }
+
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "authorization_code",
+        code,
+        redirect_uri:
+          redirectUri || `${process.env.FRONTEND_URL}/auth/google/callback`,
+        client_id: clientId,
+        client_secret: clientSecret,
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      const errorData = await tokenResponse.json().catch(() => ({}));
+      logger.error("Google token exchange failed", errorData);
+      res.status(401).json({
+        success: false,
+        error: {
+          code: "TOKEN_EXCHANGE_FAILED",
+          message: "Failed to exchange authorization code",
+        },
+      });
+      return;
+    }
+
+    const tokenData = (await tokenResponse.json()) as { access_token: string };
+    const accessToken = tokenData.access_token;
+
+    const profileResponse = await fetch(
+      "https://www.googleapis.com/oauth2/v3/userinfo",
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+
+    if (!profileResponse.ok) {
+      logger.error("Google profile fetch failed");
+      res.status(401).json({
+        success: false,
+        error: {
+          code: "PROFILE_FETCH_FAILED",
+          message: "Failed to fetch Google profile",
+        },
+      });
+      return;
+    }
+
+    interface GoogleProfile {
+      sub: string;
+      email: string;
+      name: string;
+      given_name?: string;
+      family_name?: string;
+      picture?: string;
+      email_verified: boolean;
+    }
+    const profileData = (await profileResponse.json()) as GoogleProfile;
+
+    if (!profileData.email_verified) {
+      res.status(401).json({
+        success: false,
+        error: {
+          code: "EMAIL_NOT_VERIFIED",
+          message: "Google account email is not verified",
+        },
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        googleId: profileData.sub,
+        email: profileData.email,
+        name: profileData.name,
+        firstName: profileData.given_name,
+        lastName: profileData.family_name,
+        picture: profileData.picture,
+        emailVerified: profileData.email_verified,
+      },
+    });
+  } catch (error) {
+    logger.error("Google OAuth error", error);
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/auth/google/register
+ * Register or login a user using a verified Google profile.
+ */
+authRoutes.post("/google/register", authRateLimiter, async (req, res, next) => {
+  try {
+    const { googleId, email, name, picture } = req.body;
+
+    if (!email || !name) {
+      res.status(400).json({
+        success: false,
+        error: { code: "MISSING_FIELDS", message: "Email and name are required" },
+      });
+      return;
+    }
+
+    const result = await authController.googleAuth({
+      googleId,
+      email,
+      name,
+      avatarUrl: picture,
+      userAgent: req.headers["user-agent"],
+      ipAddress: req.ip,
+    });
+
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default authRoutes;

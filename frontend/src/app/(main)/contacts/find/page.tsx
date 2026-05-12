@@ -288,7 +288,7 @@ export default function FindContactPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'HIGH_CONFIDENCE':
-        return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+        return 'bg-emerald-500/20 text-[#93c5fd] border-emerald-500/30';
       case 'LIKELY':
         return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
       case 'UNCERTAIN':
@@ -302,7 +302,7 @@ export default function FindContactPage() {
 
   // Get confidence color
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.9) return 'text-emerald-400';
+    if (confidence >= 0.9) return 'text-[#93c5fd]';
     if (confidence >= 0.7) return 'text-blue-400';
     if (confidence >= 0.5) return 'text-yellow-400';
     return 'text-th-text-t';
@@ -456,7 +456,7 @@ export default function FindContactPage() {
                           setShowIntentDropdown(false);
                         }}
                         className={`w-full px-4 py-3 text-start hover:bg-th-surface-h transition-colors ${
-                          intent === opt.value ? 'bg-emerald-500/20 text-emerald-400' : 'text-white'
+                          intent === opt.value ? 'bg-emerald-500/20 text-[#93c5fd]' : 'text-white'
                         }`}
                       >
                         {lang === 'ar' ? opt.labelAr : opt.label}
@@ -485,7 +485,7 @@ export default function FindContactPage() {
           <button
             onClick={handleSearch}
             disabled={isSearching || (!query.trim() && !selectedImage)}
-            className="w-full px-6 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-emerald-600 disabled:from-neutral-600 disabled:to-neutral-700 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
+            className="w-full px-6 py-4 bg-[#3b82f633] hover:from-emerald-600 hover:to-emerald-600 disabled:from-neutral-600 disabled:to-neutral-700 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
           >
             {isSearching ? (
               <>
@@ -616,7 +616,7 @@ export default function FindContactPage() {
                                 href={channel.type === 'email' ? `mailto:${channel.value}` : channel.type === 'phone' ? `tel:${channel.value}` : channel.value}
                                 target={['email', 'phone'].includes(channel.type) ? undefined : '_blank'}
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-lg hover:bg-emerald-500/30 transition-colors"
+                                className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/20 text-[#93c5fd] text-xs rounded-lg hover:bg-emerald-500/30 transition-colors"
                               >
                                 {getChannelIcon(channel.type)}
                                 {channel.type === 'linkedin' ? 'LinkedIn' : channel.value.length > 25 ? channel.value.slice(0, 25) + '...' : channel.value}
@@ -642,7 +642,7 @@ export default function FindContactPage() {
                             <>
                               <button
                                 onClick={() => submitFeedback(result.candidateId, result.candidateType)}
-                                className="p-2 bg-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/30 transition-colors"
+                                className="p-2 bg-emerald-500/20 text-[#93c5fd] rounded-lg hover:bg-emerald-500/30 transition-colors"
                                 title={t.findContact?.confirmMatch || 'This is the right person'}
                               >
                                 <ThumbLike24Regular className="w-5 h-5" />
@@ -657,7 +657,7 @@ export default function FindContactPage() {
                             </>
                           )}
                           {feedbackSubmitted === result.candidateId && (
-                            <span className="text-xs text-emerald-400 flex items-center gap-1">
+                            <span className="text-xs text-[#93c5fd] flex items-center gap-1">
                               <Checkmark24Regular className="w-4 h-4" />
                               {t.findContact?.confirmed || 'Confirmed'}
                             </span>
@@ -674,7 +674,7 @@ export default function FindContactPage() {
             {selectedResult && searchResponse.openingSentences.length > 0 && (
               <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <Sparkle24Regular className="w-5 h-5 text-emerald-400" />
+                  <Sparkle24Regular className="w-5 h-5 text-[#93c5fd]" />
                   <h3 className="text-lg font-semibold text-th-text">
                     {t.findContact?.suggestedOpenings || 'Suggested Opening Lines'}
                   </h3>
@@ -692,7 +692,7 @@ export default function FindContactPage() {
                         title={t.findContact?.copyToClipboard || 'Copy to clipboard'}
                       >
                         {copiedSentence === index ? (
-                          <Checkmark24Regular className="w-4 h-4 text-emerald-400" />
+                          <Checkmark24Regular className="w-4 h-4 text-[#93c5fd]" />
                         ) : (
                           <Copy24Regular className="w-4 h-4 text-th-text-t" />
                         )}
@@ -712,7 +712,7 @@ export default function FindContactPage() {
                 <ul className="space-y-2">
                   {searchResponse.suggestedActions.map((action, i) => (
                     <li key={i} className="flex items-center gap-2 text-sm text-th-text-s">
-                      <ArrowRight24Regular className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                      <ArrowRight24Regular className="w-4 h-4 text-[#93c5fd] flex-shrink-0" />
                       {action}
                     </li>
                   ))}

@@ -545,7 +545,7 @@ export default function OpportunityForm({
   if (loadingData) {
     return (
       <div className="flex items-center justify-center py-12">
-        <ArrowSync24Regular className="w-8 h-8 text-emerald-400 animate-spin" />
+        <ArrowSync24Regular className="w-8 h-8 text-[#93c5fd] animate-spin" />
       </div>
     );
   }
@@ -584,15 +584,15 @@ export default function OpportunityForm({
                   className="group flex flex-col items-center gap-3 p-5 rounded-2xl border-2 border-dashed border-th-border bg-th-surface hover:border-emerald-400/50 hover:bg-emerald-500/[0.06] transition-all active:scale-[0.98]"
                 >
                   <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 flex items-center justify-center group-hover:bg-emerald-500/25 transition-colors">
-                    <ArrowUpload24Regular className="w-7 h-7 text-emerald-400" />
+                    <ArrowUpload24Regular className="w-7 h-7 text-[#93c5fd]" />
                   </div>
                   <div className="text-center">
                     <p className="text-sm font-semibold text-th-text">Upload Document</p>
                     <p className="text-[11px] text-th-text-m mt-1">Upload a job description and AI fills the form</p>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Sparkle24Regular className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wide">AI Powered</span>
+                    <Sparkle24Regular className="w-3.5 h-3.5 text-[#93c5fd]" />
+                    <span className="text-[10px] font-semibold text-[#93c5fd] uppercase tracking-wide">AI Powered</span>
                   </div>
                 </button>
 
@@ -622,7 +622,7 @@ export default function OpportunityForm({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <ArrowUpload24Regular className="w-5 h-5 text-emerald-400" />
+                  <ArrowUpload24Regular className="w-5 h-5 text-[#93c5fd]" />
                   <h3 className="font-medium text-th-text text-sm">Upload Document</h3>
                 </div>
                 <button
@@ -659,7 +659,7 @@ export default function OpportunityForm({
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 transition-colors ${
                       isDragOver ? 'bg-emerald-500/20' : 'bg-th-surface'
                     }`}>
-                      <ArrowUpload24Regular className={`w-6 h-6 transition-colors ${isDragOver ? 'text-emerald-400' : 'text-th-text-t'}`} />
+                      <ArrowUpload24Regular className={`w-6 h-6 transition-colors ${isDragOver ? 'text-[#93c5fd]' : 'text-th-text-t'}`} />
                     </div>
                     <p className="text-sm font-medium text-th-text mb-1">
                       {isDragOver ? 'Drop your file here' : 'Drag & drop your document'}
@@ -712,13 +712,13 @@ export default function OpportunityForm({
                 <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-4">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center flex-shrink-0">
-                      <ArrowSync24Regular className="w-5 h-5 text-emerald-400 animate-spin" />
+                      <ArrowSync24Regular className="w-5 h-5 text-[#93c5fd] animate-spin" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-th-text">Analyzing document...</p>
                       <p className="text-xs text-th-text-t mt-0.5">AI is reading and extracting details</p>
                     </div>
-                    <span className="text-sm font-semibold text-emerald-400">{Math.round(jobExtractionProgress)}%</span>
+                    <span className="text-sm font-semibold text-[#93c5fd]">{Math.round(jobExtractionProgress)}%</span>
                   </div>
                   <div className="h-2 bg-th-surface-h rounded-full overflow-hidden">
                     <div
@@ -746,7 +746,7 @@ export default function OpportunityForm({
         <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center flex-shrink-0">
-              <CheckmarkCircle24Regular className="w-6 h-6 text-emerald-400" />
+              <CheckmarkCircle24Regular className="w-6 h-6 text-[#93c5fd]" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-th-text">Fields populated from document</p>
@@ -757,7 +757,7 @@ export default function OpportunityForm({
             <button
               type="button"
               onClick={handleJobExtract}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#93c5fd] bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg transition-colors"
             >
               <ArrowSync24Regular className="w-3.5 h-3.5" />
               Re-extract
@@ -835,13 +835,13 @@ export default function OpportunityForm({
                 onClick={() => setIntentType(option.id)}
                 className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all active:scale-[0.97] ${
                   intentType === option.id
-                    ? 'bg-emerald-400 border-emerald-400/80 text-[#042820] shadow-lg shadow-emerald-500/10'
+                    ? 'bg-emerald-400 border-emerald-400/80 text-[#042820] shadow-lg shadow-[#3b82f6]/10'
                     : 'bg-white/[0.04] border-white/[0.12] text-th-text-s hover:bg-white/[0.07] hover:border-white/25'
                 }`}
               >
                 {INTENT_ICONS[option.id]}
                 <span className="text-sm font-semibold">{option.label}</span>
-                <span className={`text-xs text-center ${intentType === option.id ? 'text-emerald-300/70' : 'text-th-text-m'}`}>{option.description}</span>
+                <span className={`text-xs text-center ${intentType === option.id ? 'text-[#93c5fd]/70' : 'text-th-text-m'}`}>{option.description}</span>
               </button>
             ))}
           </div>
@@ -974,7 +974,7 @@ export default function OpportunityForm({
                     <span className="text-[11px] font-semibold px-1.5 py-0.5 bg-emerald-400 text-[#042820] rounded-full">{mustHaveSkills.length}</span>
                   )}
                 </label>
-                <button type="button" onClick={() => setSkillsExpanded(!skillsExpanded)} className="text-[0.84rem] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+                <button type="button" onClick={() => setSkillsExpanded(!skillsExpanded)} className="text-[0.84rem] font-bold text-[#93c5fd] hover:text-[#93c5fd] flex items-center gap-1">
                   {skillsExpanded ? <><ChevronUp24Regular className="w-4 h-4" />Less</> : <><ChevronDown24Regular className="w-4 h-4" />Show all</>}
                 </button>
               </div>
@@ -1062,7 +1062,7 @@ export default function OpportunityForm({
                   <span className="text-[11px] font-semibold px-1.5 py-0.5 bg-emerald-400 text-[#042820] rounded-full">{mustHaveSkills.length} selected</span>
                 )}
               </label>
-              <button type="button" onClick={() => setSkillsExpanded(!skillsExpanded)} className="text-[0.84rem] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+              <button type="button" onClick={() => setSkillsExpanded(!skillsExpanded)} className="text-[0.84rem] font-bold text-[#93c5fd] hover:text-[#93c5fd] flex items-center gap-1">
                 {skillsExpanded ? <><ChevronUp24Regular className="w-4 h-4" />Less</> : <><ChevronDown24Regular className="w-4 h-4" />Show all</>}
               </button>
             </div>
@@ -1111,7 +1111,7 @@ export default function OpportunityForm({
             ? 'Optional details that help improve candidate fit, industry relevance, and urgency-based prioritization.'
             : 'Optional details that help the system understand fit, preferences, and industry direction more accurately.'
           }
-          icon={<Sparkle24Regular className="w-5 h-5 text-emerald-400" />}
+          icon={<Sparkle24Regular className="w-5 h-5 text-[#93c5fd]" />}
           defaultOpen={advancedOpen || languages.length > 0 || certifications.length > 0 || educationLevels.length > 0 || industries.length > 0 || !!salaryMin || !!salaryMax || !!noticePeriod || !!relevantExperience}
           headerColor="from-emerald-500 to-teal-400"
         >
@@ -1121,7 +1121,7 @@ export default function OpportunityForm({
               <label className={labelClass}>
                 {notesLabel}{(isHiring || intentType === 'OPEN_TO_OPPORTUNITIES') && requiredStar}
               </label>
-              <button type="button" onClick={() => setNotesExpanded(!notesExpanded)} className="text-[0.84rem] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+              <button type="button" onClick={() => setNotesExpanded(!notesExpanded)} className="text-[0.84rem] font-bold text-[#93c5fd] hover:text-[#93c5fd] flex items-center gap-1">
                 <FullScreenMaximize24Regular className="w-4 h-4" />{notesExpanded ? 'Less' : 'Expand'}
               </button>
             </div>
@@ -1185,7 +1185,7 @@ export default function OpportunityForm({
                   <span className="text-[11px] font-semibold px-1.5 py-0.5 bg-emerald-400 text-[#042820] rounded-full">{selectedSectors.length} selected</span>
                 )}
               </label>
-              <button type="button" onClick={() => setSectorsExpanded(!sectorsExpanded)} className="text-[0.84rem] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+              <button type="button" onClick={() => setSectorsExpanded(!sectorsExpanded)} className="text-[0.84rem] font-bold text-[#93c5fd] hover:text-[#93c5fd] flex items-center gap-1">
                 {sectorsExpanded ? <><ChevronUp24Regular className="w-4 h-4" />Less</> : <><ChevronDown24Regular className="w-4 h-4" />Show all</>}
               </button>
             </div>
@@ -1467,7 +1467,7 @@ export default function OpportunityForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex items-center justify-center gap-2.5 px-6 py-[15px] rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 disabled:opacity-50 text-[#042820] font-extrabold text-base transition-all active:scale-[0.98] shadow-[0_12px_28px_rgba(24,210,164,0.22)] min-h-[56px]"
+          className="flex items-center justify-center gap-2.5 px-6 py-[15px] rounded-2xl bg-[#3b82f633] hover:from-emerald-400 hover:to-teal-400 disabled:opacity-50 text-[#042820] font-extrabold text-base transition-all active:scale-[0.98] shadow-[0_12px_28px_rgba(24,210,164,0.22)] min-h-[56px]"
         >
           {isSubmitting ? (
             <ArrowSync24Regular className="w-5 h-5 animate-spin" />

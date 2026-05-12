@@ -50,26 +50,26 @@ function NavItem({
   return (
     <Link
       href={href}
-      className="flex flex-col items-center justify-center flex-1 min-w-0 py-1.5 group"
+      className="flex flex-col items-center justify-center flex-1 min-w-0 py-1 group"
     >
       <div
         className={cn(
-          'relative flex items-center justify-center w-10 h-10 rounded-2xl transition-all duration-200',
+          'relative flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200',
           isActive
-            ? 'bg-[#00d084]/15'
+            ? 'bg-[#00d084]/12'
             : 'group-active:scale-90'
         )}
       >
         <Icon
           className={cn(
-            'w-[22px] h-[22px] transition-colors duration-200',
+            'w-5 h-5 transition-colors duration-200',
             isActive
               ? 'text-[#00d084]'
               : 'text-th-text-m group-hover:text-th-text-t'
           )}
         />
         {badge !== undefined && badge > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold leading-none ring-2 ring-th-bg">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold leading-none ring-2 ring-th-bg">
             {badge > 99 ? '99+' : badge}
           </span>
         )}
@@ -126,7 +126,7 @@ export function BottomNav() {
       {/* Background */}
       <div className="absolute inset-0 bg-th-nav-bottom backdrop-blur-xl border-t border-th-border" />
 
-      <div className="relative flex items-end h-[68px] max-w-md mx-auto px-1">
+      <div className="relative flex items-end h-[62px] max-w-md mx-auto px-1">
         {/* Home */}
         <NavItem
           href="/dashboard"
@@ -146,36 +146,36 @@ export function BottomNav() {
         />
 
         {/* Center Scan Button */}
-        <div className="flex-1 flex justify-center -mt-4 pb-0.5">
+        <div className="flex-1 flex justify-center -mt-3 pb-0.5">
           <Link
             href="/scan"
             className="flex flex-col items-center group"
           >
             <div className="relative">
-              {/* Outer glow */}
+              {/* Outer glow — reduced ~20% intensity */}
               <div
                 className={cn(
                   'absolute -inset-1 rounded-full bg-gradient-to-r from-[#00d084] to-[#00b870] transition-opacity duration-300',
-                  isScanActive ? 'opacity-40 blur-md' : 'opacity-20 blur-md group-hover:opacity-30'
+                  isScanActive ? 'opacity-30 blur-md' : 'opacity-15 blur-md group-hover:opacity-25'
                 )}
               />
               {/* Button */}
               <div
                 className={cn(
-                  'relative flex items-center justify-center w-[52px] h-[52px] rounded-full',
+                  'relative flex items-center justify-center w-12 h-12 rounded-full',
                   'bg-gradient-to-br from-[#00d084] to-[#00b870] text-[#060b18]',
-                  'shadow-lg shadow-[#00d084]/20',
+                  'shadow-md shadow-[#00d084]/15',
                   'transition-all duration-200',
                   'group-hover:scale-105 group-active:scale-95',
-                  'ring-[3px] ring-[#060b18]'
+                  'ring-[3px] ring-th-bg'
                 )}
               >
-                <Camera24Filled className="w-6 h-6" />
+                <Camera24Filled className="w-[22px] h-[22px]" />
               </div>
             </div>
             <span
               className={cn(
-                'mt-1 text-[10px] font-semibold transition-colors duration-200',
+                'mt-0.5 text-[10px] font-semibold transition-colors duration-200',
                 isScanActive
                   ? 'text-[#00d084]'
                   : 'text-[#00d084]/70'

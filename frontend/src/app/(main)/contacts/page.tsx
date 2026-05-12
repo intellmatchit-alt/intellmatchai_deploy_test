@@ -125,10 +125,10 @@ type MatchFilter = 'all' | 'high' | 'medium' | 'low' | 'none';
 type SortOption = 'name' | 'matchScore' | 'recent' | 'company';
 
 const MATCH_TYPE_STYLES: Record<string, { bg: string; text: string; border: string; icon: any; label: string }> = {
-  project: { bg: 'bg-emerald-500/15', text: 'text-emerald-300', border: 'border-emerald-500/25', icon: Lightbulb24Regular, label: 'Project' },
+  project: { bg: 'bg-emerald-500/15', text: 'text-[#93c5fd]', border: 'border-emerald-500/25', icon: Lightbulb24Regular, label: 'Project' },
   deal: { bg: 'bg-blue-500/15', text: 'text-blue-300', border: 'border-blue-500/25', icon: Handshake24Regular, label: 'Deal' },
-  pitch: { bg: 'bg-emerald-500/15', text: 'text-emerald-300', border: 'border-emerald-500/25', icon: Rocket24Regular, label: 'Pitch' },
-  job: { bg: 'bg-teal-500/15', text: 'text-teal-300', border: 'border-teal-500/25', icon: Briefcase24Regular, label: 'Job' },
+  pitch: { bg: 'bg-emerald-500/15', text: 'text-[#93c5fd]', border: 'border-emerald-500/25', icon: Rocket24Regular, label: 'Pitch' },
+  job: { bg: 'bg-teal-500/15', text: 'text-[#93c5fd]', border: 'border-teal-500/25', icon: Briefcase24Regular, label: 'Job' },
 };
 
 /**
@@ -696,7 +696,7 @@ export default function ContactsPage() {
   const isNearLimit = planLimit !== null && !isAtLimit && planLimit.limit > 0 && (planLimit.current / planLimit.limit) > 0.9;
   const usagePercent = planLimit && planLimit.limit > 0 ? Math.min((planLimit.current / planLimit.limit) * 100, 100) : 0;
   const usageColor = usagePercent >= 90 ? 'bg-red-500' : usagePercent >= 70 ? 'bg-amber-500' : 'bg-emerald-500';
-  const usageTextColor = usagePercent >= 90 ? 'text-red-400' : usagePercent >= 70 ? 'text-emerald-400' : 'text-emerald-400';
+  const usageTextColor = usagePercent >= 90 ? 'text-red-400' : usagePercent >= 70 ? 'text-[#93c5fd]' : 'text-[#93c5fd]';
 
   // Handler to check limit before add/import actions
   const handleAddClick = (e: React.MouseEvent) => {
@@ -754,7 +754,7 @@ export default function ContactsPage() {
           ) : (
             <Link
               href="/contacts/add"
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+              className="flex items-center gap-2 px-4 py-2 bg-[#3b82f633] text-white font-thin rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all"
             >
               <Add24Regular className="w-5 h-5" />
               {t.common?.add || 'Add'}
@@ -782,7 +782,7 @@ export default function ContactsPage() {
           onClick={() => setShowFilters(!showFilters)}
           className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all ${
             hasActiveFilters
-              ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-300'
+              ? 'bg-emerald-500/20 border border-emerald-500/30 text-[#93c5fd]'
               : 'bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'
           }`}
         >
@@ -836,7 +836,7 @@ export default function ContactsPage() {
                     }}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all flex items-center gap-1 ${
                       sortOption === option.id
-                        ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300'
+                        ? 'bg-emerald-500/20 border-emerald-500/30 text-[#93c5fd]'
                         : 'bg-th-surface border-th-border text-th-text-t hover:bg-th-surface-h'
                     }`}
                   >
@@ -868,7 +868,7 @@ export default function ContactsPage() {
                     onClick={() => { setSelectedSector(null); setShowFilters(false); setFilterSearch(''); }}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
                       !selectedSector
-                        ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300'
+                        ? 'bg-emerald-500/20 border-emerald-500/30 text-[#93c5fd]'
                         : 'bg-th-surface border-th-border text-th-text-t hover:bg-th-surface-h'
                     }`}
                   >
@@ -883,7 +883,7 @@ export default function ContactsPage() {
                         onClick={() => { setSelectedSector(sector); setShowFilters(false); setFilterSearch(''); }}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
                           selectedSector === sector
-                            ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300'
+                            ? 'bg-emerald-500/20 border-emerald-500/30 text-[#93c5fd]'
                             : 'bg-th-surface border-th-border text-th-text-t hover:bg-th-surface-h'
                         }`}
                       >
@@ -1002,7 +1002,7 @@ export default function ContactsPage() {
                     onClick={() => { setSelectedMatchType(null); setShowFilters(false); setFilterSearch(''); }}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
                       !selectedMatchType
-                        ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300'
+                        ? 'bg-emerald-500/20 border-emerald-500/30 text-[#93c5fd]'
                         : 'bg-th-surface border-th-border text-th-text-t hover:bg-th-surface-h'
                     }`}
                   >
@@ -1049,7 +1049,7 @@ export default function ContactsPage() {
                     onClick={() => { setSelectedSource(null); setShowFilters(false); setFilterSearch(''); }}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
                       !selectedSource
-                        ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300'
+                        ? 'bg-emerald-500/20 border-emerald-500/30 text-[#93c5fd]'
                         : 'bg-th-surface border-th-border text-th-text-t hover:bg-th-surface-h'
                     }`}
                   >
@@ -1063,7 +1063,7 @@ export default function ContactsPage() {
                         onClick={() => { setSelectedSource(source); setShowFilters(false); setFilterSearch(''); }}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
                           selectedSource === source
-                            ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300'
+                            ? 'bg-emerald-500/20 border-emerald-500/30 text-[#93c5fd]'
                             : 'bg-th-surface border-th-border text-th-text-t hover:bg-th-surface-h'
                         }`}
                       >
@@ -1089,7 +1089,7 @@ export default function ContactsPage() {
                 setSelectedMatchType(null);
                 setShowFilters(false);
               }}
-              className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+              className="text-sm text-[#93c5fd] hover:text-[#93c5fd] transition-colors"
             >
               Clear all filters
             </button>
@@ -1101,7 +1101,7 @@ export default function ContactsPage() {
       {hasActiveFilters && (
         <div className="flex flex-wrap gap-2 items-center">
           {selectedSector && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-500/20 border border-emerald-500/30 text-emerald-300">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-500/20 border border-emerald-500/30 text-[#93c5fd]">
               {selectedSector}
               <button onClick={() => setSelectedSector(null)} className="ml-1 hover:text-white"><Dismiss24Regular className="w-3 h-3" /></button>
             </span>
@@ -1119,7 +1119,7 @@ export default function ContactsPage() {
             </span>
           )}
           {selectedSource && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-500/20 border border-emerald-500/30 text-emerald-300">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-500/20 border border-emerald-500/30 text-[#93c5fd]">
               {selectedSource === 'CARD_SCAN' ? 'Card Scan' : selectedSource === 'LINKEDIN' ? 'LinkedIn' : selectedSource === 'IMPORT' ? 'Import' : selectedSource === 'MANUAL' ? 'Manual' : selectedSource}
               <button onClick={() => setSelectedSource(null)} className="ml-1 hover:text-white"><Dismiss24Regular className="w-3 h-3" /></button>
             </span>
@@ -1137,7 +1137,7 @@ export default function ContactsPage() {
           })()}
           <button
             onClick={() => { setSelectedSector(null); setSelectedSkill(null); setSelectedLocation(null); setSelectedSource(null); setSelectedMatchType(null); }}
-            className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+            className="text-xs text-[#93c5fd] hover:text-[#93c5fd] transition-colors"
           >
             Clear all
           </button>
@@ -1188,13 +1188,13 @@ export default function ContactsPage() {
       {/* Near Limit Warning */}
       {isNearLimit && (
         <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 flex items-center gap-3">
-          <Warning24Regular className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-          <p className="text-emerald-400 text-sm font-medium flex-1">
+          <Warning24Regular className="w-5 h-5 text-[#93c5fd] flex-shrink-0" />
+          <p className="text-[#93c5fd] text-sm font-medium flex-1">
             Running low on contacts — {planLimit!.remaining.toLocaleString()} remaining
           </p>
           <Link
             href="/checkout"
-            className="flex-shrink-0 text-emerald-400 hover:text-emerald-300 text-sm font-medium transition-colors"
+            className="flex-shrink-0 text-[#93c5fd] hover:text-[#93c5fd] text-sm font-medium transition-colors"
           >
             Upgrade
           </Link>
@@ -1229,7 +1229,7 @@ export default function ContactsPage() {
             <span className="text-th-text font-medium">{contacts.length}</span> contacts
             {selectedSector && (
               <span className="ml-2">
-                in <span className="text-emerald-300">{selectedSector}</span>
+                in <span className="text-[#93c5fd]">{selectedSector}</span>
               </span>
             )}
           </div>
@@ -1242,7 +1242,7 @@ export default function ContactsPage() {
                 setSelectedLocation(null);
                 setSelectedSource(null);
               }}
-              className="text-emerald-400 hover:text-emerald-300 transition-colors"
+              className="text-[#93c5fd] hover:text-[#93c5fd] transition-colors"
             >
               Reset filters
             </button>
@@ -1359,7 +1359,7 @@ export default function ContactsPage() {
             {!searchQuery && !hasActiveFilters && (
               <Link
                 href="/contacts/add"
-                className="inline-block mt-4 px-6 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+                className="inline-block mt-4 px-6 py-2 bg-[#3b82f633] text-white font-thin rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all"
               >
                 {t.contacts?.addContact || 'Add Contact'}
               </Link>
@@ -1403,7 +1403,7 @@ export default function ContactsPage() {
       ) : (
         <Link
           href="/contacts/add"
-          className="fixed bottom-24 end-6 w-14 h-14 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-full shadow-lg shadow-emerald-500/30 flex items-center justify-center hover:shadow-xl hover:shadow-emerald-500/40 hover:scale-110 transition-all z-40"
+          className="fixed bottom-24 end-6 w-14 h-14 bg-[#3b82f633] text-white rounded-full shadow-lg shadow-[#3b82f6]/30 flex items-center justify-center hover:shadow-xl hover:shadow-[#3b82f6]/40 hover:scale-110 transition-all z-40"
         >
           <Add24Regular className="w-6 h-6" />
         </Link>
@@ -1538,7 +1538,7 @@ export default function ContactsPage() {
                 <Link
                   href="/checkout"
                   onClick={() => setShowLimitModal(false)}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all text-center"
+                  className="flex-1 px-4 py-3 bg-[#3b82f633] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all text-center"
                 >
                   Upgrade Plan
                 </Link>

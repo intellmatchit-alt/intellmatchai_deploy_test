@@ -276,7 +276,7 @@ function BioPreviewDialog({
           <button
             type="button"
             onClick={handleSave}
-            className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-lg hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+            className="px-4 py-2 bg-[#3b82f633] text-white font-thin rounded-lg hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all"
           >
             {t.common?.save || "Save"}
           </button>
@@ -590,7 +590,7 @@ export default function EditProfilePage() {
       {/* Avatar Section */}
       <div className="flex justify-center mb-8">
         <div className="relative">
-          <div className="p-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full">
+          <div className="p-1 bg-[#3b82f633] rounded-full">
             <Avatar
               src={profile?.avatarUrl}
               name={formData.fullName || "User"}
@@ -772,7 +772,7 @@ export default function EditProfilePage() {
             <button
               type="button"
               onClick={() => setIsBioDialogOpen(true)}
-              className="flex items-center gap-1.5 px-2 py-1 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-2 py-1 text-xs text-[#93c5fd] hover:text-[#93c5fd] hover:bg-emerald-500/10 rounded-lg transition-colors"
             >
               <FullScreenMaximize24Regular className="w-4 h-4" />
               {t.onboarding?.bioPreview?.expand || "Expand"}
@@ -893,10 +893,10 @@ export default function EditProfilePage() {
         <div className="pt-4 border-t border-th-border">
           <div className="flex items-center justify-between mb-3">
             <label className="flex items-center gap-2 text-sm font-medium text-th-text-s">
-              <Briefcase24Regular className="w-4 h-4 text-emerald-400" />
+              <Briefcase24Regular className="w-4 h-4 text-[#93c5fd]" />
               {t.profile?.sectors || "Industry Sectors"}
               {selectedSectorIds.length > 0 && (
-                <span className="text-xs text-emerald-400">
+                <span className="text-xs text-[#93c5fd]">
                   ({selectedSectorIds.length})
                 </span>
               )}
@@ -904,7 +904,7 @@ export default function EditProfilePage() {
             <button
               type="button"
               onClick={() => setSectorsExpanded(!sectorsExpanded)}
-              className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+              className="text-xs text-[#93c5fd] hover:text-[#93c5fd] flex items-center gap-1"
             >
               {sectorsExpanded ? (
                 <>
@@ -927,7 +927,7 @@ export default function EditProfilePage() {
                 key={sector.id}
                 type="button"
                 onClick={() => toggleSector(sector.id)}
-                className={`px-3 py-1.5 rounded-full text-sm transition-all ${selectedSectorIds.includes(sector.id) ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white" : "bg-th-surface border border-th-border text-th-text-t hover:bg-th-surface-h"}`}
+                className={`px-3 py-1.5 rounded-full text-sm transition-all ${selectedSectorIds.includes(sector.id) ? "bg-[#3b82f633] text-white" : "bg-th-surface border border-th-border text-th-text-t hover:bg-th-surface-h"}`}
               >
                 {sector.name}
               </button>
@@ -950,7 +950,7 @@ export default function EditProfilePage() {
             <button
               type="button"
               onClick={() => setSkillsExpanded(!skillsExpanded)}
-              className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+              className="text-xs text-[#93c5fd] hover:text-[#93c5fd] flex items-center gap-1"
             >
               {skillsExpanded ? (
                 <>
@@ -985,10 +985,10 @@ export default function EditProfilePage() {
         <div className="pt-4 border-t border-th-border">
           <div className="flex items-center justify-between mb-3">
             <label className="flex items-center gap-2 text-sm font-medium text-th-text-s">
-              <Heart24Regular className="w-4 h-4 text-emerald-400" />
+              <Heart24Regular className="w-4 h-4 text-[#93c5fd]" />
               {t.profile?.interestsLabel || "Interests"}
               {selectedInterestIds.length > 0 && (
-                <span className="text-xs text-emerald-400">
+                <span className="text-xs text-[#93c5fd]">
                   ({selectedInterestIds.length})
                 </span>
               )}
@@ -996,7 +996,7 @@ export default function EditProfilePage() {
             <button
               type="button"
               onClick={() => setInterestsExpanded(!interestsExpanded)}
-              className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+              className="text-xs text-[#93c5fd] hover:text-[#93c5fd] flex items-center gap-1"
             >
               {interestsExpanded ? (
                 <>
@@ -1042,7 +1042,7 @@ export default function EditProfilePage() {
             <button
               type="button"
               onClick={() => setObjectivesExpanded(!objectivesExpanded)}
-              className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+              className="text-xs text-[#93c5fd] hover:text-[#93c5fd] flex items-center gap-1"
             >
               {objectivesExpanded ? (
                 <>
@@ -1088,7 +1088,7 @@ export default function EditProfilePage() {
             <button
               type="button"
               onClick={() => setHobbiesExpanded(!hobbiesExpanded)}
-              className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+              className="text-xs text-[#93c5fd] hover:text-[#93c5fd] flex items-center gap-1"
             >
               {hobbiesExpanded ? (
                 <>
@@ -1111,7 +1111,7 @@ export default function EditProfilePage() {
                 key={hobby.id}
                 type="button"
                 onClick={() => toggleHobby(hobby.id)}
-                className={`px-3 py-1.5 rounded-full text-sm transition-all ${selectedHobbyIds.includes(hobby.id) ? "bg-gradient-to-r from-yellow-500 to-cyan-500 text-white" : "bg-th-surface border border-th-border text-th-text-t hover:bg-th-surface-h"}`}
+                className={`px-3 py-1.5 rounded-full text-sm transition-all ${selectedHobbyIds.includes(hobby.id) ? "bg-[#3b82f633] text-[#93c5fd]" : "bg-th-surface border border-th-border text-th-text-t hover:bg-th-surface-h"}`}
               >
                 {hobby.name}
               </button>
@@ -1126,7 +1126,7 @@ export default function EditProfilePage() {
           className="relative w-full group mt-4"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl blur-lg opacity-50 group-hover:opacity-80 transition-opacity" />
-          <span className="relative flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50">
+          <span className="relative flex items-center justify-center gap-2 w-full py-3 bg-[#3b82f633] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all disabled:opacity-50">
             {isLoading ? (
               <>
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

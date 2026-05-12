@@ -54,7 +54,7 @@ interface MatchingCardProps {
 const STATUS_COLORS = {
   green: 'bg-green-500/20 text-green-400 border-green-500/30',
   blue: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  purple: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+  purple: 'bg-emerald-500/20 text-[#93c5fd] border-emerald-500/30',
   yellow: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
   orange: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
   red: 'bg-red-500/20 text-red-400 border-red-500/30',
@@ -201,7 +201,7 @@ export function MatchingCard({
                 {onMessage && (
                   <button
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMessage(); }}
-                    className="p-2 rounded-lg hover:bg-emerald-500/20 text-th-text-t hover:text-emerald-400 transition-colors"
+                    className="p-2 rounded-lg hover:bg-emerald-500/20 text-th-text-t hover:text-[#93c5fd] transition-colors"
                     title="Message"
                   >
                     <Chat24Regular className="w-4 h-4" />
@@ -235,7 +235,7 @@ export function MatchingCard({
               </span>
             ))}
             {sharedInterests.slice(0, isCompact ? 1 : 2).map((interest, i) => (
-              <span key={`interest-${i}`} className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span key={`interest-${i}`} className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/20 text-[#93c5fd] border border-emerald-500/30">
                 {interest}
               </span>
             ))}
@@ -265,8 +265,8 @@ export function MatchingCard({
         <div className="px-4 pb-3">
           <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
             <div className="flex items-center gap-2 mb-2">
-              <Lightbulb24Regular className="w-4 h-4 text-emerald-400" />
-              <span className="text-sm font-medium text-emerald-400">Ice Breakers</span>
+              <Lightbulb24Regular className="w-4 h-4 text-[#93c5fd]" />
+              <span className="text-sm font-medium text-[#93c5fd]">Ice Breakers</span>
             </div>
             <div className="space-y-2">
               {iceBreakers.slice(0, 2).map((iceBreaker, idx) => (
@@ -274,10 +274,10 @@ export function MatchingCard({
                   <p className="text-xs text-th-text-s italic">&quot;{iceBreaker}&quot;</p>
                   <button
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleCopy(iceBreaker, idx); }}
-                    className="absolute top-2 right-2 p-1 text-th-text-m hover:text-emerald-400 transition-colors opacity-0 group-hover:opacity-100"
+                    className="absolute top-2 right-2 p-1 text-th-text-m hover:text-[#93c5fd] transition-colors opacity-0 group-hover:opacity-100"
                   >
                     {copiedIndex === idx ? (
-                      <Checkmark24Regular className="w-4 h-4 text-emerald-400" />
+                      <Checkmark24Regular className="w-4 h-4 text-[#93c5fd]" />
                     ) : (
                       <Copy24Regular className="w-4 h-4" />
                     )}
@@ -313,7 +313,7 @@ export function MatchingCard({
           {linkTo && (
             <Link
               href={linkTo}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-medium rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-[#3b82f633] text-white text-sm font-thin rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all"
             >
               View Details
               <ChevronRight24Regular className="w-4 h-4" />

@@ -88,7 +88,7 @@ export default function NewProjectPage() {
               <div className="flex flex-col gap-3">
                 <button
                   onClick={handleViewProject}
-                  className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+                  className="w-full py-3 bg-[#3b82f633] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all"
                 >
                   {t.projects?.viewProject || 'View Project'}
                 </button>

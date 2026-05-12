@@ -139,8 +139,8 @@ export function ItemizedMatchCard({
                 <span
                   className={cn(
                     'px-2 py-0.5 text-[10px] font-semibold rounded-full whitespace-nowrap',
-                    match.matchQuality === 'HIGH' && 'bg-emerald-500/20 text-emerald-400',
-                    match.matchQuality === 'MEDIUM' && 'bg-emerald-500/20 text-emerald-400',
+                    match.matchQuality === 'HIGH' && 'bg-emerald-500/20 text-[#93c5fd]',
+                    match.matchQuality === 'MEDIUM' && 'bg-emerald-500/20 text-[#93c5fd]',
                     match.matchQuality === 'LOW' && 'bg-white/[0.03]0/20 text-white/50'
                   )}
                 >
@@ -235,8 +235,8 @@ export function ItemizedMatchCard({
         <div className="px-4 pb-4">
           <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
             <div className="flex items-center gap-2 mb-2">
-              <Lightbulb24Regular className="w-4 h-4 text-emerald-400" />
-              <span className="text-sm font-medium text-emerald-400">
+              <Lightbulb24Regular className="w-4 h-4 text-[#93c5fd]" />
+              <span className="text-sm font-medium text-[#93c5fd]">
                 Ice Breakers
               </span>
             </div>
@@ -253,10 +253,10 @@ export function ItemizedMatchCard({
                     </p>
                     <button
                       onClick={() => handleCopyIceBreaker(text, idx)}
-                      className="absolute top-2 right-2 p-1 text-th-text-m hover:text-emerald-400 transition-colors opacity-0 group-hover:opacity-100"
+                      className="absolute top-2 right-2 p-1 text-th-text-m hover:text-[#93c5fd] transition-colors opacity-0 group-hover:opacity-100"
                     >
                       {copiedIceBreaker === idx ? (
-                        <Checkmark24Regular className="w-4 h-4 text-emerald-400" />
+                        <Checkmark24Regular className="w-4 h-4 text-[#93c5fd]" />
                       ) : (
                         <Copy24Regular className="w-4 h-4" />
                       )}
@@ -293,7 +293,7 @@ export function ItemizedMatchCard({
           {onMessage && (
             <button
               onClick={() => onMessage(match.target.id)}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-medium rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-[#3b82f633] text-white text-sm font-thin rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all"
             >
               <Chat24Regular className="w-4 h-4" />
               Message

@@ -5,7 +5,7 @@
   "main": "dist/main.js",
   "scripts": {
     "dev": "tsx watch src/main.ts",
-    "build": "tsc && copyfiles -u 1 src/config/swagger.yaml dist/config/",
+    "build": "tsc && copyfiles -u 2 src/config/swagger.yaml dist/config/",
     "start": "node dist/main.js",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",

@@ -138,7 +138,7 @@ function TypingDots() {
 
 function MessageStatusIcon({ status }: { status: string }) {
   if (status === 'READ') {
-    return <CheckmarkCircle20Filled className="w-4 h-4 text-emerald-400" />;
+    return <CheckmarkCircle20Filled className="w-4 h-4 text-[#93c5fd]" />;
   }
   return <Checkmark20Regular className="w-4 h-4 text-th-text-m" />;
 }
@@ -227,7 +227,7 @@ function AttachmentRenderer({ att, isMine }: { att: MessageAttachment; isMine: b
       rel="noopener noreferrer"
       className={`flex items-center gap-2 px-3 py-2 rounded-lg ${isMine ? 'bg-th-surface-h' : 'bg-th-surface'} hover:opacity-80 transition-opacity`}
     >
-      <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold ${isMine ? 'bg-th-surface-h' : 'bg-emerald-500/20 text-emerald-400'}`}>
+      <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold ${isMine ? 'bg-th-surface-h' : 'bg-emerald-500/20 text-[#93c5fd]'}`}>
         {getFileTypeLabel(mime)}
       </div>
       <div className="flex-1 min-w-0">
@@ -767,7 +767,7 @@ export default function ChatPage() {
             {loadingMore ? (
               <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
             ) : (
-              <button onClick={loadMore} className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors">
+              <button onClick={loadMore} className="text-sm text-[#93c5fd] hover:text-[#93c5fd] transition-colors">
                 {msgs.loadMore || 'Load more messages'}
               </button>
             )}
@@ -891,7 +891,7 @@ export default function ChatPage() {
                       isDeleted
                         ? 'bg-th-surface text-th-text-m'
                         : isMine
-                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-br-md'
+                        ? 'bg-[#3b82f633] text-white rounded-br-md'
                         : 'bg-th-surface-h text-th-text rounded-bl-md'
                     }`}
                   >
@@ -963,7 +963,7 @@ export default function ChatPage() {
                           onClick={() => handleToggleReaction(msg.id, g.emoji)}
                           className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border transition-colors ${
                             g.hasReacted
-                              ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                              ? 'bg-emerald-500/20 border-emerald-500/40 text-[#93c5fd]'
                               : 'bg-th-surface border-th-border text-th-text-t hover:bg-th-surface-h'
                           }`}
                           title={g.users.join(', ')}
@@ -1017,7 +1017,7 @@ export default function ChatPage() {
       {voiceBlob && !isRecording && (
         <div className="px-2 py-2 border-t border-th-border flex items-center gap-3">
           <div className="flex-1 flex items-center gap-2 px-3 py-2 bg-th-surface rounded-xl">
-            <Mic24Regular className="w-4 h-4 text-emerald-400" />
+            <Mic24Regular className="w-4 h-4 text-[#93c5fd]" />
             <span className="text-sm text-th-text-s">{msgs.voiceMessage || 'Voice message'}</span>
             <span className="text-xs text-th-text-m">{formatDuration(voiceDuration)}</span>
           </div>
@@ -1083,7 +1083,7 @@ export default function ChatPage() {
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
               className={`flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-xl transition-colors ${
                 showEmojiPicker
-                  ? 'text-emerald-400 bg-emerald-500/10'
+                  ? 'text-[#93c5fd] bg-emerald-500/10'
                   : 'text-th-text-t hover:text-th-text hover:bg-th-surface-h'
               }`}
             >
@@ -1107,7 +1107,7 @@ export default function ChatPage() {
               <button
                 onClick={handleSend}
                 disabled={sending}
-                className="flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+                className="flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-xl bg-[#3b82f633] text-white disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
               >
                 <Send24Filled className="w-5 h-5" />
               </button>

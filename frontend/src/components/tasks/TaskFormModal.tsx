@@ -592,7 +592,7 @@ export function TaskFormModal({
                   className={cn(
                     'w-full px-2.5 py-1.5 text-start rounded-lg border text-sm transition-all',
                     dueDate
-                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-[#93c5fd]'
                       : 'bg-white/[0.03] border-th-border text-white/50 hover:border-emerald-500/30'
                   )}
                 >
@@ -636,12 +636,12 @@ export function TaskFormModal({
                     key={r.id || `new-${idx}`}
                     className="flex items-center justify-between px-3 py-1.5 bg-teal-500/10 border border-teal-500/20 rounded-lg"
                   >
-                    <span className="text-xs text-teal-400">
+                    <span className="text-xs text-[#93c5fd]">
                       {r.label || formatReminderLabel(r.reminderAt)}
                     </span>
                     <button
                       onClick={() => removeReminder(idx)}
-                      className="p-0.5 text-teal-400/60 hover:text-red-400 transition-colors"
+                      className="p-0.5 text-[#93c5fd]/60 hover:text-red-400 transition-colors"
                       title="Remove reminder"
                     >
                       <Dismiss24Regular className="w-4 h-4" />
@@ -660,7 +660,7 @@ export function TaskFormModal({
                   disabled={!dueDate}
                   className={cn(
                     'py-1 px-2.5 text-xs font-medium rounded-lg border transition-all',
-                    'border-th-border text-white/50 hover:border-teal-500/30 hover:text-teal-400',
+                    'border-th-border text-white/50 hover:border-teal-500/30 hover:text-[#93c5fd]',
                     !dueDate && 'opacity-40 cursor-not-allowed'
                   )}
                 >
@@ -672,8 +672,8 @@ export function TaskFormModal({
                 className={cn(
                   'py-1 px-2.5 text-xs font-medium rounded-lg border transition-all',
                   showAddReminder
-                    ? 'bg-teal-500/20 text-teal-400 border-teal-500/30'
-                    : 'border-th-border text-white/50 hover:border-teal-500/30 hover:text-teal-400'
+                    ? 'bg-teal-500/20 text-[#93c5fd] border-teal-500/30'
+                    : 'border-th-border text-white/50 hover:border-teal-500/30 hover:text-[#93c5fd]'
                 )}
               >
                 + {(t as any).taskDialog?.reminderPresets?.custom || 'Custom'}
@@ -706,7 +706,7 @@ export function TaskFormModal({
                 <button
                   onClick={addCustomReminder}
                   disabled={!customReminderDate}
-                  className="px-3 py-2 text-xs font-medium text-teal-400 border border-teal-500/30 rounded-xl hover:bg-teal-500/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="px-3 py-2 text-xs font-medium text-[#93c5fd] border border-teal-500/30 rounded-xl hover:bg-teal-500/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   <Add24Regular className="w-4 h-4" />
                 </button>
@@ -728,7 +728,7 @@ export function TaskFormModal({
                   className={cn(
                     'py-1 px-2.5 text-xs font-medium rounded-lg border transition-all',
                     recurrencePattern === opt.key
-                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                      ? 'bg-emerald-500/20 text-[#93c5fd] border-emerald-500/30'
                       : 'border-th-border text-white/50 hover:border-th-border-hover'
                   )}
                 >
@@ -793,7 +793,7 @@ export function TaskFormModal({
                     className={cn(
                       'py-1.5 px-3 text-xs font-medium rounded-lg border transition-all',
                       status === s
-                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                        ? 'bg-emerald-500/20 text-[#93c5fd] border-emerald-500/30'
                         : 'border-th-border text-white/50 hover:border-th-border-hover'
                     )}
                   >
@@ -817,7 +817,7 @@ export function TaskFormModal({
                   className={cn(
                     'py-1 px-2.5 text-xs font-medium rounded-lg border transition-all',
                     !category
-                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                      ? 'bg-emerald-500/20 text-[#93c5fd] border-emerald-500/30'
                       : 'border-th-border text-white/50'
                   )}
                 >
@@ -859,9 +859,9 @@ export function TaskFormModal({
                 {assigneeContacts.map((c) => (
                   <span
                     key={c.id}
-                    className="inline-flex items-center gap-1.5 px-2 py-1 bg-emerald-500/15 border border-emerald-500/25 rounded-full text-xs text-emerald-400"
+                    className="inline-flex items-center gap-1.5 px-2 py-1 bg-emerald-500/15 border border-emerald-500/25 rounded-full text-xs text-[#93c5fd]"
                   >
-                    <span className="w-4 h-4 rounded-full bg-emerald-500/30 flex items-center justify-center text-[8px] font-bold text-emerald-300">
+                    <span className="w-4 h-4 rounded-full bg-emerald-500/30 flex items-center justify-center text-[8px] font-bold text-[#93c5fd]">
                       {(c.fullName || '?')[0].toUpperCase()}
                     </span>
                     <span className="truncate max-w-[120px]">{c.fullName}</span>
@@ -901,7 +901,7 @@ export function TaskFormModal({
                       onClick={() => addAssignee(c)}
                       className="w-full px-3 py-2 text-start hover:bg-white/5 transition-colors flex items-center gap-2"
                     >
-                      <span className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-[10px] font-bold text-emerald-400 flex-shrink-0">
+                      <span className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-[10px] font-bold text-[#93c5fd] flex-shrink-0">
                         {(c.fullName || '?')[0].toUpperCase()}
                       </span>
                       <div className="min-w-0">
@@ -1101,7 +1101,7 @@ export function TaskFormModal({
               <button
                 onClick={handleSaveAndAddAnother}
                 disabled={!title.trim() || saving}
-                className="px-4 py-2 text-sm font-medium text-emerald-400 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/10 disabled:opacity-50 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-[#93c5fd] border border-emerald-500/30 rounded-xl hover:bg-emerald-500/10 disabled:opacity-50 transition-colors"
               >
                 {saving ? '...' : (t as any).tasksPage?.saveAndAddAnother || 'Save & Add Another'}
               </button>
@@ -1109,7 +1109,7 @@ export function TaskFormModal({
             <button
               onClick={handleSave}
               disabled={!title.trim() || saving}
-              className="px-6 py-2 text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity"
+              className="px-6 py-2 text-sm font-thin text-white bg-[#3b82f633] rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity"
             >
               {saving ? '...' : isEdit ? ((t as any).common?.save || 'Save') : (t as any).taskDialog?.create || 'Create Task'}
             </button>

@@ -32,11 +32,11 @@ const matchingOptions = [
     gradient: "from-emerald-500 to-teal-400",
     bgGlow: "bg-emerald-500/[0.08]",
     borderColor: "border-emerald-500/20",
-    iconColor: "text-emerald-400",
+    iconColor: "text-[#93c5fd]",
     hoverBorder: "hover:border-emerald-400/40",
-    hoverGlow: "group-hover:shadow-emerald-500/20",
+    hoverGlow: "group-hover:shadow-[#3b82f6]/20",
     matchBg: "bg-emerald-500/15 border-emerald-500/25",
-    matchText: "text-emerald-400",
+    matchText: "text-[#93c5fd]",
     countKey: "projects" as const,
   },
   {
@@ -82,11 +82,11 @@ const matchingOptions = [
     gradient: "from-emerald-500 to-teal-400",
     bgGlow: "bg-emerald-500/[0.08]",
     borderColor: "border-emerald-500/20",
-    iconColor: "text-emerald-400",
+    iconColor: "text-[#93c5fd]",
     hoverBorder: "hover:border-emerald-400/40",
-    hoverGlow: "group-hover:shadow-emerald-500/20",
+    hoverGlow: "group-hover:shadow-[#3b82f6]/20",
     matchBg: "bg-emerald-500/15 border-emerald-500/25",
-    matchText: "text-emerald-400",
+    matchText: "text-[#93c5fd]",
     countKey: "opportunities" as const,
   },
 ];
@@ -159,7 +159,7 @@ export default function MatchingPage() {
       {/* Header */}
       <div className="text-center pt-2">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/20 mb-3">
-          <Sparkle24Regular className="w-8 h-8 text-emerald-400" />
+          <Sparkle24Regular className="w-8 h-8 text-[#93c5fd]" />
         </div>
         <h1 className="text-2xl font-bold text-white">
           {t.bottomNav?.matching || "Matching"}
@@ -251,7 +251,7 @@ export default function MatchingPage() {
       {/* View all matches link */}
       <Link href="/matches" className="block mx-1">
         <div className="bg-gradient-to-r from-emerald-500/[0.08] to-teal-500/[0.08] border border-emerald-500/20 rounded-2xl p-4 flex items-center gap-4 transition-all hover:border-emerald-400/40 hover:bg-emerald-500/[0.12] active:scale-[0.98]">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-emerald-500/20">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#3b82f6]/20">
             <Sparkle24Regular className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1 min-w-0">
@@ -265,7 +265,7 @@ export default function MatchingPage() {
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             {!loading && totalMatches > 0 && (
-              <span className="px-3 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-sm font-bold">
+              <span className="px-3 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-[#93c5fd] text-sm font-bold">
                 {totalMatches}
               </span>
             )}

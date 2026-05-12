@@ -87,7 +87,7 @@ export function ProjectMatchDetailCard({
   const statusBadges: Record<string, { bg: string; text: string; label: string }> = {
     PENDING: { bg: 'bg-th-surface-h', text: 'text-th-text-t', label: t.projects?.pending || 'Pending' },
     CONTACTED: { bg: 'bg-blue-500/20', text: 'text-blue-400', label: t.projects?.contacted || 'Contacted' },
-    SAVED: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', label: t.projects?.saved || 'Saved' },
+    SAVED: { bg: 'bg-emerald-500/20', text: 'text-[#93c5fd]', label: t.projects?.saved || 'Saved' },
     DISMISSED: { bg: 'bg-white/[0.03]0/20', text: 'text-th-text-m', label: t.projects?.dismissed || 'Dismissed' },
     CONNECTED: { bg: 'bg-green-500/20', text: 'text-green-400', label: t.projects?.connected || 'Connected' },
   };
@@ -184,7 +184,7 @@ export function ProjectMatchDetailCard({
               <div className="flex items-center gap-2 flex-wrap mb-1">
                 <h3 className="font-semibold text-th-text text-lg">{person.fullName}</h3>
                 {isUser && (
-                  <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
+                  <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/30 text-[#93c5fd] border border-emerald-500/40">
                     <Person24Regular className="w-3 h-3 inline me-1" />
                     {t.projectMatches?.user || 'User'}
                   </span>
@@ -216,15 +216,15 @@ export function ProjectMatchDetailCard({
                   <div className="absolute bottom-full left-0 mb-2 px-4 py-3 bg-th-bg-t border border-th-border rounded-xl text-xs text-th-text-s w-72 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl pointer-events-none">
                     <p className="font-semibold text-th-text mb-2 text-sm">How Match Score is Calculated</p>
                     <div className="space-y-1 text-[11px]">
-                      <div className="flex justify-between"><span>Goals Alignment</span><span className="text-emerald-400">25%</span></div>
+                      <div className="flex justify-between"><span>Goals Alignment</span><span className="text-[#93c5fd]">25%</span></div>
                       <div className="flex justify-between"><span>Sector Overlap</span><span className="text-blue-400">15%</span></div>
                       <div className="flex justify-between"><span>Skills Match</span><span className="text-cyan-400">12%</span></div>
-                      <div className="flex justify-between"><span>AI Semantic Similarity*</span><span className="text-emerald-400">10%</span></div>
-                      <div className="flex justify-between"><span>Network Proximity</span><span className="text-emerald-400">8%</span></div>
+                      <div className="flex justify-between"><span>AI Semantic Similarity*</span><span className="text-[#93c5fd]">10%</span></div>
+                      <div className="flex justify-between"><span>Network Proximity</span><span className="text-[#93c5fd]">8%</span></div>
                       <div className="flex justify-between"><span>Complementary Skills</span><span className="text-green-400">7%</span></div>
-                      <div className="flex justify-between"><span>Recency Bonus</span><span className="text-teal-400">7%</span></div>
+                      <div className="flex justify-between"><span>Recency Bonus</span><span className="text-[#93c5fd]">7%</span></div>
                       <div className="flex justify-between"><span>Interaction History</span><span className="text-cyan-400">6%</span></div>
-                      <div className="flex justify-between"><span>Shared Interests</span><span className="text-emerald-400">5%</span></div>
+                      <div className="flex justify-between"><span>Shared Interests</span><span className="text-[#93c5fd]">5%</span></div>
                       <div className="flex justify-between"><span>Hobbies</span><span className="text-red-400">5%</span></div>
                     </div>
                     <p className="mt-2 pt-2 border-t border-th-border text-th-text-t text-[10px]">Score = sum of (component score × weight)</p>
@@ -328,7 +328,7 @@ export function ProjectMatchDetailCard({
           {Array.isArray(match.reasons) && match.reasons.length > 0 && (
             <div className="px-4 py-4 border-t border-th-border">
               <h4 className="text-sm font-medium text-th-text-s mb-3 flex items-center gap-2">
-                <Sparkle24Regular className="w-4 h-4 text-emerald-400" />
+                <Sparkle24Regular className="w-4 h-4 text-[#93c5fd]" />
                 {t.projectMatches?.whyGoodMatch || 'Why this is a good match'}
               </h4>
               <div className="space-y-2">
@@ -417,7 +417,7 @@ export function ProjectMatchDetailCard({
                     handleStatusChange('SAVED');
                   }}
                   disabled={isUpdating}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm bg-emerald-500/20 text-[#93c5fd] hover:bg-emerald-500/30 transition-colors disabled:opacity-50"
                 >
                   <BookmarkAdd24Regular className="w-4 h-4" />
                   {t.projects?.save || 'Save'}
@@ -459,7 +459,7 @@ export function ProjectMatchDetailCard({
                 e.stopPropagation();
                 handleViewProfile();
               }}
-              className="w-full px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all flex items-center justify-center gap-2"
+              className="w-full px-4 py-3 bg-[#3b82f633] text-white font-thin rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all flex items-center justify-center gap-2"
             >
               {isUser ? (
                 <>

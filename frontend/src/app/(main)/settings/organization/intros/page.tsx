@@ -18,7 +18,7 @@ import {
 } from '@fluentui/react-icons';
 
 const STATUS_CONFIG: Record<string, { color: string; icon: any }> = {
-  PENDING: { color: 'text-emerald-400 bg-emerald-500/20', icon: Clock24Regular },
+  PENDING: { color: 'text-[#93c5fd] bg-emerald-500/20', icon: Clock24Regular },
   APPROVED: { color: 'text-blue-400 bg-blue-500/20', icon: ArrowCircleRight24Regular },
   COMPLETED: { color: 'text-green-400 bg-green-500/20', icon: CheckmarkCircle24Regular },
   DECLINED: { color: 'text-red-400 bg-red-500/20', icon: DismissCircle24Regular },
@@ -100,7 +100,7 @@ export default function WarmIntrosPage() {
             <p className="text-xs text-th-text-m">{t.organization?.totalIntros || 'Total'}</p>
           </div>
           <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-emerald-400">{stats.pending}</p>
+            <p className="text-2xl font-bold text-[#93c5fd]">{stats.pending}</p>
             <p className="text-xs text-th-text-m">{t.organization?.pendingIntros || 'Pending'}</p>
           </div>
           <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 text-center">
@@ -217,7 +217,7 @@ export default function WarmIntrosPage() {
                   <button
                     onClick={() => handleRespond(intro.id, 'COMPLETED')}
                     disabled={respondingId === intro.id}
-                    className="w-full flex items-center justify-center gap-2 py-2 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl text-sm font-medium hover:bg-emerald-500/30 transition-colors disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-2 py-2 bg-emerald-500/20 border border-emerald-500/30 text-[#93c5fd] rounded-xl text-sm font-medium hover:bg-emerald-500/30 transition-colors disabled:opacity-50"
                   >
                     <CheckmarkCircle24Regular className="w-4 h-4" />
                     {t.organization?.markComplete || 'Mark as Completed'}

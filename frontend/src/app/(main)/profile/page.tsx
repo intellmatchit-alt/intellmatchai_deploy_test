@@ -289,8 +289,8 @@ export default function ProfilePage() {
           {/* Profile Info */}
           <div className="text-center">
             <div className="relative inline-block mb-4">
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full blur-lg opacity-50" />
-              <div className="relative p-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full">
+              <div className="absolute inset-0 bg-[#3b82f633] rounded-full blur-lg opacity-50" />
+              <div className="relative p-1 bg-[#3b82f633] rounded-full">
                 <Avatar
                   src={user?.avatarUrl}
                   name={user?.name || "User"}
@@ -423,7 +423,7 @@ export default function ProfilePage() {
                   </div>
                   <Link
                     href="/onboarding"
-                    className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-medium rounded-lg hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+                    className="flex items-center gap-1.5 px-3 py-2 bg-[#3b82f633] text-white text-xs font-thin rounded-lg hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all"
                   >
                     {t.dashboard?.continueSetup || "Continue"}
                     <ArrowRight24Regular className="w-3.5 h-3.5" />
@@ -437,7 +437,7 @@ export default function ProfilePage() {
                     key={step}
                     className={`h-1 flex-1 rounded-full transition-colors ${
                       step < onboardingProgress.currentStep
-                        ? "bg-gradient-to-r from-emerald-500 to-teal-500"
+                        ? "bg-[#3b82f633]"
                         : step === onboardingProgress.currentStep
                           ? "bg-emerald-500/50"
                           : "bg-th-surface-h"
@@ -455,7 +455,7 @@ export default function ProfilePage() {
         <div className="px-4">
           <div className="bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-5">
             <div className="flex items-center gap-2 mb-3">
-              <Briefcase24Regular className="w-4 h-4 text-emerald-400" />
+              <Briefcase24Regular className="w-4 h-4 text-[#93c5fd]" />
               <h3 className="text-sm font-medium text-th-text-s">
                 {t.profile?.sectors || "Sectors"}
               </h3>
@@ -464,7 +464,7 @@ export default function ProfilePage() {
               {fullProfile.sectors.map((sector) => (
                 <span
                   key={sector.id}
-                  className="px-3 py-1.5 rounded-full text-sm font-medium bg-gradient-to-r from-emerald-500 to-teal-500 text-white"
+                  className="px-3 py-1.5 rounded-full text-sm font-thin bg-[#3b82f633] text-white"
                 >
                   {sector.name}
                 </span>
@@ -503,7 +503,7 @@ export default function ProfilePage() {
         <div className="px-4">
           <div className="bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-5">
             <div className="flex items-center gap-2 mb-3">
-              <Heart24Regular className="w-4 h-4 text-emerald-400" />
+              <Heart24Regular className="w-4 h-4 text-[#93c5fd]" />
               <h3 className="text-sm font-medium text-th-text-s">
                 {t.profile?.interestsLabel || "Interests"}
               </h3>
@@ -562,7 +562,7 @@ export default function ProfilePage() {
               {fullProfile.hobbies.map((hobby) => (
                 <span
                   key={hobby.id}
-                  className="px-3 py-1.5 rounded-full text-sm font-medium bg-gradient-to-r from-yellow-500 to-cyan-500 text-white"
+                  className="px-3 py-1.5 rounded-full text-sm font-thin bg-[#3b82f633] text-[#93c5fd]"
                 >
                   {hobby.name}
                 </span>
@@ -599,7 +599,7 @@ export default function ProfilePage() {
                   href={user.websiteUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300"
+                  className="flex items-center gap-2 text-sm text-[#93c5fd] hover:text-[#93c5fd]"
                 >
                   <span>{t.profile.website || "Website"}</span>
                   <ChevronRight24Regular className="w-4 h-4" />
@@ -669,7 +669,7 @@ export default function ProfilePage() {
                 onClick={() => setLang(language.code as LanguageCode)}
                 className={`flex items-center justify-center gap-3 p-4 rounded-xl transition-all ${
                   lang === language.code
-                    ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25"
+                    ? "bg-[#3b82f633] text-white shadow-lg shadow-[#3b82f6]/25"
                     : "bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h"
                 }`}
               >

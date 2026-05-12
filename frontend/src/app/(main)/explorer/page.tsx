@@ -777,10 +777,10 @@ export default function ExplorerPage() {
     if (p.includes('linkedin')) return 'bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20';
     if (p.includes('twitter') || p.includes('x')) return 'bg-white/[0.03]0/10 text-th-text-s border-neutral-500/20 hover:bg-white/[0.03]0/20';
     if (p.includes('youtube')) return 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20';
-    if (p.includes('instagram')) return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20';
+    if (p.includes('instagram')) return 'bg-emerald-500/10 text-[#93c5fd] border-emerald-500/20 hover:bg-emerald-500/20';
     if (p.includes('facebook')) return 'bg-blue-600/10 text-blue-400 border-blue-600/20 hover:bg-blue-600/20';
     if (p.includes('tiktok')) return 'bg-white/[0.03]0/10 text-th-text-s border-neutral-500/20 hover:bg-white/[0.03]0/20';
-    return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20';
+    return 'bg-emerald-500/10 text-[#93c5fd] border-emerald-500/20 hover:bg-emerald-500/20';
   };
 
   // Archive View
@@ -850,7 +850,7 @@ export default function ExplorerPage() {
       <div className="flex items-center justify-between mb-8">
         <div className="text-center flex-1">
           <div className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-500/20 border border-emerald-500/20">
-            <Sparkle24Regular className="w-8 h-8 text-emerald-400" />
+            <Sparkle24Regular className="w-8 h-8 text-[#93c5fd]" />
           </div>
           <h1 className="text-2xl font-bold text-th-text mb-2">
             {t.bottomNav?.explorer || 'Profile Explorer'}
@@ -877,7 +877,7 @@ export default function ExplorerPage() {
           {/* Image Upload Section */}
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3">
-              <Camera24Regular className="w-5 h-5 text-emerald-400" />
+              <Camera24Regular className="w-5 h-5 text-[#93c5fd]" />
               <span className="text-sm font-medium text-th-text">{t.explorer?.scanBusinessCards || 'Scan Business Cards'}</span>
               <span className="text-xs text-th-text-m">{t.explorer?.optional || '(Optional)'}</span>
             </div>
@@ -906,7 +906,7 @@ export default function ExplorerPage() {
                 type="button"
                 onClick={() => cameraInputRef.current?.click()}
                 disabled={isScanning || isLoading}
-                className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-emerald-500/20 to-emerald-500/20 border border-emerald-500/30 rounded-xl text-emerald-300 hover:bg-emerald-500/30 transition-all disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-emerald-500/20 to-emerald-500/20 border border-emerald-500/30 rounded-xl text-[#93c5fd] hover:bg-emerald-500/30 transition-all disabled:opacity-50"
               >
                 <Camera24Regular className="w-5 h-5" />
                 <span>{t.explorer?.camera || 'Camera'}</span>
@@ -1045,7 +1045,7 @@ export default function ExplorerPage() {
               {keywordTags.map((tag, index) => (
                 <span
                   key={index}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 rounded-full text-sm"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 text-[#93c5fd] rounded-full text-sm"
                 >
                   {tag}
                   <button
@@ -1160,7 +1160,7 @@ export default function ExplorerPage() {
           <button
             type="submit"
             disabled={isLoading || isDiscovering || !firstName.trim()}
-            className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#3b82f633] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {isDiscovering ? (
               <>
@@ -1387,11 +1387,11 @@ export default function ExplorerPage() {
                             <span
                               key={i}
                               className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
-                                item.type === 'sector' ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' :
-                                item.type === 'skill' ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' :
+                                item.type === 'sector' ? 'bg-emerald-500/10 text-[#93c5fd] border-emerald-500/20' :
+                                item.type === 'skill' ? 'bg-emerald-500/10 text-[#93c5fd] border-emerald-500/20' :
                                 item.type === 'goal' ? 'bg-green-500/10 text-green-300 border-green-500/20' :
                                 item.type === 'complementary' ? 'bg-blue-500/10 text-blue-300 border-blue-500/20' :
-                                item.type === 'location' ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' :
+                                item.type === 'location' ? 'bg-emerald-500/10 text-[#93c5fd] border-emerald-500/20' :
                                 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20'
                               }`}
                             >
@@ -1445,9 +1445,9 @@ export default function ExplorerPage() {
                 <div className="min-w-0 flex-1">
                   <h2 className="text-xl font-bold text-th-text truncate">{profileData.name}</h2>
                   {profileData.jobTitle && profileData.company ? (
-                    <p className="text-sm text-emerald-300">{profileData.jobTitle} at {profileData.company}</p>
+                    <p className="text-sm text-[#93c5fd]">{profileData.jobTitle} at {profileData.company}</p>
                   ) : (
-                    <p className="text-sm text-emerald-300 flex items-center gap-1.5">
+                    <p className="text-sm text-[#93c5fd] flex items-center gap-1.5">
                       {searchEngine === 'perplexity' ? (
                         <>
                           <Globe24Regular className="w-3.5 h-3.5 flex-shrink-0" />
@@ -1488,7 +1488,7 @@ export default function ExplorerPage() {
           {profileData.socialMedia && profileData.socialMedia.length > 0 && (
             <div className="bg-th-surface border border-th-border rounded-xl p-5">
               <div className="flex items-center gap-2 mb-4">
-                <Link24Regular className="w-5 h-5 text-emerald-400" />
+                <Link24Regular className="w-5 h-5 text-[#93c5fd]" />
                 <h3 className="font-semibold text-th-text">{t.explorer?.socialMediaProfiles || 'Social Media Profiles'}</h3>
                 <span className="text-xs text-th-text-m">({profileData.socialMedia.length} {t.explorer?.found || 'found'})</span>
               </div>
@@ -1651,14 +1651,14 @@ export default function ExplorerPage() {
               {profileData.sectors && profileData.sectors.length > 0 && (
                 <div className="bg-th-surface border border-th-border rounded-xl p-5">
                   <div className="flex items-center gap-2 mb-3">
-                    <Briefcase24Regular className="w-5 h-5 text-emerald-400" />
+                    <Briefcase24Regular className="w-5 h-5 text-[#93c5fd]" />
                     <h3 className="font-semibold text-th-text">{t.explorer?.industrySectors || 'Industry Sectors'}</h3>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {profileData.sectors.map((sector, i) => (
                       <span
                         key={i}
-                        className="px-3 py-1.5 bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 rounded-full text-sm"
+                        className="px-3 py-1.5 bg-emerald-500/10 text-[#93c5fd] border border-emerald-500/20 rounded-full text-sm"
                       >
                         {sector}
                       </span>
@@ -1671,14 +1671,14 @@ export default function ExplorerPage() {
               {profileData.skills && profileData.skills.length > 0 && (
                 <div className="bg-th-surface border border-th-border rounded-xl p-5">
                   <div className="flex items-center gap-2 mb-3">
-                    <Sparkle24Regular className="w-5 h-5 text-emerald-400" />
+                    <Sparkle24Regular className="w-5 h-5 text-[#93c5fd]" />
                     <h3 className="font-semibold text-th-text">{t.explorer?.skillsExpertise || 'Skills & Expertise'}</h3>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {profileData.skills.map((skill, i) => (
                       <span
                         key={i}
-                        className="px-3 py-1.5 bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 rounded-full text-sm"
+                        className="px-3 py-1.5 bg-emerald-500/10 text-[#93c5fd] border border-emerald-500/20 rounded-full text-sm"
                       >
                         {skill}
                       </span>
@@ -1767,7 +1767,7 @@ export default function ExplorerPage() {
           {profileData.approachTips && (
             <div className="bg-gradient-to-r from-emerald-500/10 to-emerald-500/10 border border-emerald-500/20 rounded-xl p-5">
               <div className="flex items-center gap-2 mb-3">
-                <Sparkle24Regular className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                <Sparkle24Regular className="w-5 h-5 text-[#93c5fd] flex-shrink-0" />
                 <h3 className="font-semibold text-th-text flex-1">{t.explorer?.approachTips || 'Approach Tips'}</h3>
                 <button
                   onClick={() => copyToClipboard(profileData.approachTips, 'tips')}
@@ -1825,7 +1825,7 @@ export default function ExplorerPage() {
             </button>
             <button
               onClick={() => saveToArchive(profileData, { firstName, lastName, company, name: `${firstName} ${lastName}`.trim(), linkedIn, twitter, website, additionalInfo }, searchEngine || 'unknown')}
-              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-lg hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+              className="flex items-center gap-2 px-6 py-2.5 bg-[#3b82f633] text-white font-thin rounded-lg hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all"
             >
               <Archive24Regular className="w-4 h-4" />
               {t.explorer?.saveToArchive || 'Save to Archive'}
@@ -1840,7 +1840,7 @@ export default function ExplorerPage() {
           <p className="text-th-text-m mb-6">{t.explorer?.enterNameToStart || 'Enter a name above to get started'}</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto">
             <div className="flex flex-col items-center gap-2 p-4 bg-th-surface rounded-xl">
-              <Person24Regular className="w-6 h-6 text-emerald-400" />
+              <Person24Regular className="w-6 h-6 text-[#93c5fd]" />
               <span className="text-xs text-th-text-t">{t.explorer?.profileSummary || 'Profile Summary'}</span>
             </div>
             <div className="flex flex-col items-center gap-2 p-4 bg-th-surface rounded-xl">

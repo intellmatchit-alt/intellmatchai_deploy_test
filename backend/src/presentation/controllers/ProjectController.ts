@@ -244,6 +244,59 @@ export class ProjectController {
         prisma.project.count({ where }),
       ]);
 
+      // Aggregate compact-card metadata in a single round-trip:
+      // - matchesByRole: count of matches grouped by (projectId, intent)
+      // - newMatchCount: matches created after the owner last viewed this project
+      // - matchStrength: average final/match score per project (0-100)
+      const projectIds = projects.map((p) => p.id);
+      const matchesByRoleMap: Record<string, Record<string, number>> = {};
+      const newMatchCountMap: Record<string, number> = {};
+      const matchStrengthMap: Record<string, number> = {};
+      if (projectIds.length > 0) {
+        // Build per-project OR-conditions for the new-match query so each project
+        // is evaluated against its own matchesViewedAt cutoff.
+        const newMatchConditions = projects.map((p) => ({
+          projectId: p.id,
+          archivedAt: null,
+          ...(p.matchesViewedAt
+            ? { createdAt: { gt: p.matchesViewedAt } }
+            : {}),
+        }));
+        const [byRole, byNew, byScore] = await Promise.all([
+          prisma.projectMatch.groupBy({
+            by: ["projectId", "intent"],
+            where: { projectId: { in: projectIds }, archivedAt: null },
+            _count: { _all: true },
+          }),
+          prisma.projectMatch.groupBy({
+            by: ["projectId"],
+            where: { OR: newMatchConditions },
+            _count: { _all: true },
+          }),
+          prisma.projectMatch.groupBy({
+            by: ["projectId"],
+            where: { projectId: { in: projectIds }, archivedAt: null },
+            _avg: { finalScore: true, matchScore: true },
+          }),
+        ]);
+        for (const row of byRole) {
+          const intent = row.intent || "other";
+          if (!matchesByRoleMap[row.projectId]) matchesByRoleMap[row.projectId] = {};
+          matchesByRoleMap[row.projectId][intent] = row._count._all;
+        }
+        for (const row of byNew) {
+          newMatchCountMap[row.projectId] = row._count._all;
+        }
+        for (const row of byScore) {
+          const avg = row._avg.finalScore ?? row._avg.matchScore;
+          if (avg != null) {
+            // Scores are stored in 0-1 (finalScore) or 0-100 (matchScore); normalize to 0-100.
+            const pct = avg > 1 ? avg : avg * 100;
+            matchStrengthMap[row.projectId] = Math.round(Math.max(0, Math.min(100, pct)));
+          }
+        }
+      }
+
       res.status(200).json({
         success: true,
         data: {
@@ -264,6 +317,9 @@ export class ProjectController {
               importance: ps.importance,
             })),
             matchCount: p._count.matches,
+            matchesByRole: matchesByRoleMap[p.id] || {},
+            newMatchCount: newMatchCountMap[p.id] || 0,
+            matchStrength: matchStrengthMap[p.id] ?? null,
           })),
           pagination: {
             page,
@@ -489,6 +545,15 @@ export class ProjectController {
       if (!project) {
         throw new NotFoundError("Project not found");
       }
+
+      // Stamp matchesViewedAt so the "New Matches" badge clears on the listing.
+      // Best-effort: failure must not break the detail response.
+      void prisma.project
+        .update({
+          where: { id: project.id },
+          data: { matchesViewedAt: new Date() },
+        })
+        .catch(() => {});
 
       res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.status(200).json({
@@ -1163,6 +1228,9 @@ export class ProjectController {
         updateData.status = normalizedStatus as ProjectMatchStatus;
         if (normalizedStatus === "ARCHIVED") {
           updateData.archivedAt = new Date();
+        } else {
+          // Unarchive: clear archivedAt so archive-aware queries pick the match back up.
+          updateData.archivedAt = null;
         }
       }
 
@@ -1373,8 +1441,14 @@ MARKET OPTIONS (use EXACT values): mena, gcc, north_america, europe, asia_pacifi
 
 Return JSON:
 {
+  "title": "A concise, compelling project title (5-10 words). Generate this even if the input already has a title — improve clarity. NEVER leave empty.",
+  "summary": "A clear 2-3 sentence project summary. Refine and clarify based on the input.",
+  "detailedDesc": "A detailed 4-8 sentence description covering product, users, goals, business model, and requirements.",
   "category": "Best matching category from CATEGORY OPTIONS",
   "stage": "Best matching stage",
+  "timeline": "Create a realistic phased timeline with 2-4 milestones. Format with each phase on its OWN LINE separated by \\n. Example: 'Phase 1 (Month 1-3): MVP development.\\nPhase 2 (Month 4-6): Pilot launch.\\nPhase 3 (Month 7-12): Market expansion.' Use the literal newline escape \\n between phases.",
+  "fundingAskMin": "Suggested minimum funding ask in USD as a number (e.g. 25000). Use null if unclear.",
+  "fundingAskMax": "Suggested maximum funding ask in USD as a number (e.g. 150000). Use null if unclear.",
   "lookingFor": ["Select only 2-4 MOST relevant from LOOKING FOR OPTIONS. Be selective."],
   "sectors": ["Select 3-5 MOST relevant from AVAILABLE SECTORS. EXACT names only."],
   "skills": ["Select 4-6 MOST critical from AVAILABLE SKILLS. EXACT names only."],
@@ -1391,9 +1465,11 @@ Return JSON:
 }
 
 RULES:
+- ALWAYS produce a non-empty "title", "summary", and "detailedDesc" — even if the input is brief, infer reasonable values.
 - Use ONLY exact values from the provided option lists.
 - markets = GEOGRAPHIC REGIONS (mena, north_america, europe, etc.) NOT customer segments.
 - Be SELECTIVE — pick only the 2-4 most relevant, NOT all.
+- "fundingAskMin" and "fundingAskMax" must be numbers or null, not strings.
 - Return ONLY valid JSON.`;
 
       const groqResponse = await fetch(
@@ -1415,7 +1491,7 @@ RULES:
               { role: "user", content: prompt },
             ],
             temperature: 0.3,
-            max_tokens: 1500,
+            max_tokens: 2200,
           }),
         },
       );
@@ -1527,9 +1603,34 @@ RULES:
         skillsFound: skillItems.length,
       });
 
+      const toNullableNumber = (v: any): number | null => {
+        if (v === null || v === undefined || v === "") return null;
+        const n = typeof v === "number" ? v : Number(String(v).replace(/[^0-9.\-]/g, ""));
+        return Number.isFinite(n) ? n : null;
+      };
+
       res.status(200).json({
         success: true,
         data: {
+          title:
+            typeof extractedData.title === "string" && extractedData.title.trim()
+              ? extractedData.title.trim()
+              : "",
+          summary:
+            typeof extractedData.summary === "string" && extractedData.summary.trim()
+              ? extractedData.summary.trim()
+              : "",
+          detailedDesc:
+            typeof extractedData.detailedDesc === "string" &&
+            extractedData.detailedDesc.trim()
+              ? extractedData.detailedDesc.trim()
+              : "",
+          timeline:
+            typeof extractedData.timeline === "string" && extractedData.timeline.trim()
+              ? extractedData.timeline.trim()
+              : "",
+          fundingAskMin: toNullableNumber(extractedData.fundingAskMin),
+          fundingAskMax: toNullableNumber(extractedData.fundingAskMax),
           category,
           stage,
           lookingFor,

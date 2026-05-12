@@ -310,7 +310,7 @@ export default function TasksPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-500/20 border border-emerald-500/20 flex items-center justify-center">
-            <TaskListSquareLtr24Regular className="w-5 h-5 text-emerald-400" />
+            <TaskListSquareLtr24Regular className="w-5 h-5 text-[#93c5fd]" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">{(t as any).tasksPage?.title || 'Tasks'}</h1>
@@ -323,7 +323,7 @@ export default function TasksPage() {
         </div>
         <button
           onClick={() => openNewTask()}
-          className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl hover:opacity-90 transition-opacity"
+          className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-thin text-white bg-[#3b82f633] rounded-xl hover:opacity-90 transition-opacity"
         >
           <Add24Regular className="w-4 h-4" />
           {(t as any).tasksPage?.newTask || 'New'}
@@ -337,7 +337,7 @@ export default function TasksPage() {
           className={cn(
             'flex-1 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors',
             activeTab === 'myTasks'
-              ? 'bg-emerald-500/20 text-emerald-400'
+              ? 'bg-emerald-500/20 text-[#93c5fd]'
               : 'text-white/50 hover:text-white'
           )}
         >
@@ -348,7 +348,7 @@ export default function TasksPage() {
           className={cn(
             'flex-1 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors inline-flex items-center justify-center gap-1.5',
             activeTab === 'sharedWithMe'
-              ? 'bg-emerald-500/20 text-emerald-400'
+              ? 'bg-emerald-500/20 text-[#93c5fd]'
               : 'text-white/50 hover:text-white'
           )}
         >
@@ -417,7 +417,7 @@ export default function TasksPage() {
                 : 'border-th-border bg-th-surface hover:bg-th-hover'
             )}
           >
-            <Clock24Regular className="w-4 h-4 text-emerald-400 mx-auto mb-1" />
+            <Clock24Regular className="w-4 h-4 text-[#93c5fd] mx-auto mb-1" />
             <p className="text-lg font-bold text-white">{stats.thisWeek}</p>
             <p className="text-[10px] text-white/50">{(t as any).tasksPage?.stats?.thisWeek || 'This Week'}</p>
           </button>
@@ -524,7 +524,7 @@ export default function TasksPage() {
           className={cn(
             'p-2 rounded-xl border transition-colors',
             hasActiveFilters
-              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+              ? 'border-emerald-500/30 bg-emerald-500/10 text-[#93c5fd]'
               : 'border-th-border text-white/50 hover:bg-th-hover'
           )}
         >
@@ -544,7 +544,7 @@ export default function TasksPage() {
               className={cn(
                 'p-2 transition-colors',
                 viewMode === mode
-                  ? 'bg-emerald-500/20 text-emerald-400'
+                  ? 'bg-emerald-500/20 text-[#93c5fd]'
                   : 'text-white/50 hover:bg-th-hover'
               )}
             >
@@ -568,7 +568,7 @@ export default function TasksPage() {
                   className={cn(
                     'px-2.5 py-1 text-xs rounded-lg border transition-colors',
                     filterStatus === s
-                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                      ? 'bg-emerald-500/20 text-[#93c5fd] border-emerald-500/30'
                       : 'border-th-border text-white/50 hover:bg-th-hover'
                   )}
                 >
@@ -589,7 +589,7 @@ export default function TasksPage() {
                   className={cn(
                     'px-2.5 py-1 text-xs rounded-lg border transition-colors',
                     filterPriority === p
-                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                      ? 'bg-emerald-500/20 text-[#93c5fd] border-emerald-500/30'
                       : 'border-th-border text-white/50 hover:bg-th-hover'
                   )}
                 >
@@ -609,7 +609,7 @@ export default function TasksPage() {
                   className={cn(
                     'px-2.5 py-1 text-xs rounded-lg border transition-colors',
                     !filterCategory
-                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                      ? 'bg-emerald-500/20 text-[#93c5fd] border-emerald-500/30'
                       : 'border-th-border text-white/50 hover:bg-th-hover'
                   )}
                 >
@@ -658,7 +658,7 @@ export default function TasksPage() {
           {(hasActiveFilters || showAssignedToMe) && (
             <button
               onClick={() => { clearFilters(); setShowAssignedToMe(false); }}
-              className="text-xs text-emerald-400 hover:text-emerald-300"
+              className="text-xs text-[#93c5fd] hover:text-[#93c5fd]"
             >
               {(t as any).tasksPage?.filters?.clearAll || 'Clear all filters'}
             </button>

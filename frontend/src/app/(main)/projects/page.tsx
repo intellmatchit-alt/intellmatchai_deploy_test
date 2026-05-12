@@ -163,7 +163,37 @@ function CardMenu({
 }
 
 /**
- * Project Card Component
+ * Format a date as a compact relative time string (e.g. "2h ago", "3d ago").
+ */
+function formatRelativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (!Number.isFinite(then)) return '';
+  const diffSec = Math.max(0, Math.floor((Date.now() - then) / 1000));
+  if (diffSec < 60) return 'just now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay === 1) return 'yesterday';
+  if (diffDay < 30) return `${diffDay}d ago`;
+  const diffMo = Math.floor(diffDay / 30);
+  if (diffMo < 12) return `${diffMo}mo ago`;
+  return `${Math.floor(diffMo / 12)}y ago`;
+}
+
+/**
+ * Derive a compact project status label and color tone from project state.
+ */
+function deriveProjectStatus(project: Project): { label: string; tone: 'active' | 'funding' | 'archived' } {
+  if (!project.isActive) return { label: 'Archived', tone: 'archived' };
+  if (project.lookingFor?.includes('investor')) return { label: 'Seeking Funding', tone: 'funding' };
+  return { label: 'Active', tone: 'active' };
+}
+
+/**
+ * Project Card — compact, scannable card focused on title, status, match strength,
+ * per-role matches, last updated, and a new-matches indicator.
  */
 function ProjectCard({
   project,
@@ -176,89 +206,100 @@ function ProjectCard({
   onDelete: (id: string) => void;
   onArchive: (id: string) => void;
 }) {
-  const { t } = useI18n();
-
-  const stageLabel = STAGE_OPTIONS.find(s => s.id === project.stage)?.label || project.stage;
-  const lookingForLabels = project.lookingFor
-    .map(id => LOOKING_FOR_OPTIONS.find(o => o.id === id)?.label || id)
-    .slice(0, 2);
-
   const router = useRouter();
 
+  const matchesByRole = project.matchesByRole || {};
+  const newMatches = project.newMatchCount ?? 0;
+  const totalMatches = project.matchCount ?? 0;
+  const strength = project.matchStrength ?? null;
+  const updatedRel = formatRelativeTime(project.updatedAt);
+
+  const roleRows = (project.lookingFor || [])
+    .map((id) => ({ id, label: LOOKING_FOR_OPTIONS.find((o) => o.id === id)?.label || id, count: matchesByRole[id] || 0 }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
+
+  const strengthTone =
+    strength == null
+      ? ''
+      : strength >= 80
+        ? 'text-emerald-300'
+        : strength >= 60
+          ? 'text-blue-300'
+          : strength >= 40
+            ? 'text-amber-300'
+            : 'text-th-text-m';
+
   return (
-    <div className="relative mb-5" style={{ zIndex: 'auto' }}>
-      <div
-        onClick={() => router.push(`/projects/${project.id}`)}
-        className={`group cursor-pointer bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-4 hover:bg-th-surface-h transition-all duration-200 ${!project.isActive ? 'opacity-70' : ''}`}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-bold text-white truncate">{project.title}</h3>
-              {project.visibility === 'PRIVATE' ? (
-                <LockClosed24Regular className="w-4 h-4 text-th-text-m" />
-              ) : (
-                <Globe24Regular className="w-4 h-4 text-green-400" />
-              )}
-              {!project.isActive && (
-                <span className="px-2 py-0.5 rounded-full text-xs bg-orange-500/20 text-orange-300 border border-orange-500/30">
-                  {t.common?.archived || 'Archived'}
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-white font-bold line-clamp-2 mb-3">{project.summary}</p>
-
-            {/* Tags Row */}
-            <div className="flex flex-wrap gap-2 mb-3">
-              <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-400 text-[#042820] border border-emerald-400/80 font-bold">
-                {stageLabel}
-              </span>
-              {project.category && (
-                <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-400 text-[#042820] border border-emerald-400/80 font-bold">
-                  {(t.projects?.categories as Record<string, string>)?.[project.category] || project.category}
-                </span>
-              )}
-              {lookingForLabels.map((label, i) => (
-                <span key={i} className="px-2 py-0.5 rounded-full text-xs bg-emerald-400 text-[#042820] border border-emerald-400/80 font-bold">
-                  {label}
-                </span>
-              ))}
-            </div>
-
-            {/* Sectors */}
-            {project.sectors.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {project.sectors.slice(0, 3).map((sector) => (
-                  <span key={sector.id} className="px-2 py-0.5 rounded-full text-xs bg-emerald-400 text-[#042820] border border-emerald-400/80 font-bold">
-                    {sector.name}
-                  </span>
-                ))}
-                {project.sectors.length > 3 && (
-                  <span className="px-2 py-0.5 rounded-full text-xs text-th-text-m">
-                    +{project.sectors.length - 3}
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Match Count & Actions */}
-          <div className="flex flex-col items-end gap-2">
-            {(project.matchCount ?? 0) > 0 && (
-              <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-500 text-black text-xs font-bold">
-                <People24Regular className="w-3 h-3" />
-                {project.matchCount} {t.projects?.matches || 'matches'}
-              </div>
-            )}
-            <CardMenu
-              onEdit={() => onEdit(project.id)}
-              onDelete={() => onDelete(project.id)}
-              onArchive={() => onArchive(project.id)}
-              isArchived={!project.isActive}
-            />
-          </div>
+    <div
+      onClick={() => router.push(`/projects/${project.id}`)}
+      className={`group relative cursor-pointer bg-th-surface border border-th-border rounded-xl px-4 py-3.5 hover:border-emerald-500/40 hover:shadow-[0_0_0_1px_rgba(24,210,164,0.18),0_8px_24px_-12px_rgba(24,210,164,0.35)] transition-all duration-200 ${!project.isActive ? 'opacity-70' : ''}`}
+    >
+      {/* Top row: updated time (left) + match strength + kebab (right) */}
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[11px] text-th-text-m">
+          {updatedRel ? `Updated ${updatedRel}` : ''}
+        </span>
+        <div className="flex items-center gap-2.5">
+          {strength != null && (
+            <span className={`text-[13px] font-bold tabular-nums ${strengthTone}`}>
+              {strength}% Match
+            </span>
+          )}
+          <CardMenu
+            onEdit={() => onEdit(project.id)}
+            onDelete={() => onDelete(project.id)}
+            onArchive={() => onArchive(project.id)}
+            isArchived={!project.isActive}
+          />
         </div>
       </div>
+
+      {/* Title + summary */}
+      <h3 className="mt-2 text-[15px] sm:text-base font-bold text-white truncate">{project.title}</h3>
+      {project.summary && (
+        <p className="mt-1 text-[13px] text-th-text-t leading-snug line-clamp-2">{project.summary}</p>
+      )}
+
+      {/* Per-role match counts */}
+      {roleRows.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-3.5 gap-y-1.5">
+          {roleRows.map((r) => (
+            <span key={r.id} className="inline-flex items-center gap-1 text-[12px] text-th-text-s">
+              <span className="font-semibold text-th-text">{r.label}</span>
+              <span className="text-th-text-m">→</span>
+              <span className={`font-bold tabular-nums ${r.count > 0 ? 'text-emerald-300' : 'text-th-text-m'}`}>
+                {r.count} {r.count === 1 ? 'match' : 'matches'}
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Bottom row: total matches + new matches indicator */}
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-th-text">
+          <People24Regular className="w-3.5 h-3.5 text-th-text-s" />
+          <span className="tabular-nums">{totalMatches}</span>
+          <span className="text-th-text-m font-normal">{totalMatches === 1 ? 'match' : 'matches'}</span>
+        </span>
+        {newMatches > 0 && (
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-400/40 shadow-[0_0_12px_rgba(24,210,164,0.35)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            {newMatches} New {newMatches === 1 ? 'Match' : 'Matches'}
+          </span>
+        )}
+      </div>
+
+      {/* View Project CTA */}
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); router.push(`/projects/${project.id}`); }}
+        className="mt-3 w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/20 hover:border-emerald-500/50 transition-all"
+      >
+        View Project
+        <ChevronRight24Regular className="w-3.5 h-3.5 rtl:rotate-180" />
+      </button>
     </div>
   );
 }
@@ -482,9 +523,9 @@ export default function ProjectsPage() {
 
       {/* Loading State */}
       {isLoading && (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-th-surface border border-th-border rounded-xl p-4 animate-pulse">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-th-surface border border-th-border rounded-xl px-4 py-3.5 animate-pulse">
               <div className="space-y-3">
                 <div className="h-5 bg-th-surface-h rounded w-1/3" />
                 <div className="h-4 bg-th-surface-h rounded w-2/3" />
@@ -500,7 +541,7 @@ export default function ProjectsPage() {
 
       {/* Content - My Projects */}
       {activeTab === 'projects' && !isLoading && filteredProjects.length > 0 && (
-        <div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {filteredProjects.map((project) => (
             <ProjectCard key={project.id} project={project} onEdit={handleEdit} onDelete={handleDeleteRequest} onArchive={handleArchive} />
           ))}

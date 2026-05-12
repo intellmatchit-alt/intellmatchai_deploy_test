@@ -362,7 +362,7 @@ export default function CandidateProfileForm({
   if (loadingData) {
     return (
       <div className="flex items-center justify-center py-12">
-        <ArrowSync24Regular className="w-8 h-8 text-emerald-400 animate-spin" />
+        <ArrowSync24Regular className="w-8 h-8 text-[#93c5fd] animate-spin" />
       </div>
     );
   }
@@ -385,7 +385,7 @@ export default function CandidateProfileForm({
       <CollapsibleSection
         title="AI Auto-Fill from CV"
         description="Paste your CV or resume text and let AI pre-fill the form"
-        icon={<Sparkle24Regular className="w-5 h-5 text-emerald-400" />}
+        icon={<Sparkle24Regular className="w-5 h-5 text-[#93c5fd]" />}
         headerColor="from-emerald-500 to-teal-400"
         borderColor="border-emerald-500/20"
       >
@@ -404,7 +404,7 @@ export default function CandidateProfileForm({
             type="button"
             onClick={handleAiExtract}
             disabled={aiExtracting || !aiText.trim()}
-            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 disabled:opacity-50 text-[#042820] font-extrabold text-sm transition-all active:scale-[0.98]"
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#3b82f633] hover:from-emerald-400 hover:to-teal-400 disabled:opacity-50 text-[#042820] font-extrabold text-sm transition-all active:scale-[0.98]"
           >
             {aiExtracting ? (
               <>
@@ -595,7 +595,7 @@ export default function CandidateProfileForm({
               {skills.map((skill) => (
                 <span
                   key={skill}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/25"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500/15 text-[#93c5fd] border border-emerald-500/25"
                 >
                   {skill}
                   <button
@@ -657,7 +657,7 @@ export default function CandidateProfileForm({
             <button
               type="button"
               onClick={addLanguage}
-              className="flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
+              className="flex items-center gap-1 text-xs font-bold text-[#93c5fd] hover:text-[#93c5fd] transition-colors"
             >
               <Add16Regular className="w-4 h-4" />
               Add
@@ -791,7 +791,7 @@ export default function CandidateProfileForm({
             <button
               type="button"
               onClick={addEducation}
-              className="flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
+              className="flex items-center gap-1 text-xs font-bold text-[#93c5fd] hover:text-[#93c5fd] transition-colors"
             >
               <Add16Regular className="w-4 h-4" />
               Add
@@ -897,7 +897,7 @@ export default function CandidateProfileForm({
             <button
               type="button"
               onClick={addRelevantExperience}
-              className="flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
+              className="flex items-center gap-1 text-xs font-bold text-[#93c5fd] hover:text-[#93c5fd] transition-colors"
             >
               <Add16Regular className="w-4 h-4" />
               Add
@@ -996,7 +996,7 @@ export default function CandidateProfileForm({
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full flex items-center justify-center gap-2.5 px-6 py-[15px] rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 disabled:opacity-50 text-[#042820] font-extrabold text-base transition-all active:scale-[0.98] shadow-[0_12px_28px_rgba(24,210,164,0.22)] min-h-[56px]"
+          className="w-full flex items-center justify-center gap-2.5 px-6 py-[15px] rounded-2xl bg-[#3b82f633] hover:from-emerald-400 hover:to-teal-400 disabled:opacity-50 text-[#042820] font-extrabold text-base transition-all active:scale-[0.98] shadow-[0_12px_28px_rgba(24,210,164,0.22)] min-h-[56px]"
         >
           {isLoading ? (
             <ArrowSync24Regular className="w-5 h-5 animate-spin" />

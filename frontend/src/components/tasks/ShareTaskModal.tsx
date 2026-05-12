@@ -104,7 +104,7 @@ export function ShareTaskModal({ isOpen, onClose, taskId, taskTitle }: ShareTask
               className={cn(
                 'flex-1 py-1.5 text-xs font-medium rounded-lg border transition-all',
                 permission === 'VIEW'
-                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                  ? 'bg-emerald-500/20 text-[#93c5fd] border-emerald-500/30'
                   : 'border-th-border text-white/50'
               )}
             >
@@ -115,7 +115,7 @@ export function ShareTaskModal({ isOpen, onClose, taskId, taskTitle }: ShareTask
               className={cn(
                 'flex-1 py-1.5 text-xs font-medium rounded-lg border transition-all',
                 permission === 'EDIT'
-                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                  ? 'bg-emerald-500/20 text-[#93c5fd] border-emerald-500/30'
                   : 'border-th-border text-white/50'
               )}
             >
@@ -139,7 +139,7 @@ export function ShareTaskModal({ isOpen, onClose, taskId, taskTitle }: ShareTask
             <button
               onClick={handleShareViaEmail}
               disabled={!email.trim() || loading}
-              className="px-3 py-2 text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl hover:opacity-90 disabled:opacity-50"
+              className="px-3 py-2 text-sm font-thin text-white bg-[#3b82f633] rounded-xl hover:opacity-90 disabled:opacity-50"
             >
               Share
             </button>

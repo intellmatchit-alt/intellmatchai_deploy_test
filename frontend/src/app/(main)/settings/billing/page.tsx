@@ -60,7 +60,7 @@ const StatusBadge = ({ status, t }: { status: string; t: any }) => {
       icon: <CheckmarkCircle24Filled className="w-4 h-4" />,
     },
     TRIALING: {
-      color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+      color: 'bg-emerald-500/20 text-[#93c5fd] border-emerald-500/30',
       icon: <Clock24Regular className="w-4 h-4" />,
     },
     PENDING: {
@@ -377,8 +377,8 @@ export default function BillingPage() {
         {subscription?.trialEndsAt && subscription.status === 'TRIALING' && (
           <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
             <div className="flex items-center justify-between">
-              <span className="text-emerald-300">{t.settings?.trialEnds || 'Trial ends'}</span>
-              <span className="text-emerald-400 font-medium">{formatDate(subscription.trialEndsAt)}</span>
+              <span className="text-[#93c5fd]">{t.settings?.trialEnds || 'Trial ends'}</span>
+              <span className="text-[#93c5fd] font-medium">{formatDate(subscription.trialEndsAt)}</span>
             </div>
           </div>
         )}
@@ -458,7 +458,7 @@ export default function BillingPage() {
                 {t.settings?.currentPlanBadge || 'Current'}
               </span>
             ) : (
-              <span className="absolute -top-2 start-4 px-2 py-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-medium rounded-full">
+              <span className="absolute -top-2 start-4 px-2 py-0.5 bg-[#3b82f633] text-white text-xs font-thin rounded-full">
                 {t.settings?.recommended || 'Recommended'}
               </span>
             )}
@@ -485,7 +485,7 @@ export default function BillingPage() {
             {subscription?.plan !== 'PRO' && (
               <button
                 onClick={() => router.push('/checkout?plan=pro')}
-                className="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-lg hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+                className="w-full py-2.5 bg-[#3b82f633] text-white font-thin rounded-lg hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all"
               >
                 {t.settings?.upgradeToPro || 'Upgrade to Pro'}
               </button>
@@ -575,7 +575,7 @@ export default function BillingPage() {
                         className="p-2 hover:bg-th-surface-h rounded-lg transition-colors"
                         title={t.settings?.viewInvoice || 'View Invoice'}
                       >
-                        <DocumentArrowDown24Regular className="w-5 h-5 text-emerald-400" />
+                        <DocumentArrowDown24Regular className="w-5 h-5 text-[#93c5fd]" />
                       </button>
                     )}
                   </div>

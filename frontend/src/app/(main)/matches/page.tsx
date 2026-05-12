@@ -53,8 +53,8 @@ const SOURCE_COLORS: Record<string, { bg: string; bgActive: string; border: stri
   project: {
     bg: 'bg-emerald-500/5', bgActive: 'bg-emerald-500/20',
     border: 'border-emerald-500/15', borderActive: 'border-emerald-500/50',
-    text: 'text-th-text-s', textActive: 'text-emerald-300',
-    badge: 'bg-emerald-500/10 text-emerald-400/60', badgeActive: 'bg-emerald-500/30 text-emerald-300',
+    text: 'text-th-text-s', textActive: 'text-[#93c5fd]',
+    badge: 'bg-emerald-500/10 text-[#93c5fd]/60', badgeActive: 'bg-emerald-500/30 text-[#93c5fd]',
   },
   deal: {
     bg: 'bg-blue-500/5', bgActive: 'bg-blue-500/20',
@@ -65,14 +65,14 @@ const SOURCE_COLORS: Record<string, { bg: string; bgActive: string; border: stri
   pitch: {
     bg: 'bg-emerald-500/5', bgActive: 'bg-emerald-500/20',
     border: 'border-emerald-500/15', borderActive: 'border-emerald-500/50',
-    text: 'text-th-text-s', textActive: 'text-emerald-300',
-    badge: 'bg-emerald-500/10 text-emerald-400/60', badgeActive: 'bg-emerald-500/30 text-emerald-300',
+    text: 'text-th-text-s', textActive: 'text-[#93c5fd]',
+    badge: 'bg-emerald-500/10 text-[#93c5fd]/60', badgeActive: 'bg-emerald-500/30 text-[#93c5fd]',
   },
   job: {
     bg: 'bg-teal-500/5', bgActive: 'bg-teal-500/20',
     border: 'border-teal-500/15', borderActive: 'border-teal-500/50',
-    text: 'text-th-text-s', textActive: 'text-teal-300',
-    badge: 'bg-teal-500/10 text-teal-400/60', badgeActive: 'bg-teal-500/30 text-teal-300',
+    text: 'text-th-text-s', textActive: 'text-[#93c5fd]',
+    badge: 'bg-teal-500/10 text-[#93c5fd]/60', badgeActive: 'bg-teal-500/30 text-[#93c5fd]',
   },
 };
 
@@ -454,7 +454,7 @@ export default function MatchesPage() {
             onClick={() => setStatusFilter(tab.id)}
             className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
               statusFilter === tab.id
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-[#3b82f6]/20'
                 : 'text-th-text-t hover:text-th-text hover:bg-th-surface-h'
             }`}
           >
@@ -471,7 +471,7 @@ export default function MatchesPage() {
             onClick={() => { setFilter(f.id); clearSourceIds(); setSourceSearch(''); }}
             className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all flex-shrink-0 ${
               filter === f.id
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25'
+                ? 'bg-[#3b82f633] text-white shadow-lg shadow-[#3b82f6]/25'
                 : 'bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'
             }`}
           >
@@ -617,7 +617,7 @@ export default function MatchesPage() {
           </p>
           {matches.length === 0 && (
             <Link href="/matching">
-              <button className="mt-4 px-5 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-medium rounded-xl">
+              <button className="mt-4 px-5 py-2 bg-[#3b82f633] text-white text-sm font-thin rounded-xl">
                 {t.matchesPage?.goToMatching || 'Go to Matching'}
               </button>
             </Link>
@@ -629,15 +629,15 @@ export default function MatchesPage() {
       {!isLoading && matches.length > 0 && (
         <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
           <h3 className="text-th-text font-semibold mb-3 flex items-center gap-2 text-sm">
-            <Sparkle24Regular className="w-4 h-4 text-emerald-400" />
+            <Sparkle24Regular className="w-4 h-4 text-[#93c5fd]" />
             {t.matchesPage?.matchSources || 'Match Sources'}
           </h3>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { label: t.matchesPage?.projects || 'Projects', count: sourceCounts.project, icon: Lightbulb24Regular, color: 'text-emerald-400' },
+              { label: t.matchesPage?.projects || 'Projects', count: sourceCounts.project, icon: Lightbulb24Regular, color: 'text-[#93c5fd]' },
               { label: t.matchesPage?.smartDeals || 'Smart Deals', count: sourceCounts.deal, icon: Handshake24Regular, color: 'text-blue-400' },
-              { label: t.matchesPage?.pitchDecks || 'Pitch Decks', count: sourceCounts.pitch, icon: Rocket24Regular, color: 'text-emerald-400' },
-              { label: t.matchesPage?.jobs || 'Jobs', count: sourceCounts.job, icon: Briefcase24Regular, color: 'text-teal-400' },
+              { label: t.matchesPage?.pitchDecks || 'Pitch Decks', count: sourceCounts.pitch, icon: Rocket24Regular, color: 'text-[#93c5fd]' },
+              { label: t.matchesPage?.jobs || 'Jobs', count: sourceCounts.job, icon: Briefcase24Regular, color: 'text-[#93c5fd]' },
             ].map((s) => (
               <div key={s.label} className="flex items-center gap-2">
                 <s.icon className={`w-4 h-4 ${s.color}`} />

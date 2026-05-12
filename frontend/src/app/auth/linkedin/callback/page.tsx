@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, Suspense } from 'react';
+import React, { useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import { useAuth } from '@/hooks/useAuth';
@@ -24,8 +24,14 @@ function LinkedInCallbackHandler() {
   const code = searchParams.get('code');
   const state = searchParams.get('state');
   const linkedInError = searchParams.get('error');
+  // setTokens from useAuth is a fresh reference on every render; without a guard,
+  // the effect re-fires after the first run consumes sessionStorage state, and the
+  // second run falls into the state-mismatch branch.
+  const ranRef = useRef(false);
 
   useEffect(() => {
+    if (ranRef.current) return;
+    ranRef.current = true;
     const handleLinkedInLogin = async () => {
       // LinkedIn returned an error (user denied, etc.)
       if (linkedInError) {

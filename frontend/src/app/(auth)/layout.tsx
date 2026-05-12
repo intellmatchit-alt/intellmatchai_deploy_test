@@ -21,26 +21,38 @@ const AuthBackground = () => (
         backgroundSize: '64px 64px',
       }}
     />
-    {/* Teal glow top-right */}
-    <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(0,208,132,0.1)_0%,transparent_70%)]" />
-    {/* Blue glow bottom-left */}
-    <div className="absolute -bottom-48 -left-48 w-[400px] h-[400px] rounded-full bg-[radial-gradient(circle,rgba(56,97,251,0.06)_0%,transparent_70%)]" />
+    {/* Teal glow top-right — slow drift */}
+    <div className="auth-orb-drift-1 absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(0,208,132,0.1)_0%,transparent_70%)] will-change-transform" />
+    {/* Blue glow bottom-left — slow drift */}
+    <div className="auth-orb-drift-2 absolute -bottom-48 -left-48 w-[400px] h-[400px] rounded-full bg-[radial-gradient(circle,rgba(56,97,251,0.06)_0%,transparent_70%)] will-change-transform" />
   </div>
 );
 
-// Language Switcher for Auth
+// Language Switcher for Auth — pill-style segmented toggle
 const AuthLanguageSwitcher = () => {
   const { lang, setLang } = useI18n();
+  const baseBtn = "px-3.5 py-1 rounded-full text-xs font-semibold tracking-wide transition-all duration-200";
+  const active = "bg-[#00d084]/15 text-[#00d084] shadow-[inset_0_0_0_1px_rgba(0,208,132,0.35)]";
+  const inactive = "text-white/55 hover:text-white/85";
   return (
-    <button
-      type="button"
-      onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-      className="flex items-center gap-1 px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/5 transition-colors cursor-pointer font-medium text-sm"
-    >
-      <span className={lang === 'en' ? 'text-white' : 'text-white/50'}>EN</span>
-      <span className="text-white/50">/</span>
-      <span className={lang === 'ar' ? 'text-white' : 'text-white/50'}>AR</span>
-    </button>
+    <div className="inline-flex items-center gap-1 p-1 rounded-full bg-white/[0.04] border border-white/[0.06] backdrop-blur-md" role="group" aria-label="Language">
+      <button
+        type="button"
+        onClick={() => setLang('en')}
+        aria-pressed={lang === 'en'}
+        className={`${baseBtn} ${lang === 'en' ? active : inactive}`}
+      >
+        EN
+      </button>
+      <button
+        type="button"
+        onClick={() => setLang('ar')}
+        aria-pressed={lang === 'ar'}
+        className={`${baseBtn} ${lang === 'ar' ? active : inactive}`}
+      >
+        AR
+      </button>
+    </div>
   );
 };
 
@@ -55,6 +67,21 @@ function AuthLayoutContent({ children }: { children: React.ReactNode }) {
           to { opacity: 1; transform: translateY(0); }
         }
         .animate-slide-up-custom { animation: slide-up-auth 0.6s ease-out; }
+
+        @keyframes auth-orb-drift-1 {
+          0%, 100% { transform: translate(0, 0); }
+          50% { transform: translate(40px, -32px); }
+        }
+        @keyframes auth-orb-drift-2 {
+          0%, 100% { transform: translate(0, 0); }
+          50% { transform: translate(-32px, 40px); }
+        }
+        .auth-orb-drift-1 { animation: auth-orb-drift-1 28s ease-in-out infinite; }
+        .auth-orb-drift-2 { animation: auth-orb-drift-2 34s ease-in-out infinite; }
+
+        @media (prefers-reduced-motion: reduce) {
+          .auth-orb-drift-1, .auth-orb-drift-2 { animation: none; }
+        }
       `}</style>
 
       <AuthBackground />

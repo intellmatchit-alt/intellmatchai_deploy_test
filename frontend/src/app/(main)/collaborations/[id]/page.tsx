@@ -80,7 +80,7 @@ function VoicePlayer({ url }: { url: string }) {
   return (
     <button
       onClick={toggle}
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/15 border border-emerald-500/30 rounded-full text-sm text-emerald-300 hover:bg-emerald-500/25 transition-colors"
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/15 border border-emerald-500/30 rounded-full text-sm text-[#93c5fd] hover:bg-emerald-500/25 transition-colors"
     >
       {isPlaying ? <Stop24Regular className="w-4 h-4" /> : <Play24Regular className="w-4 h-4" />}
       <Mic24Regular className="w-4 h-4" />
@@ -325,7 +325,7 @@ function IntroduceModal({
                 onClick={() => setChannel('EMAIL')}
                 className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
                   channel === 'EMAIL'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                    ? 'bg-emerald-500/20 text-[#93c5fd] border border-emerald-500/40'
                     : 'bg-th-surface text-th-text-t border border-th-border hover:bg-th-surface-h'
                 }`}
               >
@@ -548,7 +548,7 @@ function MatchResultDetailModal({
                   <div key={`l-${i}`} className="flex items-start gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0 mt-1.5" />
                     <p className="text-xs text-th-text-s">
-                      <span className="text-emerald-400 font-medium">Location: </span>{r.text}
+                      <span className="text-[#93c5fd] font-medium">Location: </span>{r.text}
                     </p>
                   </div>
                 ))}
@@ -570,7 +570,7 @@ function MatchResultDetailModal({
           {!result.isIntroduced && !result.isDismissed && (
             <button
               onClick={() => setShowIntroduceModal(true)}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-medium rounded-lg hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-[#3b82f633] text-white text-sm font-thin rounded-lg hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all"
             >
               <PersonAdd24Regular className="w-4 h-4" />
               {t.collaborations?.introduce || 'Introduce'}
@@ -866,7 +866,7 @@ export default function CollaborationSessionPage() {
         {request.sourceFeature && (
           <div className="bg-th-surface border border-th-border rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Target24Regular className="w-5 h-5 text-emerald-400" />
+              <Target24Regular className="w-5 h-5 text-[#93c5fd]" />
               <span className="font-semibold text-th-text">{request.sourceFeature.title}</span>
               <span className={`px-2 py-0.5 rounded-full text-xs border ${getSourceTypeColor(request.sourceType)}`}>
                 {getSourceTypeLabel(request.sourceType)}
@@ -890,7 +890,7 @@ export default function CollaborationSessionPage() {
                   </span>
                 ))}
                 {request.sourceFeature.criteria.locations?.map((l: string, i: number) => (
-                  <span key={`l-${i}`} className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  <span key={`l-${i}`} className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/20 text-[#93c5fd] border border-emerald-500/30">
                     {l}
                   </span>
                 ))}
@@ -925,7 +925,7 @@ export default function CollaborationSessionPage() {
         <div className="bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-th-text flex items-center gap-2">
-              <Sparkle24Regular className="w-5 h-5 text-emerald-400" />
+              <Sparkle24Regular className="w-5 h-5 text-[#93c5fd]" />
               {t.collaborations?.matching || 'Matching'}
             </h2>
             {session && (
@@ -940,11 +940,11 @@ export default function CollaborationSessionPage() {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-th-text-t">{t.collaborations?.scanningContacts || 'Scanning contacts...'}</span>
-                <span className="text-emerald-400">{session.progress}%</span>
+                <span className="text-[#93c5fd]">{session.progress}%</span>
               </div>
               <div className="w-full h-3 bg-th-surface-h rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500"
+                  className="h-full bg-[#3b82f633] transition-all duration-500"
                   style={{ width: `${session.progress}%` }}
                 />
               </div>
@@ -956,7 +956,7 @@ export default function CollaborationSessionPage() {
             <button
               onClick={handleRunMatching}
               disabled={isRunningMatching}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-3 bg-[#3b82f633] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3b82f6]/25 transition-all disabled:opacity-50"
             >
               {isRunningMatching ? (
                 <>
@@ -977,7 +977,7 @@ export default function CollaborationSessionPage() {
             <button
               onClick={handleRunMatching}
               disabled={isRunningMatching}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-th-surface-h border border-emerald-500/50 text-emerald-400 font-semibold rounded-xl hover:bg-emerald-500/20 transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-3 bg-th-surface-h border border-emerald-500/50 text-[#93c5fd] font-semibold rounded-xl hover:bg-emerald-500/20 transition-all disabled:opacity-50"
             >
               {isRunningMatching ? (
                 <>
@@ -1001,7 +1001,7 @@ export default function CollaborationSessionPage() {
                 <div className="text-xs text-th-text-m">{t.collaborations?.contactsScanned || 'Contacts'}</div>
               </div>
               <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-center">
-                <div className="text-2xl font-bold text-emerald-400">{session.matchCount}</div>
+                <div className="text-2xl font-bold text-[#93c5fd]">{session.matchCount}</div>
                 <div className="text-xs text-th-text-m">{t.collaborations?.matchesFound || 'Matches'}</div>
               </div>
               <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-center">
@@ -1040,7 +1040,7 @@ export default function CollaborationSessionPage() {
                   onClick={() => setSectionTab(tab.id)}
                   className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                     sectionTab === tab.id
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      ? 'bg-emerald-500/20 text-[#93c5fd] border border-emerald-500/30'
                       : 'text-th-text-t hover:text-th-text hover:bg-th-surface-h'
                   }`}
                 >
@@ -1048,7 +1048,7 @@ export default function CollaborationSessionPage() {
                   {tab.label}
                   {tab.count > 0 && (
                     <span className={`min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full text-[10px] font-bold ${
-                      sectionTab === tab.id ? 'bg-emerald-500/30 text-emerald-300' : 'bg-white/10 text-th-text-m'
+                      sectionTab === tab.id ? 'bg-emerald-500/30 text-[#93c5fd]' : 'bg-white/10 text-th-text-m'
                     }`}>
                       {tab.count}
                     </span>
@@ -1068,7 +1068,7 @@ export default function CollaborationSessionPage() {
                         onClick={() => setMatchFilter('all')}
                         className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
                           matchFilter === 'all'
-                            ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50'
+                            ? 'bg-emerald-500/30 text-[#93c5fd] border border-emerald-500/50'
                             : 'bg-th-surface text-th-text-t border border-th-border hover:bg-th-surface-h'
                         }`}
                       >
@@ -1141,7 +1141,7 @@ export default function CollaborationSessionPage() {
                 : introductions.filter(i => i.status === introFilter);
 
               const filterButtons: { id: typeof introFilter; label: string; color: string; count: number }[] = [
-                { id: 'all', label: 'All', color: 'bg-emerald-500/30 text-emerald-300 border-emerald-500/50', count: introductions.length },
+                { id: 'all', label: 'All', color: 'bg-emerald-500/30 text-[#93c5fd] border-emerald-500/50', count: introductions.length },
                 { id: 'PENDING', label: 'Pending', color: 'bg-yellow-500/30 text-yellow-300 border-yellow-500/50', count: statusCounts.PENDING },
                 { id: 'SENT', label: 'Sent', color: 'bg-blue-500/30 text-blue-300 border-blue-500/50', count: statusCounts.SENT },
                 { id: 'ACCEPTED', label: 'Accepted', color: 'bg-green-500/30 text-green-300 border-green-500/50', count: statusCounts.ACCEPTED },
