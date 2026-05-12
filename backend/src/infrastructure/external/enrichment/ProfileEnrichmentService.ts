@@ -713,26 +713,14 @@ IMPORTANT:
 - If a field is not found, omit it from the response
 - Return ONLY valid JSON`;
 
-      // Prefer OpenAI for HTML extraction: LinkedIn pages routinely exceed Groq's
-      // free-tier 12k TPM cap. OpenAI's context + tier limits handle ~200KB cleaned HTML.
-      const useOpenAI = !!this.openaiApiKey;
-      const apiKey = useOpenAI ? this.openaiApiKey : this.groqApiKey;
-      const endpoint = useOpenAI ? this.openaiEndpoint : this.groqEndpoint;
-      const model = useOpenAI ? this.openaiModel : this.groqModel;
-
-      logger.info('LinkedIn HTML → JSON extraction', {
-        provider: useOpenAI ? 'openai' : 'groq',
-        model,
-      });
-
-      const response = await fetch(endpoint, {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
+          'Authorization': `Bearer ${this.groqApiKey}`,
         },
         body: JSON.stringify({
-          model,
+          model: 'llama-3.3-70b-versatile',
           messages: [
             {
               role: 'system',
@@ -742,17 +730,12 @@ IMPORTANT:
           ],
           temperature: 0.1,
           max_tokens: 3000,
-          ...(useOpenAI ? { response_format: { type: 'json_object' } } : {}),
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        logger.error('LLM extraction error for LinkedIn scraping', {
-          provider: useOpenAI ? 'openai' : 'groq',
-          status: response.status,
-          error: errorText,
-        });
+        logger.error('Groq API error for LinkedIn scraping', { status: response.status, error: errorText });
         return {};
       }
 
@@ -810,37 +793,15 @@ IMPORTANT:
    * Returns structured JSON data
    */
   private async scrapeLinkedInPage(url: string): Promise<string | null> {
-    // 1. Try ScrapIn (primary, cached/Datalake — Trial returns 404 for non-indexed people)
+    // 1. Try ScrapIn (primary)
     const scrapInData = await this.scrapeViaScrapIn(url);
     if (scrapInData) {
       logger.info('LinkedIn data retrieved via ScrapIn');
       return scrapInData;
     }
-    logger.warn('ScrapIn failed, falling back to Coresignal', { url });
+    logger.warn('ScrapIn failed, falling back to direct scraping', { url });
 
-    // 2. Coresignal (paid, broader MENA coverage)
-    const coresignalData = await this.scrapeViaCoresignal(url);
-    if (coresignalData) {
-      logger.info('LinkedIn data retrieved via Coresignal');
-      return coresignalData;
-    }
-    logger.warn('Coresignal failed, falling back to RapidAPI', { url });
-
-    // 3. RapidAPI LinkedIn Data API (only if RAPIDAPI_KEY is set)
-    const rapidApiData = await this.scrapeViaRapidAPI(url);
-    if (rapidApiData) {
-      logger.info('LinkedIn data retrieved via RapidAPI');
-      return rapidApiData;
-    }
-
-    // 4. ScrapingBee (only if SCRAPINGBEE_API_KEY is set) — returns raw HTML for AI extraction
-    const beeData = await this.scrapeViaScrapingBee(url);
-    if (beeData) {
-      logger.info('LinkedIn data retrieved via ScrapingBee');
-      return beeData;
-    }
-
-    // 5. Direct fetch fallback (returns raw HTML for AI extraction)
+    // 2. Direct scraping fallback (when ScrapIn is unavailable)
     const directData = await this.scrapeDirectly(url);
     if (directData) {
       logger.info('LinkedIn data retrieved via direct scraping fallback');
@@ -1091,84 +1052,48 @@ IMPORTANT:
     try {
       logger.info('Trying ScrapIn for LinkedIn', { url });
 
-      // ScrapIn v2 API — POST /v2/fetch/persons (cached/Datalake, Trial-OK)
-      const response = await fetch('https://api.scrapin.io/v2/fetch/persons', {
+      // ScrapIn v1 API - POST with JSON body, apikey as query parameter
+      const apiUrl = `https://api.scrapin.io/v1/enrichment/profile?apikey=${apiKey}`;
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
         },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({
+          linkedInUrl: url,
+          includes: {
+            includeCompany: true,
+            includeSummary: true,
+            includeFollowersCount: true,
+            includeCreationDate: true,
+            includeSkills: true,
+            includeLanguages: true,
+            includeExperience: true,
+            includeEducation: true,
+            includeRecommendations: true,
+            includeCertifications: true,
+            includeTestScores: true,
+            includeVolunteeringExperiences: true,
+          },
+          cacheDuration: '7d',
+        }),
       });
 
-      const v2Body = await response.json() as any;
+      const result = await response.json() as any;
 
-      if (!v2Body.success || !v2Body.data) {
-        logger.warn('ScrapIn API error', { msg: v2Body.error?.message, code: v2Body.error?.code });
+      if (!result.success) {
+        logger.warn('ScrapIn API error', { msg: result.msg, title: result.title });
         return null;
       }
 
-      // Adapt v2 shape → v1 shape so the existing extraction logic below runs unchanged.
-      const isoToMonthYear = (iso?: string | null) => {
-        if (!iso) return undefined;
-        const d = new Date(iso);
-        if (isNaN(d.getTime())) return undefined;
-        return { month: d.getUTCMonth() + 1, year: d.getUTCFullYear() };
-      };
-      const adaptPosition = (pos: any) => ({
-        title: pos?.title,
-        companyName: pos?.companyName,
-        description: pos?.description,
-        contractType: pos?.contractType,
-        startEndDate: pos?.startEndDate
-          ? {
-              start: isoToMonthYear(pos.startEndDate.start),
-              end: pos.startEndDate.end ? isoToMonthYear(pos.startEndDate.end) : null,
-            }
-          : undefined,
-      });
-      const v2Person = v2Body.data;
-      const adaptedPositionHistory = Array.isArray(v2Person.experience) ? v2Person.experience.map(adaptPosition) : [];
-      const adaptedEducationHistory = Array.isArray(v2Person.education)
-        ? v2Person.education.map((edu: any) => ({
-            schoolName: edu?.schoolName,
-            degreeName: edu?.degreeName,
-            fieldOfStudy: edu?.fieldOfStudy,
-            startEndDate: edu?.startEndDate
-              ? {
-                  start: isoToMonthYear(edu.startEndDate.start),
-                  end: edu.startEndDate.end ? isoToMonthYear(edu.startEndDate.end) : undefined,
-                }
-              : undefined,
-          }))
-        : [];
+      const data = result.person;
+      if (!data) {
+        logger.warn('ScrapIn returned empty data');
+        return null;
+      }
 
-      const result: any = {
-        success: true,
-        credits_left: v2Body.quotas?.workspace?.credits?.left,
-        metadata: {
-          source: 'v2',
-          request_id: v2Body.metadata?.requestId,
-          updatedAt: v2Body.metadata?.updatedAt,
-        },
-        company: undefined,
-      };
-      const data: any = {
-        firstName: v2Person.firstName,
-        lastName: v2Person.lastName,
-        headline: v2Person.headline,
-        summary: v2Person.summary,
-        photoUrl: v2Person.photoUrl,
-        linkedInUrl: v2Person.linkedinUrl,
-        connectionsCount: v2Person.connectionsCount,
-        followerCount: v2Person.followersCount,
-        location: v2Person.location,
-        skills: Array.isArray(v2Person.skills) ? v2Person.skills : [],
-        positions: { positionHistory: adaptedPositionHistory },
-        schools: { educationHistory: adaptedEducationHistory },
-        currentPosition: v2Person.currentPosition ? adaptPosition(v2Person.currentPosition) : undefined,
-      };
-
+      // Log cache and credits info
       logger.info('ScrapIn response metadata', {
         creditsLeft: result.credits_left,
         cacheSource: result.metadata?.source,

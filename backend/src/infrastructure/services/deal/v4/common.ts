@@ -4,35 +4,25 @@
  */
 
 // ============================================================================
-// SCORE BANDS — v4.1: production bands per IntellMatch spec
-// WEAK 0–39, PARTIAL 40–54, GOOD 55–69, VERY_GOOD 70–84, EXCELLENT 85–100
+// SCORE BANDS
 // ============================================================================
 
 export enum ScoreBand {
-  WEAK = 'WEAK',
-  PARTIAL = 'PARTIAL',
+  STRONG = 'STRONG',
   GOOD = 'GOOD',
-  VERY_GOOD = 'VERY_GOOD',
-  EXCELLENT = 'EXCELLENT',
+  CONDITIONAL = 'CONDITIONAL',
+  WEAK = 'WEAK',
 }
 
-/** Single source of truth for matchLevel — frontend must not duplicate this. */
 export function getScoreBand(score: number): ScoreBand {
-  if (score >= 85) return ScoreBand.EXCELLENT;
-  if (score >= 70) return ScoreBand.VERY_GOOD;
+  if (score >= 75) return ScoreBand.STRONG;
   if (score >= 55) return ScoreBand.GOOD;
-  if (score >= 40) return ScoreBand.PARTIAL;
+  if (score >= 35) return ScoreBand.CONDITIONAL;
   return ScoreBand.WEAK;
 }
 
 export function scoreBandLabel(band: ScoreBand): string {
-  return {
-    EXCELLENT: 'Excellent Match',
-    VERY_GOOD: 'Very Good Match',
-    GOOD: 'Good Match',
-    PARTIAL: 'Partial Match',
-    WEAK: 'Weak Match',
-  }[band];
+  return { STRONG: 'Strong Match', GOOD: 'Good Match', CONDITIONAL: 'Conditional Match', WEAK: 'Weak Match' }[band];
 }
 
 /** v4: Surfaced status — distinct from score band */
@@ -129,18 +119,14 @@ export interface FieldMatch {
 // ============================================================================
 
 function rankBand(band: ScoreBand): number {
-  return { WEAK: 0, PARTIAL: 1, GOOD: 2, VERY_GOOD: 3, EXCELLENT: 4 }[band];
+  return { WEAK: 0, CONDITIONAL: 1, GOOD: 2, STRONG: 3 }[band];
 }
 
-/**
- * v4.1 band gating. Caps EXCELLENT → VERY_GOOD on low confidence, and any
- * band > sparseMaxBand → sparseMaxBand on sparse data.
- */
 export function applyBandGating(
   rawBand: ScoreBand,
   confidence: number,
   isSparse: boolean,
-  opts: { excellentMinConfidence: number; sparseMaxBand: ScoreBand },
+  opts: { strongMinConfidence: number; sparseMaxBand: ScoreBand },
 ): { effectiveBand: ScoreBand; downgradeReason: string | null } {
   let band = rawBand;
   let reason: string | null = null;
@@ -150,9 +136,9 @@ export function applyBandGating(
     reason = `Sparse profile caps band at ${scoreBandLabel(band)}.`;
   }
 
-  if (band === ScoreBand.EXCELLENT && confidence < opts.excellentMinConfidence) {
-    band = ScoreBand.VERY_GOOD;
-    reason = `Low confidence (${Math.round(confidence * 100)}%) caps EXCELLENT to VERY_GOOD.`;
+  if (band === ScoreBand.STRONG && confidence < opts.strongMinConfidence) {
+    band = ScoreBand.GOOD;
+    reason = `Low confidence (${Math.round(confidence * 100)}%) caps STRONG to GOOD.`;
   }
 
   return { effectiveBand: band, downgradeReason: reason };
@@ -235,80 +221,13 @@ export function generateMatchExplanation(
 // MATCH RESULT & RESPONSE
 // ============================================================================
 
-/**
- * v4.1: retrieval and ranking metadata produced by the hybrid retrieval +
- * effectiveRankScore stages. RetrievalBreakdown captures the four sub-scores
- * that go into retrievalScore; RankingFactors captures the multipliers that
- * went into effectiveRankScore so the UI can explain the rank order.
- */
-export interface RetrievalBreakdown {
-  structuredScore: number;
-  lexicalScore: number;
-  semanticScore: number;
-  networkScore: number;
-  totalScore: number;
-  evidence: string[];
-}
-
-export interface RankingFactors {
-  confidencePenalty: number;
-  reviewPenalty: number;
-  sparseDataPenalty: number;
-  networkBoost: number;
-  readinessBoost: number;
-  retrievalBoost: number;
-  /** product of all factors */
-  multiplier: number;
-}
-
-/**
- * v4.1: every direct/helper match result extends this. New fields:
- *   - finalScore (score used everywhere, including UI)
- *   - deterministicScore (pre-AI)
- *   - aiScore (post-AI; null if AI disabled / failed)
- *   - effectiveRankScore (ranking only, never displayed as the main score)
- *   - retrievalScore + retrievalBreakdown (hybrid retrieval transparency)
- *   - rankingFactors (effectiveRankScore inputs)
- *   - aiReasoning / aiGreenFlags / aiRedFlags (LLM validation output)
- *   - networkRelationship (degree, mutuals, org overlap)
- *   - matchLevel (= scoreBand; persisted as a stable string label)
- */
 export interface BaseMatchResult {
   id: string; sourceId: string; targetId: string;
-  finalScore: number;
-  deterministicScore: number;
-  aiScore: number | null;
-  effectiveRankScore: number;
-  scoreBand: ScoreBand;
-  matchLevel: ScoreBand;
-  surfacedStatus: SurfacedStatus;
+  finalScore: number; scoreBand: ScoreBand; surfacedStatus: SurfacedStatus;
   confidence: number;
   hardFilterStatus: HardFilterStatus; hardFilterReason: HardFilterReason | null;
-  retrievalScore: number;
-  retrievalBreakdown: RetrievalBreakdown;
-  rankingFactors: RankingFactors;
   scoreBreakdown: ScoreBreakdown; explanation: MatchExplanation;
-  aiReasoning: string | null;
-  aiGreenFlags: string[];
-  aiRedFlags: string[];
-  networkRelationship: NetworkRelationship | null;
   rank: number; createdAt: Date; expiresAt: Date;
-}
-
-/**
- * v4.1: helper-pipeline + direct-pipeline both surface this. Captures the
- * relationship between the requester and the candidate (or between the
- * candidate and a target counterparty for helper matches).
- */
-export interface NetworkRelationship {
-  degree: 1 | 2 | 3 | null;
-  isFirstDegree: boolean;
-  isSecondDegree: boolean;
-  sameOrganization: boolean;
-  mutualConnections: number;
-  /** 0–1, derived from interactionCount + recency */
-  relationshipStrength: number;
-  notes: string[];
 }
 
 export interface MatchingStats {

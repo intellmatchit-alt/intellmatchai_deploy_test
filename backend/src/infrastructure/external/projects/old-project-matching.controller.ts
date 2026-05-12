@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Request, Response } from 'express';
 import { ProjectMatchingService } from './project-matching.service';
 import { FindProjectMatchesRequest } from './project-matching.types';

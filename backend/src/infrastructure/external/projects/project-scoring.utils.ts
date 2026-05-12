@@ -11,9 +11,7 @@ import {
   ProjectMatchingConfig,
   ProjectProfile,
   ProjectStage,
-  ProjectScoringWeights,
   ProviderProfile,
-  ScoringComponentScore,
   SemanticFieldComparison,
   StructuredMatchExplanation,
   DEFAULT_PROJECT_CONFIG,
@@ -41,22 +39,6 @@ function clamp01(v: number): number {
 
 function normalize100(v: number): number {
   return Math.round(clamp01(v) * 100);
-}
-
-// Need text comes from project fields like summary/problemStatement which
-// can be entire paragraphs. Truncate to a short tag so they don't bleed into
-// the user-visible "missing signals" lines.
-function truncateNeed(raw: string, max = 60): string {
-  const oneLine = (raw || "").replace(/\s+/g, " ").trim();
-  if (oneLine.length <= max) return oneLine;
-  return oneLine.slice(0, max - 1).replace(/\s+\S*$/, "") + "…";
-}
-
-function truncateEvidence(raw: string): string {
-  // Evidence is "{need} ↔ {offer}". Truncate each side independently.
-  const sides = (raw || "").split("↔");
-  if (sides.length !== 2) return truncateNeed(raw);
-  return `${truncateNeed(sides[0].trim())} ↔ ${truncateNeed(sides[1].trim())}`;
 }
 
 function pass(reason = "PASS", details: string[] = []): HardFilterResult {
@@ -283,11 +265,11 @@ function needOfferMatch(
     coverageWeighted += (best >= 0.48 ? 1 : best) * weight;
     precisionWeighted += best * weight;
     if (best >= 0.48) {
-      matchedNeeds.push(truncateNeed(need.raw));
-      strongestSignals.push(truncateEvidence(bestEvidence));
+      matchedNeeds.push(need.raw);
+      strongestSignals.push(bestEvidence);
       capabilityFit += best * weight;
     } else {
-      gaps.push(`Need not strongly covered: ${truncateNeed(need.raw)}`);
+      gaps.push(`Need not strongly covered: ${need.raw}`);
     }
   }
 
@@ -362,49 +344,28 @@ function marketFitScore(
   };
 }
 
-/**
- * Recall floor: when a contact has strong sector/skill overlap with the
- * project but doesn't strictly match the requested counterpart type, surface
- * a partial fit instead of zero. Strict-keyword matches still dominate.
- */
-function recallFloor(skillScore: number, sectorScore: number): number {
-  // skillScore and sectorScore are 0-1. Cap the floor at 0.4 so adjacent-
-  // intent contacts never beat strict matches.
-  return Math.min(0.4, Math.max(skillScore * 0.4, sectorScore * 0.3));
-}
-
 function lookingForFit(
   project: ProjectProfile,
   provider: ProviderProfile,
   intent: ProjectIntent,
-  skillScore = 0,
-  sectorScore = 0,
 ): number {
   const target = mapIntentToCounterpart(intent);
   const lookingFor = project.lookingFor || [];
-  const floor = recallFloor(skillScore, sectorScore);
-  if (!lookingFor.length) {
-    return provider.counterpartType === target ? Math.max(0.75, floor) : floor;
-  }
+  if (!lookingFor.length) return provider.counterpartType === target ? 0.75 : 0;
   if (lookingFor.includes(provider.counterpartType)) return 1;
-  if (provider.counterpartType === target) return Math.max(0.35, floor);
-  return floor;
+  return provider.counterpartType === target ? 0.35 : 0;
 }
 
 function counterpartFit(
   project: ProjectProfile,
   provider: ProviderProfile,
   intent: ProjectIntent,
-  skillScore = 0,
-  sectorScore = 0,
 ): number {
   const target = mapIntentToCounterpart(intent);
-  const floor = recallFloor(skillScore, sectorScore);
   if (provider.counterpartType === target) return 1;
-  if ((project.lookingFor || []).includes(provider.counterpartType)) {
-    return Math.max(0.25, floor);
-  }
-  return floor;
+  return (project.lookingFor || []).includes(provider.counterpartType)
+    ? 0.25
+    : 0;
 }
 
 function subtypeSpecificFit(
@@ -632,91 +593,6 @@ function engagementFit(
   }
 }
 
-/**
- * Per-component evidence map. Used by `buildComponentScores` to attach
- * concrete evidence + penalty strings to each weighted contribution so the
- * explainer / UI can show *why* a component scored where it did.
- */
-interface ComponentEvidence {
-  evidence: Record<string, string[]>;
-  penalties: Record<string, string[]>;
-}
-
-function buildComponentEvidence(
-  components: Record<string, number>,
-  matchedSkills: string[],
-  matchedSectors: string[],
-  matchedMarkets: string[],
-  matchedNeeds: string[],
-  gaps: string[],
-): ComponentEvidence {
-  const evidence: Record<string, string[]> = {};
-  const penalties: Record<string, string[]> = {};
-
-  if (matchedSkills.length)
-    evidence.skillFit = [`Matched: ${matchedSkills.slice(0, 4).join(", ")}`];
-  if (matchedSectors.length)
-    evidence.sectorFit = [`Matched: ${matchedSectors.slice(0, 4).join(", ")}`];
-  if (matchedMarkets.length)
-    evidence.marketFit = [`Matched: ${matchedMarkets.slice(0, 4).join(", ")}`];
-  if (matchedNeeds.length) {
-    evidence.needCoverage = [
-      `Covers: ${matchedNeeds.slice(0, 4).join(", ")}`,
-    ];
-    evidence.needPrecision = evidence.needCoverage;
-    evidence.capabilityFit = evidence.needCoverage;
-  }
-
-  for (const [name, raw] of Object.entries(components)) {
-    const value = raw * 100;
-    if (value < 30) {
-      penalties[name] = penalties[name] || [];
-      penalties[name].push(`Low ${name} score (${value.toFixed(0)}%)`);
-    }
-  }
-  if (gaps.length) {
-    penalties.needCoverage = [
-      ...(penalties.needCoverage || []),
-      ...gaps.slice(0, 3),
-    ];
-  }
-
-  return { evidence, penalties };
-}
-
-/**
- * Builds the rich `componentScores` array used by the UI/AI validator and the
- * legacy flat `componentScoreMap` lookup, both backed by the same component
- * values. Keeping the array as the canonical shape means the spec's
- * `weight` / `weightedScore` / `evidence` / `penalties` fields are always
- * available without recomputation.
- */
-export function buildComponentScores(
-  components: Record<string, number>,
-  weights: ProjectScoringWeights,
-  evidenceMap: Record<string, string[]>,
-  penaltyMap: Record<string, string[]>,
-): { componentScores: ScoringComponentScore[]; componentScoreMap: Record<string, number> } {
-  const componentScores: ScoringComponentScore[] = [];
-  const componentScoreMap: Record<string, number> = {};
-
-  for (const [name, raw] of Object.entries(components)) {
-    const score = Number((raw * 100).toFixed(2));
-    const weight = (weights as unknown as Record<string, number>)[name] ?? 0;
-    componentScoreMap[name] = score;
-    componentScores.push({
-      name,
-      score,
-      weight,
-      weightedScore: Number((score * weight).toFixed(2)),
-      evidence: evidenceMap[name] || [],
-      penalties: penaltyMap[name] || [],
-    });
-  }
-
-  return { componentScores, componentScoreMap };
-}
-
 function confidenceFromComponents(
   components: Record<string, number>,
   provider: ProviderProfile,
@@ -853,8 +729,8 @@ export function calculateProjectDeterministicScore(
   const semantic = semanticFit(project, provider);
 
   const components: Record<string, number> = {
-    lookingForFit: lookingForFit(project, provider, intent, skill.score, sector.score),
-    counterpartFit: counterpartFit(project, provider, intent, skill.score, sector.score),
+    lookingForFit: lookingForFit(project, provider, intent),
+    counterpartFit: counterpartFit(project, provider, intent),
     needCoverage: need.coverage,
     needPrecision: need.precision,
     capabilityFit: need.capabilityFit,
@@ -881,41 +757,24 @@ export function calculateProjectDeterministicScore(
     completenessFit: completenessScore(project, provider),
   };
 
-  const totalWeight = Object.values(policy.weights).reduce(
-    (a, b) => a + b,
-    0,
-  );
   const weighted = Object.entries(policy.weights).reduce(
     (sum, [key, weight]) => sum + (components[key] || 0) * weight,
     0,
   );
-  const normalizedScore = normalize100(
-    totalWeight > 0 ? weighted / totalWeight : weighted,
-  );
+  const normalizedScore = normalize100(weighted);
   const confidence = confidenceFromComponents(components, provider);
-
-  const ev = buildComponentEvidence(
-    components,
-    skill.matchedSkills,
-    sector.matchedSectors,
-    market.matchedMarkets,
-    need.matchedNeeds,
-    need.gaps,
-  );
-  const { componentScores, componentScoreMap } = buildComponentScores(
-    components,
-    policy.weights,
-    ev.evidence,
-    ev.penalties,
-  );
 
   return {
     totalScore: normalizedScore,
     normalizedScore,
     confidence,
     policyType: policy.counterpartType,
-    componentScores,
-    componentScoreMap,
+    componentScores: Object.fromEntries(
+      Object.entries(components).map(([k, v]) => [
+        k,
+        Number((v * 100).toFixed(2)),
+      ]),
+    ),
     matchedNeeds: need.matchedNeeds,
     matchedSkills: skill.matchedSkills,
     matchedSectors: sector.matchedSectors,
@@ -938,44 +797,8 @@ export function buildStructuredExplanation(args: {
   const alternatives = getAlternativeIntentsForCounterpart(
     args.provider.counterpartType,
   ).filter((item) => item !== args.selectedIntent);
-
-  // Build the 2-sentence summary from concrete signals — never restate the
-  // score or band (the UI displays those separately).
-  const matchedSkills = args.scoreBreakdown.matchedSkills.slice(0, 3);
-  const matchedSectors = args.scoreBreakdown.matchedSectors.slice(0, 2);
-  const matchedNeeds = args.scoreBreakdown.matchedNeeds.slice(0, 2);
-
-  let leadSentence = "";
-  if (matchedNeeds.length) {
-    leadSentence = `Profile addresses the project's stated need around ${matchedNeeds.join(" and ")}.`;
-  } else if (matchedSkills.length && matchedSectors.length) {
-    leadSentence = `Strongest overlap is on skills (${matchedSkills.join(", ")}) and sector experience in ${matchedSectors.join(", ")}.`;
-  } else if (matchedSkills.length) {
-    leadSentence = `Skill overlap on ${matchedSkills.join(", ")}.`;
-  } else if (matchedSectors.length) {
-    leadSentence = `Sector experience in ${matchedSectors.join(", ")} aligns with the project.`;
-  } else {
-    leadSentence = `Limited concrete overlap with the project's stated needs.`;
-  }
-
-  let gapSentence = "";
-  const components = args.scoreBreakdown.componentScoreMap || {};
-  const weakest = Object.entries(components)
-    .filter(([k, v]) => v < 30 && !["lookingForFit", "counterpartFit", "completenessFit"].includes(k))
-    .sort(([, a], [, b]) => (a as number) - (b as number))[0];
-  if (weakest) {
-    const label = weakest[0]
-      .replace(/Fit$|Coverage$|Precision$/, "")
-      .replace(/([A-Z])/g, " $1")
-      .trim()
-      .toLowerCase();
-    gapSentence = ` What to verify before reaching out: ${label}.`;
-  } else if (!args.project.lookingFor?.includes(args.provider.counterpartType)) {
-    gapSentence = ` Profile reads as ${String(args.provider.counterpartType).toLowerCase().replace(/_/g, " ")} signals; this project explicitly asked for ${String(args.selectedIntent).toLowerCase().replace(/^find_/, "").replace(/_/g, " ")}.`;
-  }
-
   return {
-    summary: `${leadSentence}${gapSentence}`,
+    summary: `${args.provider.name} is a ${args.provider.counterpartType} match with deterministic score ${args.deterministicScore}.`,
     passedHardFilters:
       args.hardFilter.status === HardFilterStatus.PASS
         ? ["Passed hard filters"]
@@ -1023,10 +846,9 @@ export function buildStructuredExplanation(args: {
     ],
     comparativeNotes: [],
     confidenceLabel: confidenceLabel(args.scoreBreakdown.confidence),
-    scoreBreakdown: args.scoreBreakdown.componentScores.map((c) => ({
-      label: c.name,
-      score: c.score,
-    })),
+    scoreBreakdown: Object.entries(args.scoreBreakdown.componentScores).map(
+      ([label, score]) => ({ label, score }),
+    ),
   } as StructuredMatchExplanation;
 }
 

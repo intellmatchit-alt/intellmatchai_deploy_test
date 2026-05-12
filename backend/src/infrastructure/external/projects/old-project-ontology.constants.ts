@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { CounterpartType, NeedCluster } from './project-matching.types';
 
 export const PHRASE_NORMALIZATION_RULES: Array<[RegExp, string]> = [

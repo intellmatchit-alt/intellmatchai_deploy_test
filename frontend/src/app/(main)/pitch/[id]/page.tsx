@@ -50,7 +50,6 @@ import {
   MatchStatus,
   STAGE_OPTIONS,
   LOOKING_FOR_OPTIONS,
-  MATCH_INTENT_OPTIONS,
 } from '@/lib/api/pitch';
 import { createContact } from '@/lib/api/contacts';
 import { MatchActionBar, EditableIceBreakers, MatchCard, type MatchCardData } from '@/components/features/matches';
@@ -96,52 +95,11 @@ const SECTION_ICONS: Record<string, string> = {
 function pitchMatchToCardData(match: PitchMatch, pitchTitle: string): MatchCardData | null {
   const contact = match.contact;
   if (!contact) return null;
-
-  // Headline score: prefer the per-Match-Target totalScore (max of selected
-  // target scores). Fall back through every backward-compat alias.
-  const headlineScore = typeof match.totalScore === 'number'
-    ? match.totalScore
-    : typeof match.finalScore === 'number'
-      ? match.finalScore
-      : match.score;
-
-  // Best Match Target — derive from the detail object first, then the
-  // canonical bestMatchTarget hint, then fall back to selectedIntent.
-  const bestDetail = match.matchTargetScores?.find((d) => d.isBestMatchTarget) ?? null;
-  const bestMatchTarget = match.bestMatchTarget ?? (bestDetail?.matchTarget as any) ?? match.selectedIntent ?? null;
-  const bestLookingForId = bestDetail?.matchTarget?.toLowerCase() ?? (bestMatchTarget ? String(bestMatchTarget).toLowerCase() : null);
-  const bestLookingForLabel = bestDetail?.label
-    ?? (bestMatchTarget
-      ? MATCH_INTENT_OPTIONS.find((o) => o.value === bestMatchTarget)?.label ?? String(bestMatchTarget)
-      : null);
-
-  // Per-Looking-For pill list (typed as MatchCardLookingForDetail). The
-  // shared MatchCard already renders these as colored chips; reusing the
-  // same shape avoids redesigning the card for pitches.
-  const lookingForScoreDetails = match.matchTargetScores?.map((d) => ({
-    id: d.matchTarget.toLowerCase(),
-    label: d.label,
-    score: d.score,
-    finalScore: d.finalScore,
-    matchLevel: d.matchLevel,
-    confidence: d.confidence,
-    hardFilterStatus: d.hardFilterStatus,
-    hardFilterReason: d.hardFilterReason,
-    isBestMatchType: d.isBestMatchTarget,
-    strengths: d.strengths,
-    gaps: d.gaps,
-    matchedSignals: d.matchedSignals,
-    missingSignals: d.missingSignals,
-    greenFlags: d.greenFlags,
-    redFlags: d.redFlags,
-    explanation: d.explanation,
-  })) ?? null;
-
   return {
     id: match.id,
     source: 'pitch',
     sourceTitle: pitchTitle,
-    score: headlineScore,
+    score: match.score,
     contactId: contact.id,
     name: contact.fullName,
     company: contact.company || undefined,
@@ -155,10 +113,6 @@ function pitchMatchToCardData(match: PitchMatch, pitchTitle: string): MatchCardD
       email: null,
       linkedinUrl: null,
     },
-    lookingForScoreDetails,
-    bestLookingForId,
-    bestLookingForLabel,
-    overallExplanationSummary: match.overallExplanation?.summary ?? null,
   };
 }
 
@@ -228,36 +182,6 @@ function MatchDetailModal({
   // Score breakdown
   const breakdown = match.breakdown;
 
-  // Unified display score \u2014 comes from the same backend field as the card.
-  // Falls back through every backward-compat alias so the detail view never
-  // shows a different number than the list.
-  const displayScore = Math.round(
-    typeof match.totalScore === 'number' ? match.totalScore
-      : typeof match.finalScore === 'number' ? match.finalScore
-      : match.score || 0,
-  );
-
-  // Best Match Target \u2014 from the detail object first, then the canonical hint.
-  const bestDetail = match.matchTargetScores?.find((d) => d.isBestMatchTarget) ?? null;
-  const bestMatchTarget = match.bestMatchTarget ?? (bestDetail?.matchTarget as any) ?? match.selectedIntent ?? null;
-  const bestMatchTargetLabel = bestDetail?.label
-    ?? (bestMatchTarget
-      ? MATCH_INTENT_OPTIONS.find((o) => o.value === bestMatchTarget)?.label ?? String(bestMatchTarget)
-      : null);
-
-  // Match band of displayScore \u2014 uses the detail object's band when present.
-  const displayMatchLevel = bestDetail?.matchLevel
-    ?? (typeof match.totalScore === 'number'
-      ? (match.totalScore >= 85 ? 'EXCELLENT'
-        : match.totalScore >= 70 ? 'VERY_GOOD'
-        : match.totalScore >= 55 ? 'GOOD'
-        : match.totalScore >= 40 ? 'PARTIAL'
-        : 'WEAK')
-      : (typeof match.matchLevel === 'string' ? match.matchLevel : null));
-
-  // Overall explanation describing displayScore.
-  const displaySummary = match.overallExplanation?.summary ?? null;
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
@@ -272,7 +196,7 @@ function MatchDetailModal({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`px-2 py-0.5 rounded-full text-xs font-bold border ${displayScore >= 90 ? 'bg-[#22C55E] text-black border-[#22C55E]' : displayScore >= 75 ? 'bg-[#84CC16] text-black border-[#84CC16]' : displayScore >= 60 ? 'bg-[#FACC15] text-black border-[#FACC15]' : displayScore >= 40 ? 'bg-[#FB923C] text-black border-[#FB923C]' : 'bg-[#EF4444] text-black border-[#EF4444]'}`}>{displayScore}%</span>
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold border ${match.score >= 90 ? 'bg-[#22C55E] text-black border-[#22C55E]' : match.score >= 75 ? 'bg-[#84CC16] text-black border-[#84CC16]' : match.score >= 60 ? 'bg-[#FACC15] text-black border-[#FACC15]' : match.score >= 40 ? 'bg-[#FB923C] text-black border-[#FB923C]' : 'bg-[#EF4444] text-black border-[#EF4444]'}`}>{match.score}%</span>
             <button onClick={onClose} className="p-1 rounded-lg hover:bg-th-surface-h text-th-text-t">
               <Dismiss24Regular className="w-5 h-5" />
             </button>
@@ -281,113 +205,7 @@ function MatchDetailModal({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
-          {/* Match Summary \u2014 emerald accent. Uses overallExplanation.summary
-              so the text DESCRIBES the same totalScore being displayed. */}
-          {displaySummary && (
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
-              <p className="text-xs text-white">{displaySummary}</p>
-              {bestMatchTargetLabel && (
-                <p className="text-xs text-emerald-300 mt-2">
-                  Best Fit: <span className="font-semibold">{bestMatchTargetLabel}</span>
-                  {displayMatchLevel ? ` \u00B7 ${displayMatchLevel.replace(/_/g, ' ')}` : ''}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Match Target Scores \u2014 one chip per selected target, sorted high
-              to low, best-fit highlighted. Same chip style as elsewhere. */}
-          {match.matchTargetScores && match.matchTargetScores.length > 0 && (
-            <div className="bg-th-surface rounded-lg p-3">
-              <h3 className="text-xs font-bold text-white mb-2 uppercase">Match Target Scores</h3>
-              <div className="flex flex-wrap gap-1.5">
-                {[...match.matchTargetScores]
-                  .sort((a, b) => b.finalScore - a.finalScore)
-                  .map((d) => {
-                    const tier = d.finalScore >= 85
-                      ? 'bg-[#22C55E] border-[#22C55E]/80 text-[#042820]'
-                      : d.finalScore >= 70
-                      ? 'bg-[#84CC16] border-[#84CC16]/80 text-[#042820]'
-                      : d.finalScore >= 55
-                      ? 'bg-[#FACC15] border-[#FACC15]/80 text-[#042820]'
-                      : d.finalScore >= 40
-                      ? 'bg-[#FB923C] border-[#FB923C]/80 text-[#042820]'
-                      : 'bg-[#EF4444]/80 border-[#EF4444]/80 text-white';
-                    const bestRing = d.isBestMatchTarget ? ' ring-2 ring-emerald-300' : '';
-                    const band = d.matchLevel.replace('_', ' ').toLowerCase()
-                      .replace(/\b\w/g, (c) => c.toUpperCase());
-                    return (
-                      <span
-                        key={d.matchTarget}
-                        className={`px-2 py-0.5 rounded-full text-[10px] border font-bold ${tier}${bestRing}`}
-                        title={d.explanation}
-                      >
-                        {d.label} {Math.round(d.finalScore)}% \u00B7 {band}
-                        {d.isBestMatchTarget ? ' \u00B7 Best' : ''}
-                      </span>
-                    );
-                  })}
-              </div>
-            </div>
-          )}
-
-          {/* Validation Signals — surfaces hard-filter status, confidence,
-              and green/red flags from the best Match Target so users see why
-              a low score happened (or why a high one is trustworthy). */}
-          {bestDetail && (
-            (bestDetail.hardFilterStatus || typeof bestDetail.confidence === 'number'
-              || (bestDetail.greenFlags && bestDetail.greenFlags.length > 0)
-              || (bestDetail.redFlags && bestDetail.redFlags.length > 0)) && (
-              <div className="bg-th-surface rounded-lg p-3 space-y-2">
-                <h3 className="text-xs font-bold text-white uppercase">
-                  Validation Signals{bestMatchTargetLabel ? ` — ${bestMatchTargetLabel}` : ''}
-                </h3>
-                <div className="flex flex-wrap items-center gap-2">
-                  {bestDetail.hardFilterStatus && (
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                        bestDetail.hardFilterStatus === 'PASS'
-                          ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-                          : bestDetail.hardFilterStatus === 'WARN'
-                            ? 'bg-yellow-500/15 border-yellow-500/40 text-yellow-300'
-                            : 'bg-red-500/15 border-red-500/40 text-red-300'
-                      }`}
-                      title={bestDetail.hardFilterReason || ''}
-                    >
-                      Filter: {bestDetail.hardFilterStatus}
-                    </span>
-                  )}
-                  {typeof bestDetail.confidence === 'number' && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border bg-blue-500/15 border-blue-500/40 text-blue-300">
-                      Confidence: {Math.round(bestDetail.confidence * 100)}%
-                    </span>
-                  )}
-                </div>
-                {bestDetail.greenFlags && bestDetail.greenFlags.length > 0 && (
-                  <div className="space-y-1">
-                    {bestDetail.greenFlags.slice(0, 4).map((flag, i) => (
-                      <div key={`green-${i}`} className="flex items-start gap-2 text-sm">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0 mt-1.5" />
-                        <span className="text-white">{flag}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {bestDetail.redFlags && bestDetail.redFlags.length > 0 && (
-                  <div className="space-y-1">
-                    {bestDetail.redFlags.slice(0, 4).map((flag, i) => (
-                      <div key={`red-${i}`} className="flex items-start gap-2 text-sm">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0 mt-1.5" />
-                        <span className="text-white">{flag}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )
-          )}
-
-          {/* Score Breakdown (legacy section breakdown) */}
+          {/* Score Breakdown */}
           {breakdown && (
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(breakdown).map(([key, val]) => (
@@ -406,51 +224,13 @@ function MatchDetailModal({
             </span>
           )}
 
-          {/* Why This Match \u2014 when per-Match-Target data is present, derive
-              the bullets from the BEST Match Target's strengths/signals so
-              the explanation describes the SAME score the headline shows. */}
-          {(() => {
-            const bestStrengths = bestDetail?.strengths ?? [];
-            const bestSignals = bestDetail?.matchedSignals ?? [];
-            const targetReasons = [
-              ...bestStrengths,
-              ...bestSignals.filter((sig) => !bestStrengths.some((s) => s.toLowerCase().includes(sig.toLowerCase()))),
-            ].slice(0, 4);
-            const reasons = targetReasons.length
-              ? targetReasons
-              : Array.isArray(match.reasons)
-                ? match.reasons.map((r) => typeof r === 'string' ? r : r.text).filter(Boolean)
-                : [];
-            if (!reasons.length) return null;
-            return (
-              <div className="space-y-1.5">
-                <h3 className="text-xs font-bold text-white uppercase">
-                  Why This Match{bestMatchTargetLabel ? ` \u2014 ${bestMatchTargetLabel}` : ''}
-                </h3>
-                {reasons.map((reason, i) => (
-                  <div key={i} className="flex items-start gap-2 text-sm">
-                    <Checkmark24Regular className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                    <span className="text-white">{reason}</span>
-                  </div>
-                ))}
-              </div>
-            );
-          })()}
-
-          {/* Gaps & Concerns \u2014 same rule: derived from bestMatchTarget when
-              present so the gap analysis describes the same score. */}
-          {bestDetail && (bestDetail.gaps.length > 0 || bestDetail.missingSignals.length > 0) && (
-            <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3 space-y-1.5">
-              <h3 className="text-xs font-bold text-orange-400 uppercase">
-                Gaps &amp; Concerns{bestMatchTargetLabel ? ` \u2014 ${bestMatchTargetLabel}` : ''}
-              </h3>
-              {[
-                ...bestDetail.gaps,
-                ...bestDetail.missingSignals.filter((m) => !bestDetail.gaps.some((g) => g.toLowerCase().includes(m.toLowerCase()))),
-              ].slice(0, 5).map((gap, i) => (
+          {/* Match Reasons */}
+          {Array.isArray(match.reasons) && match.reasons.length > 0 && (
+            <div className="space-y-1.5">
+              {match.reasons.map((reason, i) => (
                 <div key={i} className="flex items-start gap-2 text-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0 mt-1.5" />
-                  <span className="text-white">{gap}</span>
+                  <Checkmark24Regular className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-white">{typeof reason === 'string' ? reason : reason.text}</span>
                 </div>
               ))}
             </div>
@@ -584,28 +364,6 @@ export default function PitchDetailPage() {
   };
 
   const handleFindMatches = async () => {
-    // Per-Match-Target matching requires at least one selected target on the
-    // pitch. Read every place matchIntent might land — the auto-extract
-    // stores it under metadata.matchIntent, but legacy uploads may have it
-    // on the row itself or under matchIntents/matchTargets aliases.
-    const meta = pitchData?.metadata as Record<string, any> | null | undefined;
-    const candidates: unknown[] = [
-      meta?.matchIntent,
-      meta?.matchIntents,
-      meta?.matchTargets,
-      (pitchData as any)?.matchIntent,
-      (pitchData as any)?.matchIntents,
-    ];
-    const hasAny = candidates.some((c) => Array.isArray(c) && c.length > 0);
-    if (!hasAny) {
-      toast({
-        title: t.common?.error || 'Error',
-        description: t.pitch?.matchTargetsRequired
-          || 'Select at least one Match Target on the pitch (Edit) before running matching.',
-        variant: 'error',
-      });
-      return;
-    }
     setIsFindingMatches(true);
     try {
       const result = await findPitchMatches(pitchId);
@@ -689,20 +447,11 @@ export default function PitchDetailPage() {
     if (stored) m.status = stored as MatchStatus;
   }
 
-  const getHeadlineScore = (m: PitchMatch) =>
-    typeof m.totalScore === 'number'
-      ? m.totalScore
-      : typeof m.finalScore === 'number'
-        ? m.finalScore
-        : m.score;
+  const activeCount = allMatches.filter((m) => m.status !== 'IGNORED' && m.status !== 'ARCHIVED').length;
+  const archivedCount = allMatches.filter((m) => m.status === 'ARCHIVED').length;
+  const dismissedCount = allMatches.filter((m) => m.status === 'IGNORED').length;
 
-  const scoredMatches = allMatches.filter((m) => (getHeadlineScore(m) ?? 0) > 0);
-
-  const activeCount = scoredMatches.filter((m) => m.status !== 'IGNORED' && m.status !== 'ARCHIVED').length;
-  const archivedCount = scoredMatches.filter((m) => m.status === 'ARCHIVED').length;
-  const dismissedCount = scoredMatches.filter((m) => m.status === 'IGNORED').length;
-
-  const statusFilteredMatches = scoredMatches.filter((m) => {
+  const statusFilteredMatches = allMatches.filter((m) => {
     if (matchStatusFilter === 'active') return m.status !== 'IGNORED' && m.status !== 'ARCHIVED';
     if (matchStatusFilter === 'archived') return m.status === 'ARCHIVED';
     if (matchStatusFilter === 'dismissed') return m.status === 'IGNORED';

@@ -21,17 +21,10 @@ import { embeddingService } from '../embedding/EmbeddingService';
 import { cosineSimilarity } from '../../../shared/matching';
 import { OpenAIExplanationService } from '../explanation/OpenAIExplanationService';
 import { RecombeeService } from '../recommendation/RecombeeService';
-import {
-  CohereRerankService,
-  formatProjectCandidateForRerank,
-  buildProjectRerankQuery,
-  expandLookingForCodes,
-} from '../rerank/CohereRerankService';
+import { CohereRerankService, formatContactForRerank } from '../rerank/CohereRerankService';
 import { cacheService, CACHE_KEYS, CACHE_TTL } from '../../cache/CacheService';
 import { neo4jGraphService } from '../../database/neo4j/GraphService';
 import { LLMService } from '../../../shared/llm';
-import { EXCLUDE_TEST_ACCOUNTS, EXCLUDE_TEST_ACCOUNTS_NULLABLE } from './test-account-filter';
-import { targetDedupeKeys } from './lookingForEnhancedScorer';
 
 const PROJECT_SYSTEM_PROMPT = 'You are a business collaboration assistant that helps match people with project opportunities. Be concise and professional. Always respond with valid JSON.';
 
@@ -45,9 +38,6 @@ interface MatchCandidate {
   company?: string | null;
   jobTitle?: string | null;
   bio?: string | null;
-  /** Identity fields for cross-source dedupe (user vs contact for same person) */
-  email?: string | null;
-  linkedinUrl?: string | null;
   sectors: string[];
   skills: string[];
   interests: string[];
@@ -64,10 +54,6 @@ interface ScoringResult {
   sharedSkills: string[];
   sharedInterests: string[];
   sharedHobbies: string[];
-  /** Cohere semantic relevance, 0-1, populated when reranking ran */
-  rerankScore?: number;
-  /** Deterministic score before any rerank blending — kept for explainability */
-  deterministicScore?: number;
 }
 
 /**
@@ -198,22 +184,12 @@ export class ProjectMatchingService {
     // 3. Find candidates
     const userCandidates = await this.findUserCandidates(project, userId);
     const contactCandidates = await this.findContactCandidates(project, userId, organizationId);
-
-    // 3.5. Dedupe across user/contact sources so the same person isn't scored,
-    // reranked, explained, and saved twice. This uses the same union-find
-    // identity logic as the read-side dedupe (email / linkedinUrl /
-    // name|company-fingerprint / fullName), so the saved row count agrees with
-    // what the UI shows. User rows win over contact rows (richer profile).
-    const allCandidates = this.dedupeCandidatesByIdentity([
-      ...userCandidates,
-      ...contactCandidates,
-    ]);
+    const allCandidates = [...userCandidates, ...contactCandidates];
 
     logger.info('Found candidates', {
       projectId,
       userCandidates: userCandidates.length,
       contactCandidates: contactCandidates.length,
-      afterDedupe: allCandidates.length,
     });
 
     // 4. Score candidates (deterministic + semantic)
@@ -223,10 +199,7 @@ export class ProjectMatchingService {
     scoredCandidates = await this.scoreWithRecombee(project, userId, scoredCandidates);
 
     // 4.6. Rerank with Cohere (3.6) - if available
-    // Send a wider pool (top 50) so semantically-strong candidates that the
-    // deterministic scorer underweighted (e.g. founders for "technical_partner")
-    // still get a chance to surface in the final top 30.
-    scoredCandidates = await this.rerankWithCohere(project, scoredCandidates, 50);
+    scoredCandidates = await this.rerankWithCohere(project, scoredCandidates, 30);
 
     // 5. Take top candidates and generate explanations
     const topCandidates = scoredCandidates.slice(0, 30);
@@ -373,14 +346,11 @@ Respond with a JSON array of keywords only:
     const projectSectorIds = project.sectors.map(ps => ps.sectorId);
     const projectSkillIds = project.skillsNeeded.map(ps => ps.skillId);
 
-    // Find users with overlapping sectors or skills.
-    // Exclude seed/test accounts via reserved test TLD/domains and the
-    // synthetic prefixes the seed scripts emit (see test-account-filter).
+    // Find users with overlapping sectors or skills
     const users = await this.prisma.user.findMany({
       where: {
         id: { not: excludeUserId },
         isActive: true,
-        ...EXCLUDE_TEST_ACCOUNTS,
         OR: [
           { userSectors: { some: { sectorId: { in: projectSectorIds } } } },
           { userSkills: { some: { skillId: { in: projectSkillIds } } } },
@@ -402,8 +372,6 @@ Respond with a JSON array of keywords only:
       company: user.company,
       jobTitle: user.jobTitle,
       bio: user.bio,
-      email: user.email,
-      linkedinUrl: user.linkedinUrl,
       sectors: user.userSectors.map(us => us.sector.name),
       skills: user.userSkills.map(us => us.skill.name),
       interests: user.userInterests.map(ui => ui.interest.name),
@@ -427,11 +395,9 @@ Respond with a JSON array of keywords only:
 
     // Get ALL contacts from the user's network
     // Scope by organization context when organizationId is provided
-    // Exclude seed / synthetic contacts (Contact.email is nullable — use the
-    // null-safe variant so contacts with no email aren't accidentally dropped).
     const contactWhere = organizationId
-      ? { organizationId, ...EXCLUDE_TEST_ACCOUNTS_NULLABLE }
-      : { ownerId: userId, ...EXCLUDE_TEST_ACCOUNTS_NULLABLE };
+      ? { organizationId }
+      : { ownerId: userId };
 
     const contacts = await this.prisma.contact.findMany({
       where: contactWhere,
@@ -457,8 +423,6 @@ Respond with a JSON array of keywords only:
       company: contact.company,
       jobTitle: contact.jobTitle,
       bio: contact.bio,
-      email: contact.email,
-      linkedinUrl: contact.linkedinUrl,
       sectors: contact.contactSectors.map(cs => cs.sector.name),
       skills: contact.contactSkills.map(cs => cs.skill.name),
       interests: contact.contactInterests.map(ci => ci.interest.name),
@@ -715,130 +679,13 @@ Respond with a JSON array of keywords only:
   }
 
   /**
-   * Collapse candidates that resolve to the same real-world person.
-   *
-   * Uses `targetDedupeKeys` (the same logic the read endpoints use) so the
-   * fingerprints agree across write and read sides. Two candidates merge when
-   * any of these match:
-   *   - email (case-insensitive)
-   *   - linkedinUrl (trimmed, trailing-slash-normalized)
-   *   - name|company fingerprint (company normalized: legal-form suffixes,
-   *     "for software", etc. stripped — so "Token Masters" and
-   *     "TOKEN MASTERS FOR SOFTWARE" collapse together)
-   *   - fullName as a last resort
-   *
-   * When two candidates merge we prefer the User row (richer, system-
-   * authoritative profile) over the Contact row.
-   */
-  private dedupeCandidatesByIdentity(candidates: MatchCandidate[]): MatchCandidate[] {
-    if (candidates.length <= 1) return candidates;
-
-    // Union-find over identity keys
-    const parent = new Map<string, string>();
-    const find = (k: string): string => {
-      const p = parent.get(k);
-      if (!p || p === k) {
-        parent.set(k, k);
-        return k;
-      }
-      const root = find(p);
-      parent.set(k, root);
-      return root;
-    };
-    const union = (a: string, b: string) => {
-      const ra = find(a);
-      const rb = find(b);
-      if (ra !== rb) parent.set(ra, rb);
-    };
-
-    const keysFor = (c: MatchCandidate): string[] =>
-      targetDedupeKeys({
-        email: c.email,
-        linkedinUrl: c.linkedinUrl,
-        fullName: c.name,
-        company: c.company,
-      });
-
-    const itemKeys = candidates.map(keysFor);
-    for (const keys of itemKeys) {
-      if (!keys.length) continue;
-      for (const k of keys) find(k);
-      for (let i = 1; i < keys.length; i++) union(keys[0], keys[i]);
-    }
-
-    const groups = new Map<string, MatchCandidate>();
-    const order: string[] = [];
-
-    const uniq = (xs: string[]) => Array.from(new Set(xs.map((x) => x.trim()).filter(Boolean)));
-    const longer = (a?: string | null, b?: string | null) =>
-      (a?.length ?? 0) >= (b?.length ?? 0) ? (a ?? null) : (b ?? null);
-
-    // Merge two candidate records that resolved to the same person, taking the
-    // union of profile data so we don't lose enrichment when one source is
-    // richer than the other.
-    const mergeCandidates = (
-      base: MatchCandidate,
-      other: MatchCandidate,
-    ): MatchCandidate => ({
-      ...base,
-      jobTitle: longer(base.jobTitle, other.jobTitle),
-      company: base.company || other.company,
-      bio: longer(base.bio, other.bio),
-      email: base.email || other.email,
-      linkedinUrl: base.linkedinUrl || other.linkedinUrl,
-      sectors: uniq([...base.sectors, ...other.sectors]),
-      skills: uniq([...base.skills, ...other.skills]),
-      interests: uniq([...base.interests, ...other.interests]),
-      hobbies: uniq([...base.hobbies, ...other.hobbies]),
-    });
-
-    for (let i = 0; i < candidates.length; i++) {
-      const c = candidates[i];
-      const keys = itemKeys[i];
-      const root = keys.length ? find(keys[0]) : `anon:${i}`;
-      const existing = groups.get(root);
-      if (!existing) {
-        order.push(root);
-        groups.set(root, c);
-        continue;
-      }
-      // Pick the user-type row as the canonical identity, then merge the other
-      // row's profile data into it. This keeps the read/write dedupe semantics
-      // identical to `pickCanonicalMatch` (prefer User row) while preserving
-      // the union of skills / sectors / interests for scoring.
-      const canonical = existing.type === 'user' ? existing : c.type === 'user' ? c : existing;
-      const secondary = canonical === existing ? c : existing;
-      groups.set(root, mergeCandidates(canonical, secondary));
-    }
-
-    const deduped = order.map((k) => groups.get(k)!);
-    if (deduped.length !== candidates.length) {
-      logger.info('Deduped candidates', {
-        before: candidates.length,
-        after: deduped.length,
-        collapsed: candidates.length - deduped.length,
-      });
-    }
-    return deduped;
-  }
-
-  /**
    * Rerank top candidates using Cohere semantic search (3.6)
-   *
-   * Pipeline:
-   *  - Build a partnership-aware query (expanded lookingFor codes,
-   *    project stage, detailed description, sectors, skills, keywords).
-   *  - Build rich candidate documents (role-authority signals, hobbies,
-   *    full sector/skill/interest context).
-   *  - Blend Cohere semantic score with the deterministic score
-   *    (35% deterministic / 65% Cohere) and re-sort by the blended score.
-   *  - Preserve rerankScore + deterministicScore on each candidate so the
-   *    explanation layer can articulate *why* the AI ranked them high.
+   * Improves relevance ranking using AI understanding of project needs
    */
   private async rerankWithCohere(
     project: Awaited<ReturnType<typeof this.getProjectWithDetails>>,
     scoredCandidates: ScoringResult[],
-    topN: number = 50
+    topN: number = 30
   ): Promise<ScoringResult[]> {
     if (!this.useCohere || !project || scoredCandidates.length === 0) {
       return scoredCandidates;
@@ -848,44 +695,20 @@ Respond with a JSON array of keywords only:
       logger.info('Reranking with Cohere', {
         projectId: project.id,
         candidateCount: scoredCandidates.length,
-        topN,
       });
 
-      const lookingForRaw = project.lookingFor as unknown;
-      const lookingFor: string[] = Array.isArray(lookingForRaw)
-        ? (lookingForRaw as string[])
-        : typeof lookingForRaw === 'string'
-          ? (() => {
-              try {
-                const p = JSON.parse(lookingForRaw);
-                return Array.isArray(p) ? p : [];
-              } catch {
-                return [];
-              }
-            })()
-          : [];
+      // Build query from project details
+      const query = `
+        Project: ${project.title}
+        Description: ${project.summary}
+        Looking for: ${(project.lookingFor as string[] || []).join(', ') || 'collaborators'}
+        Sectors: ${project.sectors.map(ps => ps.sector.name).join(', ')}
+        Skills needed: ${project.skillsNeeded.map(ps => ps.skill.name).join(', ')}
+      `.trim();
 
-      const keywordsRaw = project.keywords as unknown;
-      const keywords: string[] = Array.isArray(keywordsRaw)
-        ? (keywordsRaw as string[])
-        : [];
-
-      const query = buildProjectRerankQuery({
-        title: project.title,
-        summary: project.summary,
-        detailedDesc: project.detailedDesc,
-        stage: project.stage,
-        category: project.category,
-        lookingFor,
-        sectors: project.sectors.map((ps) => ps.sector.name),
-        skills: project.skillsNeeded.map((ps) => ps.skill.name),
-        keywords,
-      });
-
-      const inputCandidates = scoredCandidates.slice(0, topN);
-
-      const documents = inputCandidates.map((scored) =>
-        formatProjectCandidateForRerank({
+      // Format candidates as documents for reranking
+      const documents = scoredCandidates.slice(0, topN).map(scored =>
+        formatContactForRerank({
           id: scored.candidate.id,
           name: scored.candidate.name,
           company: scored.candidate.company || undefined,
@@ -893,58 +716,43 @@ Respond with a JSON array of keywords only:
           sectors: scored.candidate.sectors,
           skills: scored.candidate.skills,
           interests: scored.candidate.interests,
-          hobbies: scored.candidate.hobbies,
           bio: scored.candidate.bio || undefined,
         })
       );
 
+      // Call Cohere rerank
       const rerankResult = await this.cohereService.rerank(query, documents, {
-        topN: inputCandidates.length,
-        minScore: 0.05,
+        topN,
+        minScore: 0.1,
       });
 
-      const idToCandidate = new Map(scoredCandidates.map((s) => [s.candidate.id, s]));
-      const blended: ScoringResult[] = [];
+      // Map reranked results back to scored candidates
+      const idToCandidate = new Map(scoredCandidates.map(s => [s.candidate.id, s]));
+      const rerankedCandidates: ScoringResult[] = [];
 
-      // Blend deterministic score with Cohere relevance and re-sort by the
-      // blended score so order matches the score the UI shows.
-      // Weights: 35% deterministic, 65% Cohere — Cohere understands semantic
-      // intent (e.g., "founder of a healthtech advisory" ≈ "technical/strategic
-      // partner") much better than keyword matching, so we let it lead.
+      // Add reranked candidates in order
       for (const result of rerankResult.results) {
         const candidate = idToCandidate.get(result.id);
-        if (!candidate) continue;
-        const deterministicScore = candidate.score;
-        const blendedScore = Math.min(
-          100,
-          Math.round(deterministicScore * 0.35 + result.relevanceScore * 100 * 0.65)
-        );
-        blended.push({
-          ...candidate,
-          score: blendedScore,
-          rerankScore: result.relevanceScore,
-          deterministicScore,
-        });
-        idToCandidate.delete(result.id);
+        if (candidate) {
+          // Blend original score with Cohere relevance (60% original, 40% Cohere)
+          const blendedScore = Math.round(
+            candidate.score * 0.6 + result.relevanceScore * 100 * 0.4
+          );
+          rerankedCandidates.push({
+            ...candidate,
+            score: Math.min(blendedScore, 100),
+          });
+          idToCandidate.delete(result.id);
+        }
       }
 
-      // Re-sort the reranked slice by blended score (Cohere's order isn't
-      // guaranteed to match it once we mix in the deterministic component).
-      blended.sort((a, b) => b.score - a.score);
-
-      // Append candidates that Cohere filtered out or that were beyond topN —
-      // they keep their deterministic score and slot in below the reranked set.
-      const remaining = scoredCandidates
-        .filter((s) => idToCandidate.has(s.candidate.id))
-        .map((s) => ({ ...s, deterministicScore: s.score }));
-
-      const rerankedCandidates = [...blended, ...remaining];
+      // Add remaining candidates not in top N
+      const remaining = scoredCandidates.filter(s => idToCandidate.has(s.candidate.id));
+      rerankedCandidates.push(...remaining);
 
       logger.info('Cohere reranking completed', {
         projectId: project.id,
-        inputCount: inputCandidates.length,
         rerankedCount: rerankResult.results.length,
-        topRerankScore: blended[0]?.rerankScore,
         processingTimeMs: rerankResult.processingTimeMs,
       });
 
@@ -1096,23 +904,13 @@ Respond with a JSON array of keywords only:
     }
 
     const lookingFor = project.lookingFor as string[] || [];
-    const expandedLookingFor = expandLookingForCodes(lookingFor);
-
-    // Surface the AI relevance signal to the LLM so its reasoning explicitly
-    // reflects *why* the semantic reranker ranked this candidate high.
-    const aiRelevanceLine =
-      typeof scored.rerankScore === 'number'
-        ? `AI semantic relevance (Cohere rerank): ${(scored.rerankScore * 100).toFixed(1)}/100`
-        : 'AI semantic relevance: not computed';
 
     const prompt = `
 Analyze why this person would be a good match for this collaboration project.
-Be concrete: cite specific role authority, sector experience, and partnership readiness — not generic fluff.
 
 Project: ${project.title}
 Description: ${project.summary}
-Stage: ${project.stage || 'Unknown'}
-Looking for: ${(expandedLookingFor.length ? expandedLookingFor : lookingFor).join('; ') || 'collaborators'}
+Looking for: ${lookingFor.join(', ') || 'collaborators'}
 Project sectors: ${project.sectors.map(ps => ps.sector.name).join(', ')}
 Project skills needed: ${project.skillsNeeded.map(ps => ps.skill.name).join(', ')}
 
@@ -1122,19 +920,13 @@ Potential Match:
 - Role: ${scored.candidate.jobTitle || 'Unknown'}
 - Sectors: ${scored.candidate.sectors.join(', ')}
 - Skills: ${scored.candidate.skills.join(', ')}
-- Bio: ${scored.candidate.bio || 'N/A'}
-- Final blended match score: ${scored.score}/100
-- Deterministic score: ${scored.deterministicScore ?? scored.score}/100
-- ${aiRelevanceLine}
+- Match score: ${scored.score}%
 
 Shared sectors: ${scored.sharedSectors.join(', ') || 'None'}
 Shared skills: ${scored.sharedSkills.join(', ') || 'None'}
 
 Provide:
-1. 3 specific reasons why they're a good match. If they hold a senior/founder role
-   relevant to a strategic or technical partnership, say so explicitly.
-   If the AI semantic relevance is high (>= 70), explain what makes the
-   semantic fit strong (role authority, partnership readiness, sector adjacency).
+1. 3 specific reasons why they're a good match
 2. A suggested action (Connect, Meet, Message, Introduce)
 3. A personalized outreach message (2-3 sentences)
 
@@ -1184,12 +976,6 @@ Respond in JSON:
       reasons.push(`${scored.candidate.company} could be a valuable connection`);
     }
 
-    if (typeof scored.rerankScore === 'number' && scored.rerankScore >= 0.7) {
-      reasons.push(
-        `Strong AI semantic fit (${Math.round(scored.rerankScore * 100)}/100) — role and profile align with what this project is looking for`
-      );
-    }
-
     if (reasons.length === 0) {
       reasons.push('Potential collaboration opportunity based on professional profile');
     }
@@ -1230,13 +1016,6 @@ Respond in JSON:
           sharedInterests: match.sharedInterests,
           sharedHobbies: match.sharedHobbies,
           status: 'PENDING',
-          // Persist explainability signals so the UI can show the score breakdown.
-          deterministicScore: match.deterministicScore ?? match.score,
-          aiScore:
-            typeof match.rerankScore === 'number'
-              ? Math.round(match.rerankScore * 100)
-              : null,
-          finalScore: match.score,
         };
 
         if (match.candidate.type === 'user') {

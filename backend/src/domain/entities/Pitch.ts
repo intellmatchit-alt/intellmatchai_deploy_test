@@ -36,13 +36,6 @@ export interface PitchEntity {
   expiresAt: Date | null;
   lastError: string | null;
   deletedAt: Date | null;
-  /**
-   * Free-form metadata blob persisted on the Pitch row. Holds the
-   * user-selected matchIntent[], businessModel, supportNeededTags,
-   * fundingAmountRequested, etc. Read by the matching engine and the
-   * frontend find-matches validator.
-   */
-  metadata: Record<string, unknown> | null;
 }
 
 export interface PitchSectionEntity {
@@ -96,17 +89,6 @@ export interface PitchMatchEntity {
   contactedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
-  // Per-LookingFor / matchIntent persistence (nullable for legacy rows).
-  totalScore?: number | null;
-  deterministicScore?: number | null;
-  aiScore?: number | null;
-  bestMatchTarget?: string | null;
-  selectedIntent?: string | null;
-  matchLevel?: string | null;
-  confidence?: number | null;
-  hardFilterStatus?: string | null;
-  matchTargetScoresJson?: any | null;
-  overallExplanationJson?: any | null;
 }
 
 export interface PitchJobEntity {

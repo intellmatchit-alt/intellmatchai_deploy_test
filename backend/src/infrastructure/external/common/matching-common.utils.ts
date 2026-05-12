@@ -29,10 +29,9 @@ function levelRank(level: MatchLevel): number {
   const ranks: Record<MatchLevel, number> = {
     [MatchLevel.POOR]: 0,
     [MatchLevel.WEAK]: 1,
-    [MatchLevel.PARTIAL]: 2,
-    [MatchLevel.GOOD]: 3,
-    [MatchLevel.VERY_GOOD]: 4,
-    [MatchLevel.EXCELLENT]: 5,
+    [MatchLevel.GOOD]: 2,
+    [MatchLevel.VERY_GOOD]: 3,
+    [MatchLevel.EXCELLENT]: 4,
   };
   return ranks[level];
 }

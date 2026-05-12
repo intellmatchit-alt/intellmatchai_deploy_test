@@ -187,9 +187,6 @@ export class PrismaPitchRepository implements IPitchRepository {
       expiresAt: pitch.expiresAt,
       lastError: pitch.lastError,
       deletedAt: pitch.deletedAt,
-      // Surface the JSON metadata blob (matchIntent, businessModel,
-      // supportNeededTags, …) so the controller and frontend can read it.
-      metadata: (pitch.metadata as Record<string, unknown> | null) ?? null,
     };
   }
 
@@ -572,17 +569,6 @@ export class PrismaPitchMatchRepository implements IPitchMatchRepository {
       contactedAt: match.contactedAt,
       createdAt: match.createdAt,
       updatedAt: match.updatedAt,
-      // Per-LookingFor persistence (nullable for legacy rows).
-      totalScore: match.totalScore ?? null,
-      deterministicScore: match.deterministicScore ?? null,
-      aiScore: match.aiScore ?? null,
-      bestMatchTarget: match.bestMatchTarget ?? null,
-      selectedIntent: match.selectedIntent ?? null,
-      matchLevel: match.matchLevel ?? null,
-      confidence: match.confidence ?? null,
-      hardFilterStatus: match.hardFilterStatus ?? null,
-      matchTargetScoresJson: match.matchTargetScoresJson ?? null,
-      overallExplanationJson: match.overallExplanationJson ?? null,
     };
   }
 }

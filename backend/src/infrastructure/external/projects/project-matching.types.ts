@@ -351,32 +351,9 @@ export interface ProjectMatchingConfig {
   counterpartPolicies: Record<CounterpartType, CounterpartScoringPolicy>;
 }
 
-/**
- * Rich, explainable component-score row used in `DeterministicProjectScoreBreakdown.componentScores`.
- * The shape matches the structure required for "Why This Match" rendering and
- * for AI validators that need to see weighted contribution per component.
- */
-export interface ScoringComponentScore {
-  name: string;
-  score: number;          // 0-100
-  weight: number;         // 0-1, taken from the active LookingFor / counterpart policy
-  weightedScore: number;  // score * weight (rounded to 2 dp)
-  confidence?: number;
-  explanation?: string;
-  evidence: string[];
-  penalties: string[];
-}
-
 export interface DeterministicProjectScoreBreakdown extends DeterministicScoreBreakdown {
   policyType: CounterpartType;
-  /**
-   * Rich array of component contributions used by the explainer / UI.
-   * Replaces the legacy Record<string, number> shape — kept available via
-   * `componentScoreMap` for backward-compatible reads.
-   */
-  componentScores: ScoringComponentScore[];
-  /** Backward-compatible flat lookup: componentName -> 0-100 score. */
-  componentScoreMap: Record<string, number>;
+  componentScores: Record<string, number>;
   matchedNeeds: string[];
   matchedSkills: string[];
   matchedSectors: string[];
@@ -399,83 +376,11 @@ export interface StructuredMatchExplanation extends MatchExplanation {
   scoreBreakdown: Array<{ label: string; score: number }>;
 }
 
-// ============================================================================
-// PER-LOOKING-FOR SCORES (multi-Looking-For matching contract)
-//
-// LookingForType is declared in ./looking-for.types.ts. We import the type
-// inline here (string-literal union) to avoid a circular import at type-only
-// resolution time — the actual enum is the canonical source.
-// ============================================================================
-
-export type LookingForTypeValue =
-  | "INVESTOR"
-  | "ADVISOR"
-  | "SERVICE_PROVIDER"
-  | "STRATEGIC_PARTNER"
-  | "CHANNEL_DISTRIBUTION"
-  | "TECHNICAL_PARTNER"
-  | "CO_FOUNDER_TALENT";
-
-/**
- * One full evaluation of a single provider against a single Looking For type.
- * The card / detail UI reads `lookingForScores[]` to render per-type chips and
- * the expanded explanation. Every field is intentionally explicit so the
- * explanation generator and LLM validator never have to recompute.
- */
-export interface LookingForScore {
-  lookingFor: LookingForTypeValue;
-  label: string;
-  score: number;
-  deterministicScore: number;
-  aiScore: number | null;
-  finalScore: number;
-  matchLevel: MatchLevel;
-  confidence: number;
-  hardFilterStatus: HardFilterStatus;
-  hardFilterReason: HardFilterReason | null;
-  isBestMatchType: boolean;
-
-  // Evidence buckets — populated by per-LookingFor scoring.
-  strengths: string[];
-  gaps: string[];
-  matchedSignals: string[];
-  missingSignals: string[];
-  greenFlags: string[];
-  redFlags: string[];
-  matchedNeeds: string[];
-  matchedSkills: string[];
-  matchedSectors: string[];
-  matchedMarkets: string[];
-  strongestSignals: string[];
-  cautionFlags: string[];
-
-  explanation: string;
-  scoreBreakdown: DeterministicProjectScoreBreakdown;
-}
-
-/**
- * Top-level explanation for the displayed totalScore. The frontend's "Why This
- * Match" view reads this — it always describes totalScore (== bestLookingFor's
- * finalScore), never an arbitrary alternative.
- */
-export interface OverallLookingForExplanation {
-  summary: string;
-  bestLookingFor: LookingForTypeValue;
-  totalScoreRule: string;
-  topStrengths: string[];
-  mainGaps: string[];
-}
-
 export interface ProjectMatchResult extends BaseMatchResult {
   projectId: string;
   providerId: string;
   providerName: string;
   providerType: CounterpartType;
-  /**
-   * Legacy single-intent field. Equal to `primaryProjectIntentForLookingFor(bestLookingFor)`
-   * when multi-Looking-For matching is used. Retained for persistence and
-   * backward compatibility.
-   */
   intent: ProjectIntent;
   matchedNeeds: string[];
   matchedSkills: string[];
@@ -487,27 +392,6 @@ export interface ProjectMatchResult extends BaseMatchResult {
   aiSummary?: string;
   hydrationSnapshot?: Record<string, unknown>;
   isVerified?: boolean;
-
-  // Multi-Looking-For matching contract (always populated by the new engine,
-  // optional in the type for backward compatibility with persisted records).
-
-  /** Numeric alias for `finalScore`. Set equal to `totalScore`. */
-  score?: number;
-  /** max(lookingForScores.finalScore). Equal to `finalScore`. */
-  totalScore?: number;
-  /** Looking For type with the highest finalScore. */
-  bestLookingFor?: LookingForTypeValue;
-  /** All Looking For types this match was evaluated against. */
-  selectedLookingFor?: LookingForTypeValue[];
-  /** One full evaluation per selected Looking For type. */
-  lookingForScores?: LookingForScore[];
-  /** Top-level explanation for `totalScore`. */
-  overallExplanation?: OverallLookingForExplanation;
-
-  /**
-   * @deprecated Replaced by `lookingForScores`. Kept for legacy clients reading
-   * older persisted records.
-   */
   alternativeIntentScores?: Array<{
     intent: ProjectIntent;
     deterministicScore: number;
@@ -519,10 +403,7 @@ export interface ProjectMatchResult extends BaseMatchResult {
 export interface ProjectMatchResponse extends BaseMatchResponse<ProjectMatchResult> {
   projectId: string;
   projectTitle: string;
-  /** Legacy single-intent field. Set to the primary intent of the first selected Looking For. */
   intent: ProjectIntent;
-  /** All Looking For types matching ran against. */
-  selectedLookingFor?: LookingForTypeValue[];
 }
 
 export interface ProjectFilterOptions extends BaseFilterOptions {
@@ -535,18 +416,7 @@ export interface ProjectFilterOptions extends BaseFilterOptions {
 
 export interface FindProjectMatchesRequest {
   projectId: string;
-  /**
-   * Legacy single-intent field. The multi-Looking-For engine treats it as a
-   * fallback when no `selectedLookingFor` / `lookingFor` is provided and
-   * `project.lookingFor` is empty. Slice 2 will make this fully optional;
-   * for now it remains required for backward compatibility with the
-   * existing single-intent service flow.
-   */
   intent: ProjectIntent;
-  /** Canonical multi-select Looking For (preferred over `intent`). */
-  selectedLookingFor?: LookingForTypeValue[];
-  /** Alias for `selectedLookingFor`. */
-  lookingFor?: LookingForTypeValue[];
   limit?: number;
   offset?: number;
   filters?: ProjectFilterOptions;
@@ -557,8 +427,6 @@ export interface FindProjectMatchesRequest {
 export interface ProjectMatchingJobPayload extends BaseJobPayload {
   projectId: string;
   intent: ProjectIntent;
-  selectedLookingFor?: LookingForTypeValue[];
-  lookingFor?: LookingForTypeValue[];
   filters?: ProjectFilterOptions;
   includeAI?: boolean;
   includeExplanations?: boolean;
@@ -576,12 +444,6 @@ export interface StoredProjectMatch {
   confidence: number;
   explanationJson?: Record<string, unknown> | null;
   hydrationSnapshot?: Record<string, unknown> | null;
-  // Multi-Looking-For persistence (optional; safely missing on old rows).
-  totalScore?: number | null;
-  bestLookingFor?: LookingForTypeValue | null;
-  selectedLookingFor?: LookingForTypeValue[] | null;
-  lookingForScoresJson?: LookingForScore[] | null;
-  overallExplanationJson?: OverallLookingForExplanation | null;
   createdAt: Date;
   expiresAt?: Date | null;
 }

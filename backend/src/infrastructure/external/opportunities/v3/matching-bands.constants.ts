@@ -3,23 +3,23 @@
  *
  * SINGLE SOURCE OF TRUTH for score bands within the Job Matching engine.
  *
- * Spec-mandated 5-band model (Phase 5 migration):
- *   WEAK:      0–39    (was POOR 0–20 + old WEAK 21–40)
- *   PARTIAL:   40–54   (NEW band — replaces old GOOD's lower half)
- *   GOOD:      55–69   (was old GOOD 41–60 upper + old VERY_GOOD 61–69)
- *   VERY_GOOD: 70–84   (was old VERY_GOOD 61–80 upper + old EXCELLENT 81–84)
- *   EXCELLENT: 85–100  (was old EXCELLENT 81–100 upper)
+ * Production-ready 20‑point bands:
+ *   POOR:       0–20
+ *   WEAK:      >20–40
+ *   GOOD:      >40–60
+ *   VERY_GOOD: >60–80
+ *   EXCELLENT: >80–100
  *
- * `MatchLevel.POOR` is retained on the enum for backward-compatible
- * hydration of legacy saved rows. New code MUST NOT emit it —
- * `getMatchLevelFromScore` and `applyGating` only emit the 5 spec bands.
- * The Prisma `JobMatchLevel` enum mirrors this: POOR is kept so legacy
- * rows continue to read, PARTIAL is the new value.
+ * These boundaries are inclusive on the lower end and exclusive on the upper end
+ * except for the final band which includes 100.  They replace the previous
+ * five‑band model (WEAK, GOOD, VERY_GOOD, STRONG, EXCELLENT).  There is no
+ * longer a separate STRONG band.  See getMatchLevelFromScore() for exact
+ * mapping behaviour.
  *
- * This file lives inside the job-matching module to ensure that all scoring
- * logic and band definitions remain co-located. Do not import from
- * external shared locations. If you need to reuse these bands elsewhere
- * in the monorepo, re-export them via job-matching/index.ts.
+ * This file lives inside the job‑matching module to ensure that all scoring
+ * logic and band definitions remain co‑located.  Do not import from
+ * external shared locations.  If you need to reuse these bands elsewhere
+ * in the monorepo, re‑export them via job‑matching/index.ts.
  *
  * @module job-matching/matching-bands.constants
  */
@@ -29,15 +29,11 @@
 // ============================================================================
 
 /**
- * Ordered match levels from worst to best. POOR is retained for legacy
- * hydration only — see file header. PARTIAL is the new low-tier band.
+ * Ordered match levels from worst (POOR) to best (EXCELLENT).
  */
 export enum MatchLevel {
-  /** @deprecated Legacy band. Retained for hydration of pre-migration rows.
-   *  Never emitted by getMatchLevelFromScore() or applyGating() in new code. */
   POOR = 'POOR',
   WEAK = 'WEAK',
-  PARTIAL = 'PARTIAL',
   GOOD = 'GOOD',
   VERY_GOOD = 'VERY_GOOD',
   EXCELLENT = 'EXCELLENT',
@@ -48,18 +44,17 @@ export enum MatchLevel {
 // ============================================================================
 
 /**
- * Numerical boundaries for each match level. Scores are integers in [0,100].
+ * Numerical boundaries for each match level.  Scores are integers in [0,100].
  * A score belongs to a level if it is >= min and <= max of that level.
- *
- * POOR is intentionally excluded from this map — it's a legacy hydration
- * value only. getMatchLevelFromScore() never returns POOR.
+ * The "greater than" notation in the documentation translates to exclusive
+ * lower bounds on subsequent levels.
  */
 export const MATCH_LEVEL_BOUNDARIES = {
-  WEAK:       { min: 0,  max: 39 },
-  PARTIAL:    { min: 40, max: 54 },
-  GOOD:       { min: 55, max: 69 },
-  VERY_GOOD:  { min: 70, max: 84 },
-  EXCELLENT:  { min: 85, max: 100 },
+  POOR:       { min: 0,  max: 20 },  // 0–20 inclusive
+  WEAK:       { min: 21, max: 40 },  // >20–40
+  GOOD:       { min: 41, max: 60 },  // >40–60
+  VERY_GOOD:  { min: 61, max: 80 },  // >60–80
+  EXCELLENT:  { min: 81, max: 100 }, // >80–100
 } as const;
 
 // ============================================================================
@@ -67,27 +62,27 @@ export const MATCH_LEVEL_BOUNDARIES = {
 // ============================================================================
 
 /**
- * Derive a MatchLevel from a numeric score (0–100). Hard-filter failures
- * must be handled before calling this. The boundaries are defined by
- * MATCH_LEVEL_BOUNDARIES.
+ * Derive a MatchLevel from a numeric score (0–100).  Hard‑filter failures
+ * must be handled before calling this.  The boundaries are defined by
+ * MATCH_LEVEL_BOUNDARIES.  If a score falls outside 0–100, it will be
+ * clamped internally by callers.
  */
 export function getMatchLevelFromScore(score: number): MatchLevel {
   if (score >= MATCH_LEVEL_BOUNDARIES.EXCELLENT.min) return MatchLevel.EXCELLENT;
   if (score >= MATCH_LEVEL_BOUNDARIES.VERY_GOOD.min) return MatchLevel.VERY_GOOD;
   if (score >= MATCH_LEVEL_BOUNDARIES.GOOD.min) return MatchLevel.GOOD;
-  if (score >= MATCH_LEVEL_BOUNDARIES.PARTIAL.min) return MatchLevel.PARTIAL;
-  return MatchLevel.WEAK;
+  if (score >= MATCH_LEVEL_BOUNDARIES.WEAK.min) return MatchLevel.WEAK;
+  return MatchLevel.POOR;
 }
 
 /**
- * Human-readable labels for each match level. Suitable for UI or
+ * Human‑readable labels for each match level.  Suitable for UI or
  * explanation output.
  */
 export function matchLevelLabel(level: MatchLevel): string {
   const labels: Record<MatchLevel, string> = {
-    [MatchLevel.POOR]: 'Weak',          // Legacy rows display as "Weak"
+    [MatchLevel.POOR]: 'Poor',
     [MatchLevel.WEAK]: 'Weak',
-    [MatchLevel.PARTIAL]: 'Partial',
     [MatchLevel.GOOD]: 'Good',
     [MatchLevel.VERY_GOOD]: 'Very Good',
     [MatchLevel.EXCELLENT]: 'Excellent',
@@ -96,16 +91,11 @@ export function matchLevelLabel(level: MatchLevel): string {
 }
 
 /**
- * Return a descriptive explanation for the band assignment. Indicates the
+ * Return a descriptive explanation for the band assignment.  Indicates the
  * numeric score and the corresponding band range.
- *
- * Legacy POOR rows render the WEAK band range since POOR is collapsed into
- * WEAK on display.
  */
 export function bandExplanation(score: number, level: MatchLevel): string {
-  const effective = level === MatchLevel.POOR ? MatchLevel.WEAK : level;
-  const b = (MATCH_LEVEL_BOUNDARIES as Record<string, { min: number; max: number }>)[effective];
-  if (!b) return `Score ${score} falls in the ${matchLevelLabel(level)} band.`;
+  const b = MATCH_LEVEL_BOUNDARIES[level];
   return `Score ${score} falls in the ${matchLevelLabel(level)} band (${b.min}–${b.max}).`;
 }
 
@@ -114,9 +104,9 @@ export function bandExplanation(score: number, level: MatchLevel): string {
 // ============================================================================
 
 /**
- * The outcome of the hard filter step. A FAIL caps the match level to
- * WEAK (the new low band) and prevents AI/confidence adjustments from
- * elevating it. WARN may down-grade the final match level in gating.
+ * The outcome of the hard filter step.  A FAIL will always reduce the
+ * match level to POOR and prevent any AI or confidence adjustments from
+ * elevating it.  WARN may down‑grade the final match level in gating.
  */
 export enum HardFilterStatus {
   PASS = 'PASS',
@@ -152,9 +142,9 @@ export const DEFAULT_CONFIDENCE_GATES: ConfidenceGates = {
 };
 
 /**
- * Apply confidence and hard-filter gating to a raw match level. This function
+ * Apply confidence and hard‑filter gating to a raw match level.  This function
  * enforces the following rules:
- *   • Hard-filter FAIL → always WEAK (no POOR in the spec band system)
+ *   • Hard‑filter FAIL → always POOR
  *   • Sparse profiles cannot exceed the configured cap
  *   • Low confidence demotes EXCELLENT→VERY_GOOD and VERY_GOOD→GOOD
  *   • Hard filter WARN demotes EXCELLENT→VERY_GOOD
@@ -166,9 +156,9 @@ export function applyGating(
   isSparse: boolean,
   gates: ConfidenceGates = DEFAULT_CONFIDENCE_GATES,
 ): { level: MatchLevel; capped: boolean; reason: string | null } {
-  // Hard-filter FAIL → forced to WEAK (lowest spec band)
+  // Hard‑filter FAIL → always POOR
   if (hardFilterStatus === HardFilterStatus.FAIL) {
-    return { level: MatchLevel.WEAK, capped: true, reason: 'Hard filter failed — forced to WEAK.' };
+    return { level: MatchLevel.POOR, capped: true, reason: 'Hard filter failed — forced to POOR.' };
   }
 
   let level = getMatchLevelFromScore(rawScore);
@@ -214,11 +204,8 @@ export function applyGating(
 
 function levelRank(l: MatchLevel): number {
   const ranks: Record<MatchLevel, number> = {
-    // Legacy POOR ranks alongside WEAK for ordering purposes — they're
-    // the same tier on display.
     [MatchLevel.POOR]: 1,
-    [MatchLevel.WEAK]: 1,
-    [MatchLevel.PARTIAL]: 2,
+    [MatchLevel.WEAK]: 2,
     [MatchLevel.GOOD]: 3,
     [MatchLevel.VERY_GOOD]: 4,
     [MatchLevel.EXCELLENT]: 5,

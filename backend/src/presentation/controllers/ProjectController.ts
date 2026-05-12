@@ -26,184 +26,6 @@ import {
   ProjectMatchStatus,
   SkillImportance,
 } from "@prisma/client";
-import type {
-  ContactScoringInput,
-  ProjectScoringInput,
-} from "../../infrastructure/external/projects/lookingForRoleScorer";
-import { semanticScoreManyContacts } from "../../infrastructure/external/projects/lookingForSemanticScorer";
-import {
-  enrichLookingForResult,
-  rankByTotalLookingForScore,
-  dedupeMatchesByTarget,
-  type LookingForType,
-  type EnrichedLookingForResult,
-} from "../../infrastructure/external/projects/lookingForEnhancedScorer";
-
-/**
- * Extra fields appended to every match result returned to the frontend.
- * They form the contract for the per-Looking-For matching feature.
- */
-interface LookingForMatchEnrichment {
-  /** Selected Looking For types in canonical UPPER_SNAKE form. */
-  selectedLookingFor: LookingForType[];
-  /** Per-Looking-For score detail objects (one per selected type). */
-  lookingForScoreDetails: EnrichedLookingForResult["lookingForScores"];
-  /** MAX of all per-type finalScores. */
-  totalScore: number;
-  /** The Looking For type that produced totalScore (or null). */
-  bestLookingFor: LookingForType | null;
-  /** Overall explanation. */
-  overallExplanation: EnrichedLookingForResult["overallExplanation"];
-  /**
-   * Backward-compat: legacy Record<id, score> shape used by the older
-   * MatchCard pill renderer; preserved so the UI does not crash.
-   */
-  lookingForScores: Record<string, number>;
-  /** Backward-compat: id → label map. */
-  lookingForLabels: Record<string, string>;
-  /** Backward-compat: same as totalScore (older field name). */
-  lookingForTotalScore: number | null;
-  /** Backward-compat: top-level overall score (mirrors totalScore). */
-  score: number;
-  /** Backward-compat: top-level final score (mirrors totalScore). */
-  finalScore: number;
-  /** Match band of totalScore. */
-  matchLevel: string;
-}
-
-/**
- * Compute the Looking For enrichment for a single match.
- *
- * `selected` is the project's persisted lookingFor IDs (or canonical types).
- * `semantic` is the per-id semantic score map (or null when unavailable).
- *
- * Returns `null` when no Looking For types were selected — caller decides
- * whether to fall back to the legacy headline matchScore.
- */
-function buildLookingForEnrichment(
-  selected: string[],
-  contact: ContactScoringInput,
-  project: ProjectScoringInput | undefined,
-  semantic: Record<string, number> | null,
-  flags?: { blocked?: boolean; optedOut?: boolean },
-): { fields: LookingForMatchEnrichment; raw: EnrichedLookingForResult } | null {
-  if (!Array.isArray(selected) || selected.length === 0) return null;
-  const enriched = enrichLookingForResult({
-    selected,
-    contact,
-    project,
-    semanticScores: semantic,
-    flags,
-  });
-  if (!enriched.selectedLookingFor.length) return null;
-  return { fields: enrichmentToFields(enriched), raw: enriched };
-}
-
-/**
- * Project an `EnrichedLookingForResult` onto the response field shape.
- * Extracted so the dedupe step can re-derive the same response shape from a
- * merged enrichment object.
- */
-function enrichmentToFields(
-  enriched: EnrichedLookingForResult,
-): LookingForMatchEnrichment {
-  const bestDetail = enriched.lookingForScores.find((d) => d.isBestMatchType);
-  return {
-    selectedLookingFor: enriched.selectedLookingFor,
-    lookingForScoreDetails: enriched.lookingForScores,
-    totalScore: enriched.totalScore,
-    bestLookingFor: enriched.bestLookingFor,
-    overallExplanation: enriched.overallExplanation,
-    lookingForScores: enriched.legacyScoresMap,
-    lookingForLabels: enriched.legacyLabelsMap,
-    lookingForTotalScore: enriched.totalScore || null,
-    score: enriched.totalScore,
-    finalScore: enriched.totalScore,
-    matchLevel: bestDetail ? bestDetail.matchLevel : "WEAK",
-  };
-}
-
-/**
- * Identity payload extracted from a match row's matchedUser / matchedContact.
- * Used by `dedupeMatchesByTarget` to collapse the same person across rows.
- */
-interface MatchRowIdentity {
-  matchedUser?: {
-    id?: string;
-    email?: string | null;
-    linkedinUrl?: string | null;
-    fullName?: string | null;
-    company?: string | null;
-  } | null;
-  matchedContact?: {
-    id?: string;
-    email?: string | null;
-    linkedinUrl?: string | null;
-    fullName?: string | null;
-    company?: string | null;
-  } | null;
-}
-
-function getMatchTargetIdentity(row: MatchRowIdentity) {
-  return {
-    userId: row.matchedUser?.id ?? null,
-    contactId: row.matchedContact?.id ?? null,
-    email: row.matchedUser?.email ?? row.matchedContact?.email ?? null,
-    linkedinUrl: row.matchedUser?.linkedinUrl ?? row.matchedContact?.linkedinUrl ?? null,
-    fullName: row.matchedUser?.fullName ?? row.matchedContact?.fullName ?? null,
-    // The `name|company` fingerprint is what catches the
-    // "registered-user vs added-as-contact" duplicate when emails diverge.
-    company: row.matchedUser?.company ?? row.matchedContact?.company ?? null,
-  };
-}
-
-/**
- * Pick the canonical row when two duplicates collide. We prefer the User row
- * over the Contact row (richer, system-authoritative profile), and if both
- * sides are the same kind we keep the higher-scoring one.
- */
-function pickCanonicalMatch<T extends { matchedUser?: any; matchedContact?: any; matchScore?: number }>(
-  a: T,
-  b: T,
-): T {
-  const aHasUser = !!a.matchedUser?.id;
-  const bHasUser = !!b.matchedUser?.id;
-  if (aHasUser !== bHasUser) return aHasUser ? a : b;
-  const aScore = a.matchScore ?? 0;
-  const bScore = b.matchScore ?? 0;
-  return aScore >= bScore ? a : b;
-}
-
-/**
- * Run the canonical "dedupe by target identity then re-stamp Looking For
- * fields from the merged enrichment" pipeline that's used by every endpoint
- * which returns enriched matches. Sorting/pagination happens AFTER this.
- */
-function dedupeAndRestampMatches<
-  T extends LookingForMatchEnrichment & {
-    id: string;
-    matchScore: number;
-    matchedUser?: any;
-    matchedContact?: any;
-  },
->(items: Array<T & { __rawEnrichment?: EnrichedLookingForResult | null }>): T[] {
-  const grouped = dedupeMatchesByTarget(items, {
-    getIdentity: getMatchTargetIdentity,
-    getEnrichment: (item) => item.__rawEnrichment ?? null,
-    pickCanonical: pickCanonicalMatch,
-  });
-
-  return grouped.map(({ canonical, merged }) => {
-    const out: any = { ...canonical };
-    delete out.__rawEnrichment;
-    if (merged) {
-      Object.assign(out, enrichmentToFields(merged));
-      out.__rawEnrichment = undefined;
-    }
-    return out as T;
-  });
-}
-
 
 // Initialize matching service
 const matchingService = new ProjectMatchingService(prisma);
@@ -641,13 +463,9 @@ export class ProjectController {
                   id: true,
                   fullName: true,
                   email: true,
-                  linkedinUrl: true,
                   company: true,
                   jobTitle: true,
                   avatarUrl: true,
-                  bio: true,
-                  userSkills: { select: { skillId: true, skill: { select: { name: true } } } },
-                  userSectors: { select: { sectorId: true, sector: { select: { name: true } } } },
                 },
               },
               matchedContact: {
@@ -659,9 +477,6 @@ export class ProjectController {
                   jobTitle: true,
                   phone: true,
                   linkedinUrl: true,
-                  bio: true,
-                  contactSkills: { select: { skillId: true, skill: { select: { name: true } } } },
-                  contactSectors: { select: { sectorId: true, sector: { select: { name: true } } } },
                 },
               },
             },
@@ -675,136 +490,12 @@ export class ProjectController {
         throw new NotFoundError("Project not found");
       }
 
-      // Per-role lookingFor scoring for the embedded matches.
-      const projectLookingFor = safeJsonArray(project.lookingFor) as string[];
-
-      // Build the project-side scoring input once (skills + sectors needed).
-      const projectInput: ProjectScoringInput = {
-        skillIds: project.skillsNeeded.map((ps) => ps.skillId),
-        skillNames: project.skillsNeeded.map((ps) => ps.skill?.name).filter(Boolean) as string[],
-        sectorIds: project.sectors.map((ps) => ps.sectorId),
-        sectorNames: project.sectors
-          .map((ps: any) => ps.sector?.name ?? null)
-          .filter(Boolean) as string[],
-      };
-
-      // Build each match's contact-side scoring input.
-      const matchInputs: Array<{ m: typeof project.matches[number]; ci: ContactScoringInput }> = project.matches.map((m) => {
-        const u = m.matchedUser as any;
-        const c = m.matchedContact as any;
-        const person = u || c;
-        const skills = (u?.userSkills || c?.contactSkills || []) as Array<{ skillId: string; skill?: { name: string } }>;
-        const sectorRows = (u?.userSectors || c?.contactSectors || []) as Array<{ sectorId: string; sector?: { name: string } }>;
-        return {
-          m,
-          ci: {
-            jobTitle: person?.jobTitle,
-            company: person?.company,
-            bio: person?.bio ?? null,
-            skillIds: skills.map((s) => s.skillId),
-            skillNames: skills.map((s) => s.skill?.name).filter(Boolean) as string[],
-            sectorIds: sectorRows.map((s) => s.sectorId),
-            sectorNames: sectorRows
-              .map((s) => s.sector?.name ?? null)
-              .filter(Boolean) as string[],
-          },
-        };
-      });
-
-      // Tier 3 + 4: semantic blend (best-effort; null on failure → keyword-only).
-      let semanticPerMatch: Array<Record<string, number> | null> = matchInputs.map(() => null);
-      if (projectLookingFor.length && matchInputs.length) {
-        try {
-          semanticPerMatch = await semanticScoreManyContacts(
-            projectLookingFor,
-            matchInputs.map((mi) => mi.ci),
-          );
-        } catch {
-          // Already logged inside the scorer; treat as no-semantic.
-        }
-      }
-
-      const scoredMatches = matchInputs.map(({ m, ci }, idx) => {
-        const semScores = semanticPerMatch[idx];
-        const lf = buildLookingForEnrichment(
-          projectLookingFor,
-          ci,
-          projectInput,
-          semScores,
-        );
-        const baseRecord = {
-          id: m.id,
-          matchScore: m.matchScore,
-          matchType: m.matchType,
-          reasons: safeJsonArray(m.reasons),
-          suggestedAction: m.suggestedAction,
-          suggestedMessage: m.suggestedMessage,
-          sharedSectors: safeJsonArray(m.sharedSectors),
-          sharedSkills: safeJsonArray(m.sharedSkills),
-          status: m.status,
-          matchedUser: m.matchedUser,
-          matchedContact: m.matchedContact,
-          createdAt: m.createdAt,
-        };
-        if (!lf) {
-          return {
-            ...baseRecord,
-            selectedLookingFor: [] as LookingForType[],
-            lookingForScoreDetails: [],
-            lookingForScores: null,
-            lookingForLabels: null,
-            lookingForTotalScore: null,
-            totalScore: m.matchScore,
-            bestLookingFor: null,
-            overallExplanation: null,
-            score: m.matchScore,
-            finalScore: m.matchScore,
-            matchLevel: undefined,
-            __rawEnrichment: null as EnrichedLookingForResult | null,
-          };
-        }
-        return { ...baseRecord, ...lf.fields, __rawEnrichment: lf.raw };
-      });
-
-      // Dedupe by canonical target identity (collapses same person across
-      // user + contact + multiple-contact rows). Then sort, then filter.
-      const enrichedMatches = dedupeAndRestampMatches(scoredMatches as any);
-
-      enrichedMatches.sort((a, b) =>
-        rankByTotalLookingForScore(
-          {
-            totalScore: a.totalScore ?? a.matchScore,
-            bestConfidence:
-              a.lookingForScoreDetails?.find((d) => d.isBestMatchType)
-                ?.confidence ?? 0,
-            matchScore: a.matchScore,
-            bestDeterministicScore:
-              a.lookingForScoreDetails?.find((d) => d.isBestMatchType)?.score ??
-              0,
-          },
-          {
-            totalScore: b.totalScore ?? b.matchScore,
-            bestConfidence:
-              b.lookingForScoreDetails?.find((d) => d.isBestMatchType)
-                ?.confidence ?? 0,
-            matchScore: b.matchScore,
-            bestDeterministicScore:
-              b.lookingForScoreDetails?.find((d) => d.isBestMatchType)?.score ??
-              0,
-          },
-        ),
-      );
-
-      const visibleMatches = projectLookingFor.length
-        ? enrichedMatches.filter((m) => (m.lookingForTotalScore ?? 0) > 0)
-        : enrichedMatches;
-
       res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.status(200).json({
         success: true,
         data: {
           ...project,
-          lookingFor: projectLookingFor,
+          lookingFor: safeJsonArray(project.lookingFor),
           keywords: safeJsonArray(project.keywords),
           needs: safeJsonArray(project.needs),
           markets: safeJsonArray(project.markets),
@@ -818,7 +509,20 @@ export class ProjectController {
             ...ps.skill,
             importance: ps.importance,
           })),
-          matches: visibleMatches,
+          matches: project.matches.map((m) => ({
+            id: m.id,
+            matchScore: m.matchScore,
+            matchType: m.matchType,
+            reasons: safeJsonArray(m.reasons),
+            suggestedAction: m.suggestedAction,
+            suggestedMessage: m.suggestedMessage,
+            sharedSectors: safeJsonArray(m.sharedSectors),
+            sharedSkills: safeJsonArray(m.sharedSkills),
+            status: m.status,
+            matchedUser: m.matchedUser,
+            matchedContact: m.matchedContact,
+            createdAt: m.createdAt,
+          })),
         },
       });
     } catch (error) {
@@ -1147,30 +851,6 @@ export class ProjectController {
         });
       }
 
-      // Validate that at least one Looking For type can be resolved before we
-      // run matching. The user must select chips OR the project must have a
-      // persisted lookingFor. Per spec Part 6 (1) and Part 17 (3).
-      const reqSelectedRawTop = (req.body?.selectedLookingFor ?? req.body?.lookingFor) as
-        | string[]
-        | undefined;
-      const reqSelectedTop = Array.isArray(reqSelectedRawTop)
-        ? reqSelectedRawTop.filter((v): v is string => typeof v === "string")
-        : [];
-      const persistedLookingFor = Array.isArray(project.lookingFor)
-        ? (project.lookingFor as string[])
-        : [];
-      if (!reqSelectedTop.length && !persistedLookingFor.length) {
-        res.status(400).json({
-          success: false,
-          error: {
-            code: "MISSING_LOOKING_FOR",
-            message:
-              "At least one Looking For option must be selected to run matching.",
-          },
-        });
-        return;
-      }
-
       // Synchronous mode (default) - use advanced matching engine
       const matchOrgId = req.orgContext?.organizationId || undefined;
       const matches = await advancedFindMatches(
@@ -1186,7 +866,7 @@ export class ProjectController {
         matchCount: matches.length,
       });
 
-      // Fetch full match data with skills/sectors so the new scorer can use them.
+      // Fetch full match data
       const fullMatches = await prisma.projectMatch.findMany({
         where: { projectId },
         include: {
@@ -1200,9 +880,6 @@ export class ProjectController {
               avatarUrl: true,
               phone: true,
               linkedinUrl: true,
-              bio: true,
-              userSkills: { select: { skillId: true, skill: { select: { name: true } } } },
-              userSectors: { select: { sectorId: true, sector: { select: { name: true } } } },
             },
           },
           matchedContact: {
@@ -1214,210 +891,39 @@ export class ProjectController {
               jobTitle: true,
               phone: true,
               linkedinUrl: true,
-              bio: true,
-              contactSkills: { select: { skillId: true, skill: { select: { name: true } } } },
-              contactSectors: { select: { sectorId: true, sector: { select: { name: true } } } },
             },
           },
         },
         orderBy: { matchScore: "desc" },
       });
 
-      // Pull project skills/sectors for the bonus (include sector NAMES so
-      // the synonym layer can collapse cross-source label variants).
-      const projectFM = await prisma.project.findUnique({
-        where: { id: projectId },
-        include: {
-          skillsNeeded: { include: { skill: true } },
-          sectors: { include: { sector: true } },
-        },
-      });
-      // Resolve which Looking For types to score against, in priority order:
-      //   1. `selectedLookingFor` (canonical, multi-select from the chip UI)
-      //   2. `lookingFor` (alias accepted in the request body)
-      //   3. `project.lookingFor` (persisted on the project)
-      // The matching engine requires at least one — a 400 is returned upstream
-      // when none can be resolved (Slice 2 plan).
-      const reqSelectedRaw = (req.body?.selectedLookingFor ?? req.body?.lookingFor) as
-        | string[]
-        | undefined;
-      const reqSelected = Array.isArray(reqSelectedRaw)
-        ? reqSelectedRaw.filter((v): v is string => typeof v === "string")
-        : [];
-      const fmLookingFor: string[] = reqSelected.length
-        ? reqSelected
-        : projectFM
-          ? (Array.isArray(projectFM.lookingFor) ? (projectFM.lookingFor as string[]) : [])
-          : [];
-      // Persist the request-supplied chip selection so subsequent GETs render
-      // the same per-Looking-For enrichment without the user having to also
-      // edit the project. We only write when the user explicitly supplied a
-      // chip selection — otherwise leave the stored value untouched.
-      if (reqSelected.length) {
-        try {
-          await prisma.project.update({
-            where: { id: projectId },
-            data: { lookingFor: reqSelected },
-          });
-        } catch (err) {
-          logger.warn("Failed to persist selectedLookingFor on project", {
-            projectId,
-            error: err,
-          });
-        }
-      }
-      const fmProjectInput: ProjectScoringInput = {
-        skillIds: projectFM?.skillsNeeded?.map((ps) => ps.skillId) || [],
-        skillNames: (projectFM?.skillsNeeded?.map((ps) => ps.skill?.name).filter(Boolean) as string[]) || [],
-        sectorIds: projectFM?.sectors?.map((ps) => ps.sectorId) || [],
-        sectorNames: ((projectFM?.sectors as any[] | undefined)
-          ?.map((ps: any) => ps.sector?.name ?? null)
-          .filter(Boolean) as string[]) || [],
-      };
-
-      const fmInputs = fullMatches.map((m) => {
-        const u = m.matchedUser as any;
-        const c = m.matchedContact as any;
-        const person = u || c;
-        const skills = (u?.userSkills || c?.contactSkills || []) as Array<{ skillId: string; skill?: { name: string } }>;
-        const sectorRows = (u?.userSectors || c?.contactSectors || []) as Array<{ sectorId: string; sector?: { name: string } }>;
-        return {
-          m,
-          ci: {
-            jobTitle: person?.jobTitle,
-            company: person?.company,
-            bio: person?.bio ?? null,
-            skillIds: skills.map((s) => s.skillId),
-            skillNames: skills.map((s) => s.skill?.name).filter(Boolean) as string[],
-            sectorIds: sectorRows.map((s) => s.sectorId),
-            sectorNames: sectorRows
-              .map((s) => s.sector?.name ?? null)
-              .filter(Boolean) as string[],
-          } as ContactScoringInput,
-        };
-      });
-
-      let fmSemantic: Array<Record<string, number> | null> = fmInputs.map(() => null);
-      if (fmLookingFor.length && fmInputs.length) {
-        try {
-          fmSemantic = await semanticScoreManyContacts(
-            fmLookingFor,
-            fmInputs.map((mi) => mi.ci),
-          );
-        } catch {
-          // semantic best-effort
-        }
-      }
-
-      const fmScored = fmInputs.map(({ m, ci }, idx) => {
-        const lf = buildLookingForEnrichment(
-          fmLookingFor,
-          ci,
-          fmProjectInput,
-          fmSemantic[idx],
-        );
-        const baseRecord = {
-          id: m.id,
-          matchScore: m.matchScore,
-          matchType: m.matchType,
-          reasons: m.reasons,
-          suggestedAction: m.suggestedAction,
-          suggestedMessage: m.suggestedMessage,
-          suggestedMessageEdited: m.suggestedMessageEdited,
-          sharedSectors: m.sharedSectors,
-          sharedSkills: m.sharedSkills,
-          status: m.status,
-          matchedUser: m.matchedUser,
-          matchedContact: m.matchedContact,
-          createdAt: m.createdAt,
-          deterministicScore: m.deterministicScore,
-          confidence: m.confidence,
-          scoreBreakdown: m.scoreBreakdown,
-          explanation: m.explanation,
-          intent: m.intent,
-          rank: m.rank,
-        };
-        if (!lf) {
-          return {
-            ...baseRecord,
-            matchLevel: m.matchLevel,
-            selectedLookingFor: [] as LookingForType[],
-            lookingForScoreDetails: [],
-            lookingForScores: null,
-            lookingForLabels: null,
-            lookingForTotalScore: null,
-            totalScore: m.matchScore,
-            bestLookingFor: null,
-            overallExplanation: null,
-            score: m.matchScore,
-            finalScore: m.matchScore,
-            __rawEnrichment: null as EnrichedLookingForResult | null,
-          };
-        }
-        return { ...baseRecord, ...lf.fields, __rawEnrichment: lf.raw };
-      });
-
-      // Dedupe across user + contact rows for the same person, then sort.
-      const fmEnriched = dedupeAndRestampMatches(fmScored as any);
-
-      fmEnriched.sort((a, b) =>
-        rankByTotalLookingForScore(
-          {
-            totalScore: a.totalScore ?? a.matchScore,
-            bestConfidence:
-              a.lookingForScoreDetails?.find((d) => d.isBestMatchType)
-                ?.confidence ?? 0,
-            matchScore: a.matchScore,
-            bestDeterministicScore:
-              a.lookingForScoreDetails?.find((d) => d.isBestMatchType)?.score ??
-              0,
-          },
-          {
-            totalScore: b.totalScore ?? b.matchScore,
-            bestConfidence:
-              b.lookingForScoreDetails?.find((d) => d.isBestMatchType)
-                ?.confidence ?? 0,
-            matchScore: b.matchScore,
-            bestDeterministicScore:
-              b.lookingForScoreDetails?.find((d) => d.isBestMatchType)?.score ??
-              0,
-          },
-        ),
-      );
-
-      const fmVisible = fmLookingFor.length
-        ? fmEnriched.filter((m) => (m.lookingForTotalScore ?? 0) > 0)
-        : fmEnriched;
-
-      // Keep `_count.matches` in sync with what the UI actually shows. Rows
-      // that scored 0 across every selected Looking For type are invisible to
-      // the user but still inflate the project header's match count — delete
-      // them now so the next project-list query agrees with the find-match
-      // response. Best-effort: failure here only loses the cosmetic alignment.
-      if (fmLookingFor.length && fmVisible.length < fmEnriched.length) {
-        const visibleIds = new Set(fmVisible.map((m) => m.id));
-        const staleIds = fmEnriched
-          .map((m) => m.id)
-          .filter((id) => !visibleIds.has(id));
-        if (staleIds.length) {
-          try {
-            await prisma.projectMatch.deleteMany({
-              where: { id: { in: staleIds } },
-            });
-          } catch (err) {
-            logger.warn(
-              "Failed to prune zero-scoring matches; project count may overstate",
-              { projectId, count: staleIds.length, error: err },
-            );
-          }
-        }
-      }
-
       res.status(200).json({
         success: true,
         data: {
-          matchCount: fmVisible.length,
-          matches: fmVisible,
+          matchCount: fullMatches.length,
+          matches: fullMatches.map((m) => ({
+            id: m.id,
+            matchScore: m.matchScore,
+            matchType: m.matchType,
+            reasons: m.reasons,
+            suggestedAction: m.suggestedAction,
+            suggestedMessage: m.suggestedMessage,
+            suggestedMessageEdited: m.suggestedMessageEdited,
+            sharedSectors: m.sharedSectors,
+            sharedSkills: m.sharedSkills,
+            status: m.status,
+            matchedUser: m.matchedUser,
+            matchedContact: m.matchedContact,
+            createdAt: m.createdAt,
+            // v2 advanced matching fields
+            deterministicScore: m.deterministicScore,
+            confidence: m.confidence,
+            matchLevel: m.matchLevel,
+            scoreBreakdown: m.scoreBreakdown,
+            explanation: m.explanation,
+            intent: m.intent,
+            rank: m.rank,
+          })),
         },
       });
     } catch (error) {
@@ -1549,7 +1055,6 @@ export class ProjectController {
               avatarUrl: true,
               phone: true,
               linkedinUrl: true,
-              bio: true,
             },
           },
           matchedContact: {
@@ -1561,109 +1066,39 @@ export class ProjectController {
               jobTitle: true,
               phone: true,
               linkedinUrl: true,
-              bio: true,
             },
           },
         },
         orderBy: { matchScore: "desc" },
       });
 
-      // Per-role lookingFor scoring: for each match, compute a 0-100 score
-      // for every role the project is looking for. The match's "total" for the
-      // UI is the maximum of those role scores. Re-sort by that total so the
-      // best fit-for-any-role surfaces first.
-      const projectLookingFor = Array.isArray((project as any).lookingFor)
-        ? ((project as any).lookingFor as string[])
-        : [];
-
-      const scored = matches.map((m) => {
-        const person = m.matchedUser || m.matchedContact;
-        const lf = buildLookingForEnrichment(
-          projectLookingFor,
-          {
-            jobTitle: person?.jobTitle,
-            company: person?.company,
-            bio: (person as any)?.bio ?? null,
-          },
-          undefined,
-          null,
-        );
-        const baseRecord = {
-          id: m.id,
-          matchScore: m.matchScore,
-          matchType: m.matchType,
-          reasons: m.reasons,
-          suggestedAction: m.suggestedAction,
-          suggestedMessage: m.suggestedMessage,
-          suggestedMessageEdited: m.suggestedMessageEdited,
-          sharedSectors: m.sharedSectors,
-          sharedSkills: m.sharedSkills,
-          status: m.status,
-          matchedUser: m.matchedUser,
-          matchedContact: m.matchedContact,
-          createdAt: m.createdAt,
-          // v2 advanced matching fields
-          deterministicScore: m.deterministicScore,
-          confidence: m.confidence,
-          scoreBreakdown: m.scoreBreakdown,
-          explanation: m.explanation,
-          intent: m.intent,
-          rank: m.rank,
-        };
-        if (!lf) {
-          return {
-            ...baseRecord,
-            matchLevel: m.matchLevel,
-            selectedLookingFor: [] as LookingForType[],
-            lookingForScoreDetails: [],
-            lookingForScores: null,
-            lookingForLabels: null,
-            lookingForTotalScore: null,
-            totalScore: m.matchScore,
-            bestLookingFor: null,
-            overallExplanation: null,
-            score: m.matchScore,
-            finalScore: m.matchScore,
-            __rawEnrichment: null as EnrichedLookingForResult | null,
-          };
-        }
-        return { ...baseRecord, ...lf.fields, __rawEnrichment: lf.raw };
-      });
-
-      // Dedupe by canonical target identity. Sorting / pagination happen
-      // AFTER deduplication so the same person never produces multiple cards.
-      const enriched = dedupeAndRestampMatches(scored as any);
-
-      // Re-sort by totalScore (max of selected Looking For scores). Fall back
-      // to legacy matchScore when no Looking For is configured.
-      enriched.sort((a, b) =>
-        rankByTotalLookingForScore(
-          {
-            totalScore: a.totalScore ?? a.matchScore,
-            bestConfidence:
-              a.lookingForScoreDetails?.find((d) => d.isBestMatchType)
-                ?.confidence ?? 0,
-            matchScore: a.matchScore,
-            bestDeterministicScore:
-              a.lookingForScoreDetails?.find((d) => d.isBestMatchType)?.score ??
-              0,
-          },
-          {
-            totalScore: b.totalScore ?? b.matchScore,
-            bestConfidence:
-              b.lookingForScoreDetails?.find((d) => d.isBestMatchType)
-                ?.confidence ?? 0,
-            matchScore: b.matchScore,
-            bestDeterministicScore:
-              b.lookingForScoreDetails?.find((d) => d.isBestMatchType)?.score ??
-              0,
-          },
-        ),
-      );
-
       res.status(200).json({
         success: true,
-        data: { matches: enriched },
+        data: {
+          matches: matches.map((m) => ({
+            id: m.id,
+            matchScore: m.matchScore,
+            matchType: m.matchType,
+            reasons: m.reasons,
+            suggestedAction: m.suggestedAction,
+            suggestedMessage: m.suggestedMessage,
+            suggestedMessageEdited: m.suggestedMessageEdited,
+            sharedSectors: m.sharedSectors,
+            sharedSkills: m.sharedSkills,
+            status: m.status,
+            matchedUser: m.matchedUser,
+            matchedContact: m.matchedContact,
+            createdAt: m.createdAt,
+            // v2 advanced matching fields
+            deterministicScore: m.deterministicScore,
+            confidence: m.confidence,
+            matchLevel: m.matchLevel,
+            scoreBreakdown: m.scoreBreakdown,
+            explanation: m.explanation,
+            intent: m.intent,
+            rank: m.rank,
+          })),
+        },
       });
     } catch (error) {
       next(error);

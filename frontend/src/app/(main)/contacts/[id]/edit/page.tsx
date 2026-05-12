@@ -134,18 +134,18 @@ function BioPreviewDialog({
 
           {localTab === 'summary' ? (
             <>
-              <textarea value={localSummary} onChange={(e) => setLocalSummary(e.target.value)} placeholder={t.contacts?.form?.bioSummaryPlaceholder || 'Brief summary about this contact...'} rows={6} maxLength={1000} className="w-full px-4 py-3 bg-th-surface border border-th-border rounded-xl text-th-text placeholder-th-text-m focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none text-base leading-relaxed" autoFocus />
+              <textarea value={localSummary} onChange={(e) => setLocalSummary(e.target.value)} placeholder={t.contacts?.form?.bioSummaryPlaceholder || 'Brief summary about this contact...'} rows={6} maxLength={500} className="w-full px-4 py-3 bg-th-surface border border-th-border rounded-xl text-th-text placeholder-th-text-m focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none text-base leading-relaxed" autoFocus />
               <div className="flex items-center justify-between mt-3">
                 <p className="text-xs text-th-text-m">{t.contacts?.form?.bioSummaryTip || 'Key highlights about this person'}</p>
-                <p className={`text-xs ${localSummary.length > 900 ? 'text-yellow-400' : 'text-th-text-m'}`}>{localSummary.length}/1000</p>
+                <p className={`text-xs ${localSummary.length > 450 ? 'text-yellow-400' : 'text-th-text-m'}`}>{localSummary.length}/500</p>
               </div>
             </>
           ) : (
             <>
-              <textarea value={localFull} onChange={(e) => setLocalFull(e.target.value)} placeholder={t.contacts?.form?.bioFullPlaceholder || 'Detailed background, experience, and achievements...'} rows={12} maxLength={5000} className="w-full px-4 py-3 bg-th-surface border border-th-border rounded-xl text-th-text placeholder-th-text-m focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none text-base leading-relaxed" autoFocus />
+              <textarea value={localFull} onChange={(e) => setLocalFull(e.target.value)} placeholder={t.contacts?.form?.bioFullPlaceholder || 'Detailed background, experience, and achievements...'} rows={12} maxLength={2000} className="w-full px-4 py-3 bg-th-surface border border-th-border rounded-xl text-th-text placeholder-th-text-m focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none text-base leading-relaxed" autoFocus />
               <div className="flex items-center justify-between mt-3">
                 <p className="text-xs text-th-text-m">{t.contacts?.form?.bioFullTip || 'Include detailed experience, education, and career highlights'}</p>
-                <p className={`text-xs ${localFull.length > 4500 ? 'text-yellow-400' : 'text-th-text-m'}`}>{localFull.length}/5000</p>
+                <p className={`text-xs ${localFull.length > 1800 ? 'text-yellow-400' : 'text-th-text-m'}`}>{localFull.length}/2000</p>
               </div>
             </>
           )}
@@ -750,18 +750,18 @@ export default function EditContactPage() {
 
           {activeBioTab === 'summary' ? (
             <>
-              <textarea name="bioSummary" value={formData.bioSummary} onChange={handleInputChange} placeholder={t.contacts?.form?.bioSummaryPlaceholder || 'Brief summary about this contact...'} rows={4} maxLength={1000} className="w-full px-4 py-3 bg-th-surface border border-th-border rounded-xl text-th-text placeholder-th-text-m focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none" />
+              <textarea name="bioSummary" value={formData.bioSummary} onChange={handleInputChange} placeholder={t.contacts?.form?.bioSummaryPlaceholder || 'Brief summary about this contact...'} rows={4} maxLength={500} className="w-full px-4 py-3 bg-th-surface border border-th-border rounded-xl text-th-text placeholder-th-text-m focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none" />
               <div className="flex justify-between mt-1">
                 <span className="text-xs text-th-text-m">{t.contacts?.form?.bioSummaryTip || 'Key highlights'}</span>
-                <span className={`text-xs ${formData.bioSummary.length > 900 ? 'text-yellow-400' : 'text-th-text-m'}`}>{formData.bioSummary.length}/1000</span>
+                <span className={`text-xs ${formData.bioSummary.length > 450 ? 'text-yellow-400' : 'text-th-text-m'}`}>{formData.bioSummary.length}/500</span>
               </div>
             </>
           ) : (
             <>
-              <textarea name="bioFull" value={formData.bioFull} onChange={handleInputChange} placeholder={t.contacts?.form?.bioFullPlaceholder || 'Detailed background, experience, and achievements...'} rows={8} maxLength={5000} className="w-full px-4 py-3 bg-th-surface border border-th-border rounded-xl text-th-text placeholder-th-text-m focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none" />
+              <textarea name="bioFull" value={formData.bioFull} onChange={handleInputChange} placeholder={t.contacts?.form?.bioFullPlaceholder || 'Detailed background, experience, and achievements...'} rows={8} maxLength={2000} className="w-full px-4 py-3 bg-th-surface border border-th-border rounded-xl text-th-text placeholder-th-text-m focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none" />
               <div className="flex justify-between mt-1">
                 <span className="text-xs text-th-text-m">{t.contacts?.form?.bioFullTip || 'Complete details'}</span>
-                <span className={`text-xs ${formData.bioFull.length > 4500 ? 'text-yellow-400' : 'text-th-text-m'}`}>{formData.bioFull.length}/5000</span>
+                <span className={`text-xs ${formData.bioFull.length > 1800 ? 'text-yellow-400' : 'text-th-text-m'}`}>{formData.bioFull.length}/2000</span>
               </div>
             </>
           )}
@@ -818,19 +818,19 @@ export default function EditContactPage() {
           {/* Predefined sectors */}
           {sectors.length > 0 && (
             <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1">
-              {[...sectors].sort((a, b) => Number(formData.sectorIds.includes(b.id)) - Number(formData.sectorIds.includes(a.id))).map((sector) => {
+              {sectors.map((sector) => {
                 const isSelected = formData.sectorIds.includes(sector.id);
                 return (
                   <div key={sector.id} className="relative">
                     <button type="button" onClick={() => toggleSector(sector.id)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${isSelected
-                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white dark:bg-none dark:bg-[#3b82f633] dark:text-[#93c5fd] pe-6'
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${isSelected
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white pe-7'
                         : 'bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'}`}>
                       {lang === 'ar' && sector.nameAr ? sector.nameAr : sector.name}
                     </button>
                     {isSelected && (
                       <button type="button" onClick={(e) => { e.stopPropagation(); toggleSector(sector.id); }}
-                        className="absolute top-1/2 -translate-y-1/2 end-1 w-4 h-4 flex items-center justify-center rounded-full bg-th-surface-h text-th-text hover:bg-th-surface-h transition-all">
+                        className="absolute top-1/2 -translate-y-1/2 end-1.5 w-4 h-4 flex items-center justify-center rounded-full bg-th-surface-h text-th-text hover:bg-th-surface-h transition-all">
                         <Dismiss24Regular className="w-2.5 h-2.5" />
                       </button>
                     )}
@@ -879,13 +879,13 @@ export default function EditContactPage() {
           {/* Predefined skills */}
           {skills.length > 0 && (
             <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto scrollbar-purple p-1">
-              {[...skills].sort((a, b) => Number(formData.skillIds.includes(b.id)) - Number(formData.skillIds.includes(a.id))).map((skill) => {
+              {skills.map((skill) => {
                 const isSelected = formData.skillIds.includes(skill.id);
                 return (
                   <div key={skill.id} className="relative">
                     <button type="button" onClick={() => toggleSkill(skill.id)}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${isSelected
-                        ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white dark:bg-none dark:bg-[#3b82f633] dark:text-[#93c5fd] pe-6'
+                        ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white pe-6'
                         : 'bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'}`}>
                       {lang === 'ar' && skill.nameAr ? skill.nameAr : skill.name}
                     </button>
@@ -946,13 +946,13 @@ export default function EditContactPage() {
           {/* Predefined interests */}
           {interests.length > 0 && (
             <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto scrollbar-purple p-1">
-              {[...interests].sort((a, b) => Number(formData.interestIds.includes(b.id)) - Number(formData.interestIds.includes(a.id))).map((interest) => {
+              {interests.map((interest) => {
                 const isSelected = formData.interestIds.includes(interest.id);
                 return (
                   <div key={interest.id} className="relative">
                     <button type="button" onClick={() => toggleInterest(interest.id)}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${isSelected
-                        ? 'bg-gradient-to-r from-yellow-500 to-cyan-500 text-white dark:bg-none dark:bg-[#3b82f633] dark:text-[#93c5fd] pe-6'
+                        ? 'bg-gradient-to-r from-yellow-500 to-cyan-500 text-white pe-6'
                         : 'bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'}`}>
                       {lang === 'ar' && interest.nameAr ? interest.nameAr : interest.name}
                     </button>
@@ -1013,13 +1013,13 @@ export default function EditContactPage() {
           {/* Predefined hobbies */}
           {hobbies.length > 0 && (
             <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto scrollbar-purple p-1">
-              {[...hobbies].sort((a, b) => Number(formData.hobbyIds.includes(b.id)) - Number(formData.hobbyIds.includes(a.id))).map((hobby) => {
+              {hobbies.map((hobby) => {
                 const isSelected = formData.hobbyIds.includes(hobby.id);
                 return (
                   <div key={hobby.id} className="relative">
                     <button type="button" onClick={() => toggleHobby(hobby.id)}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${isSelected
-                        ? 'bg-gradient-to-r from-red-500 to-emerald-500 text-white dark:bg-none dark:bg-[#3b82f633] dark:text-[#93c5fd] pe-6'
+                        ? 'bg-gradient-to-r from-red-500 to-emerald-500 text-white pe-6'
                         : 'bg-th-surface border border-th-border text-th-text-s hover:bg-th-surface-h'}`}>
                       {lang === 'ar' && hobby.nameAr ? hobby.nameAr : hobby.name}
                     </button>

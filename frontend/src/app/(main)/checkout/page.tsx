@@ -365,7 +365,7 @@ export default function CheckoutPage() {
             {/* Checkout button */}
             <button
               onClick={handleCheckout}
-              disabled
+              disabled={isProcessing}
               className="w-full mt-6 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isProcessing ? (

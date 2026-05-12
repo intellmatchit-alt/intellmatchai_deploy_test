@@ -2588,7 +2588,6 @@ export const en = {
     viewProject: 'View Project',
     addAnother: 'Add Another Project',
     requiredFields: 'Title and summary are required',
-    lookingForRequired: 'Select at least one Looking For option before running matching.',
     // Form fields
     basicInfo: 'Basic Information',
     projectTitle: 'Project Title',
@@ -2895,7 +2894,6 @@ export const en = {
   pitch: {
     title: 'Pitch Deck',
     subtitle: 'Upload your pitch deck to find the best contacts in your network',
-    matchTargetsRequired: 'Select at least one Match Target before running matching.',
     uploadTitle: 'Upload Pitch Deck',
     uploadDesc: 'Upload your startup pitch deck (PDF) to discover who in your network can help',
     dragDrop: 'Drag and drop your pitch deck here, or click to browse',

@@ -101,22 +101,22 @@
 .pillGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 
 .pill {
-  border-radius: 999px; border: 1px solid rgba(146,179,221,0.20); background: rgba(255,255,255,0.04);
-  color: var(--text); padding: 6px 12px; display: inline-flex; align-items: center;
-  justify-content: center; gap: 6px; text-align: center; font-size: 0.75rem; line-height: 1.2;
-  cursor: pointer; white-space: nowrap; font-family: inherit; font-weight: 500; transition: .18s ease;
+  border-radius: 999px; border: 2px solid rgba(146,179,221,0.20); background: rgba(255,255,255,0.04);
+  color: var(--text); min-height: 42px; padding: 10px 14px; display: inline-flex; align-items: center;
+  justify-content: center; gap: 8px; text-align: center; font-size: 0.92rem; line-height: 1.2;
+  cursor: pointer; white-space: nowrap; font-family: inherit; font-weight: 700; transition: .18s ease;
 }
 .pill:hover { background: rgba(255,255,255,0.07); border-color: rgba(146,179,221,0.34); }
-.pillSel { composes: pill; background: #3b82f633; border-color: rgba(59,130,246,0.5); color: #93c5fd; box-shadow: 0 0 0 2px rgba(59,130,246,0.15) inset; }
-.pillBlu { composes: pill; background: #3b82f633; border-color: rgba(59,130,246,0.5); color: #93c5fd; }
+.pillSel { composes: pill; background: linear-gradient(135deg, rgba(24,210,164,0.22), rgba(31,200,201,0.12)); border-color: rgba(24,210,164,0.52); color: #f0fff9; box-shadow: 0 0 0 2px rgba(24,210,164,0.12) inset; }
+.pillBlu { composes: pill; background: linear-gradient(135deg, rgba(77,163,255,0.22), rgba(47,125,246,0.12)); border-color: rgba(77,163,255,0.52); color: #eff7ff; }
 
 /* ─── Chips Area ───────────────────── */
 .ca { border: 2px solid rgba(146,179,221,0.18); background: rgba(255,255,255,0.025); border-radius: 18px; padding: 12px; display: grid; gap: 12px; overflow: visible; }
 .cw { display: flex; flex-wrap: wrap; gap: 10px; }
 
 .chip { composes: pill; }
-.chipC { composes: chip; background: #3b82f633; border-color: rgba(59,130,246,0.5); color: #93c5fd; }
-.chipI { composes: chip; background: #3b82f633; border-color: rgba(59,130,246,0.5); color: #93c5fd; }
+.chipC { composes: chip; background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.25); color: #ffffff; }
+.chipI { composes: chip; background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.25); color: #ffffff; }
 
 .dismiss { width: 18px; height: 18px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; background: rgba(255,255,255,0.12); color: inherit; line-height: 0; flex-shrink: 0; border: none; cursor: pointer; padding: 0; }
 .dismiss:hover { background: rgba(255,255,255,0.22); }

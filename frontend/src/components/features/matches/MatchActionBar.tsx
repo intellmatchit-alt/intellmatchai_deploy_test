@@ -74,7 +74,7 @@ export function MatchActionBar({
         <button
           onClick={() => setConnectOpen(true)}
           disabled={isUpdating}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-transparent text-emerald-400 border border-emerald-400 hover:bg-emerald-400/10 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-400 text-[#042820] hover:bg-emerald-500 transition-colors disabled:opacity-50"
         >
           <PersonAvailable24Regular className="w-4 h-4" />
           {ma.connect}
@@ -83,7 +83,7 @@ export function MatchActionBar({
         <button
           onClick={() => onStatusChange(dismissStatus)}
           disabled={isUpdating}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-transparent text-red-400 border border-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-400 text-[#042820] hover:bg-red-500 transition-colors disabled:opacity-50"
         >
           <Dismiss24Regular className="w-4 h-4" />
           {ma.dismiss}
@@ -92,7 +92,7 @@ export function MatchActionBar({
         <button
           onClick={() => onStatusChange('ARCHIVED')}
           disabled={isUpdating}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-transparent text-blue-600 border border-blue-600 hover:bg-blue-600/10 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-400 text-[#042820] hover:bg-emerald-500 transition-colors disabled:opacity-50"
         >
           <Archive24Regular className="w-4 h-4" />
           {ma.archive}

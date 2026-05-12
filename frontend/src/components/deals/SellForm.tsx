@@ -313,7 +313,7 @@ export function SellForm({ deal, onSubmit, onCancel, isSubmitting }: SellFormPro
     return () => clearTimeout(timer);
   }, [deal, productName, solutionType, domain, companySize, targetDescription, title, buyerTags, priceRange, salesTimeline, deliveryModel, industryFocusTags, idealCustomerProfile, targetMarketLocation, providerType, capabilities, deliveryModeCapability]);
 
-  // ── Document extraction (v4.1: applies all required + optional fields) ──
+  // ── Document extraction ──────────────────────────────────────────
   const handleDocExtracted = (data: ExtractedDealData) => {
     if (data.productName) setProductName(data.productName);
     if (data.solutionType) setSolutionType(data.solutionType);
@@ -323,27 +323,10 @@ export function SellForm({ deal, onSubmit, onCancel, isSubmitting }: SellFormPro
     if (data.title) setTitle(data.title);
     if (data.priceRange) setPriceRange(data.priceRange);
     if (data.timeline) setSalesTimeline(data.timeline);
-
-    // v4.1: REQUIRED fields previously absent from extraction
-    const industriesFromAI = data.industryFocus?.length
-      ? data.industryFocus
-      : (Array.isArray(data.metadata?.industryFocusTags) ? data.metadata!.industryFocusTags : []);
-    if (industriesFromAI.length) setIndustryFocusTags(industriesFromAI.map(String));
-
-    const buyersFromAI = data.idealBuyerType?.length
-      ? data.idealBuyerType
-      : (Array.isArray(data.metadata?.idealBuyerType) ? data.metadata!.idealBuyerType : []);
-    if (buyersFromAI.length) setBuyerTags(buyersFromAI.map(String));
-
-    // Top-level fields with metadata fallback for older API payloads
-    const icp = data.idealCustomerProfile || data.metadata?.idealCustomerProfile;
-    if (icp) setIdealCustomerProfile(icp);
-    const dModel = data.deliveryModel || data.metadata?.deliveryModel;
-    if (dModel) setDeliveryModel(dModel);
-    const loc = data.targetMarketLocation || data.metadata?.targetMarketLocation;
-    if (loc) setTargetMarketLocation(loc);
-
     if (data.metadata) {
+      if (data.metadata.deliveryModel) setDeliveryModel(data.metadata.deliveryModel);
+      if (data.metadata.targetMarketLocation) setTargetMarketLocation(data.metadata.targetMarketLocation);
+      if (data.metadata.idealCustomerProfile) setIdealCustomerProfile(data.metadata.idealCustomerProfile);
       if (data.metadata.providerType) setProviderType(data.metadata.providerType as DealTargetEntityType);
       if (data.metadata.capabilities) setCapabilities(Array.isArray(data.metadata.capabilities) ? data.metadata.capabilities : []);
       if (data.metadata.deliveryModeCapability) setDeliveryModeCapability(Array.isArray(data.metadata.deliveryModeCapability) ? data.metadata.deliveryModeCapability : []);

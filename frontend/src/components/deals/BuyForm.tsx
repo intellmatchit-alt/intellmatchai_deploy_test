@@ -318,7 +318,7 @@ export function BuyForm({ deal, onSubmit, onCancel, isSubmitting }: BuyFormProps
     return () => clearTimeout(timer);
   }, [deal, problemStatement, solutionType, domain, companySize, targetEntityType, title, requirementTags, budgetRange, neededTimeline, buyingStage, targetMarketLocation, deliveryMode, idealProviderProfile, relevantIndustryTags, buyerRole]);
 
-  // ── Document extraction (v4.1: applies all required + optional fields) ──
+  // ── Document extraction ──────────────────────────────────────────
   const handleDocExtracted = (data: ExtractedDealData) => {
     if (data.problemStatement) setProblemStatement(data.problemStatement);
     if (data.solutionType) setSolutionType(data.solutionType);
@@ -328,34 +328,15 @@ export function BuyForm({ deal, onSubmit, onCancel, isSubmitting }: BuyFormProps
     if (data.title) setTitle(data.title);
     if (data.priceRange) setBudgetRange(data.priceRange);
     if (data.timeline) setNeededTimeline(data.timeline);
-
-    // v4.1: REQUIRED fields previously absent from extraction
-    const buyingStageFromAI = data.buyingStage || data.metadata?.buyingStage;
-    if (buyingStageFromAI) setBuyingStage(buyingStageFromAI);
-
-    const industriesFromAI = data.relevantIndustry?.length
-      ? data.relevantIndustry
-      : (Array.isArray(data.metadata?.relevantIndustryTags) ? data.metadata!.relevantIndustryTags : []);
-    if (industriesFromAI.length) setRelevantIndustryTags(industriesFromAI.map(String));
-
-    // v4.1: requirements — prefer the new array, fall back to legacy comma
-    // string. We accept tags outside BUY_REQUIREMENT_TAGS so the AI's
-    // free-text additions aren't dropped (UI renders them below).
-    const reqArray: string[] = data.requirementTags?.length
-      ? data.requirementTags
-      : (Array.isArray(data.metadata?.mustHaveRequirements)
-          ? data.metadata!.mustHaveRequirements
-          : (data.requirements ? data.requirements.split(',').map(r => r.trim()).filter(Boolean) : []));
-    if (reqArray.length) setRequirementTags(reqArray);
-
-    // Optional fields (top-level + metadata fallbacks)
-    const deliveryModeFromAI = data.deliveryMode || data.metadata?.deliveryMode;
-    if (deliveryModeFromAI) setDeliveryMode(deliveryModeFromAI);
-    const locFromAI = data.targetMarketLocation || data.metadata?.targetMarketLocation;
-    if (locFromAI) setTargetMarketLocation(locFromAI);
-    const profileFromAI = data.idealProviderProfile || data.metadata?.idealProviderProfile;
-    if (profileFromAI) setIdealProviderProfile(profileFromAI);
-    if (data.metadata?.buyerRole) setBuyerRole(data.metadata.buyerRole);
+    if (data.requirements) {
+      setRequirementTags(data.requirements.split(',').map(r => r.trim()).filter(r => BUY_REQUIREMENT_TAGS.includes(r)));
+    }
+    if (data.metadata) {
+      if (data.metadata.deliveryMode) setDeliveryMode(data.metadata.deliveryMode);
+      if (data.metadata.targetMarketLocation) setTargetMarketLocation(data.metadata.targetMarketLocation);
+      if (data.metadata.idealProviderProfile) setIdealProviderProfile(data.metadata.idealProviderProfile);
+      if (data.metadata.buyerRole) setBuyerRole(data.metadata.buyerRole);
+    }
   };
 
   // ── Submit ───────────────────────────────────────────────────────
@@ -511,9 +492,9 @@ export function BuyForm({ deal, onSubmit, onCancel, isSubmitting }: BuyFormProps
               </select>
             </div>
 
-            {/* Must-Have Requirements — canned pills + any AI-extracted custom tags */}
+            {/* Must-Have Requirements */}
             <div className={b.f}><span className={b.lbl}>{t.deals?.mustHaveRequirements || 'Must-Have Requirements'}<span className={b.req}>*</span></span>
-              <div className={b.msr}>{Array.from(new Set([...BUY_REQUIREMENT_TAGS, ...requirementTags])).map(v => (<button key={v} type="button" onClick={() => toggleRequirement(v)} className={requirementTags.includes(v) ? b.pSel : b.pill}>{requirementTags.includes(v) && '✓ '}{v}</button>))}</div>
+              <div className={b.msr}>{BUY_REQUIREMENT_TAGS.map(v => (<button key={v} type="button" onClick={() => toggleRequirement(v)} className={requirementTags.includes(v) ? b.pSel : b.pill}>{requirementTags.includes(v) && '✓ '}{v}</button>))}</div>
             </div>
 
             {/* Delivery Mode */}

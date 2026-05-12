@@ -2633,7 +2633,6 @@ export const ar: Translations = {
     viewProject: 'عرض المشروع',
     addAnother: 'إضافة مشروع آخر',
     requiredFields: 'العنوان والملخص مطلوبان',
-    lookingForRequired: 'اختر خيار "الباحث عن" واحدًا على الأقل قبل تشغيل المطابقة.',
     // Form fields
     basicInfo: 'المعلومات الأساسية',
     projectTitle: 'عنوان المشروع',
@@ -2788,7 +2787,6 @@ export const ar: Translations = {
   pitch: {
     title: 'العرض التقديمي',
     subtitle: 'ارفع عرضك التقديمي للعثور على أفضل جهات الاتصال في شبكتك',
-    matchTargetsRequired: 'اختر هدف مطابقة واحدًا على الأقل قبل تشغيل المطابقة.',
     uploadTitle: 'رفع العرض التقديمي',
     uploadDesc: 'ارفع عرض شركتك الناشئة (PDF) لاكتشاف من في شبكتك يمكنه المساعدة',
     dragDrop: 'اسحب وأفلت عرضك التقديمي هنا، أو انقر للتصفح',

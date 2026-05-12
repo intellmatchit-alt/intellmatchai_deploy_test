@@ -34,8 +34,6 @@ import {
 import { HardFilterStatus, MatchLevel } from '../common/matching-common.types';
 import { determineMatchLevel, isSparseRecord, generateMatchId } from '../common/matching-common.utils';
 import { buildProviderFromUser, buildProviderFromContact, UserWithRelations, ContactWithRelations } from './provider-profile.mapper';
-import { targetDedupeKeys } from './lookingForEnhancedScorer';
-import { EXCLUDE_TEST_ACCOUNTS, EXCLUDE_TEST_ACCOUNTS_NULLABLE } from './test-account-filter';
 
 const config = DEFAULT_PROJECT_CONFIG;
 
@@ -145,19 +143,9 @@ const COMPONENT_META: Record<string, { label: string; descFn: (score: number, pr
 };
 
 function buildRichScoreBreakdown(breakdown: any, provider: ProviderProfile, intent: ProjectIntent) {
-  // Read from `componentScoreMap` (the legacy flat lookup). The richer
-  // `componentScores` array is also available but the adapter rebuilds its
-  // own evidence/penalty rows below, so the flat map is sufficient here.
-  const flat: Record<string, number> | undefined =
-    breakdown?.componentScoreMap ??
-    (Array.isArray(breakdown?.componentScores)
-      ? Object.fromEntries(
-          breakdown.componentScores.map((c: any) => [c.name, c.score]),
-        )
-      : breakdown?.componentScores);
-  if (!flat) return [];
+  if (!breakdown?.componentScores) return [];
   const policy = getPolicyForIntent(intent, config);
-  return Object.entries(flat)
+  return Object.entries(breakdown.componentScores)
     .map(([name, rawScore]) => {
       const score = rawScore as number;
       const weight = (policy.weights as any)[name] || 0;
@@ -228,12 +216,9 @@ export async function advancedFindMatches(
   const projectSectorIds = project.sectors.map((s: any) => s.sectorId);
   const projectSkillIds = project.skillsNeeded.map((s: any) => s.skillId);
 
-  // Exclude seed/test accounts (RFC 2606 reserved domains + synthetic
-  // patterns the seed scripts emit). See test-account-filter.ts.
   const userWhere: any = {
     id: { not: userId },
     isActive: true,
-    ...EXCLUDE_TEST_ACCOUNTS,
     OR: [
       ...(projectSectorIds.length ? [{ userSectors: { some: { sectorId: { in: projectSectorIds } } } }] : []),
       ...(projectSkillIds.length ? [{ userSkills: { some: { skillId: { in: projectSkillIds } } } }] : []),
@@ -252,11 +237,8 @@ export async function advancedFindMatches(
     take: 200,
   }) as unknown as UserWithRelations[];
 
-  // 3. Fetch contact candidates (nullable email — use null-safe filter).
-  const contactWhere: any = {
-    ownerId: userId,
-    ...EXCLUDE_TEST_ACCOUNTS_NULLABLE,
-  };
+  // 3. Fetch contact candidates
+  const contactWhere: any = { ownerId: userId };
   if (organizationId) {
     contactWhere.OR = [{ ownerId: userId }, { organizationId }];
     delete contactWhere.ownerId;
@@ -343,95 +325,12 @@ export async function advancedFindMatches(
 
   // 6. Sort by score
   results.sort((a, b) => b.score - a.score || b.confidence - a.confidence);
+  const topResults = results.slice(0, 50);
 
-  // 6b. Dedupe by target identity BEFORE persisting. The same person can be
-  // both a registered User and someone's manual Contact (often with diverging
-  // email but matching name+company). Keep the higher-scoring row per person
-  // so `ProjectMatch._count` agrees with what the UI actually shows.
-  const userById = new Map(users.map((u) => [u.id, u]));
-  const contactById = new Map(contacts.map((c) => [c.id, c]));
-  const identityFor = (r: typeof results[number]) => {
-    if (r.type === 'user') {
-      const u = userById.get(r.provider.id);
-      return {
-        userId: r.provider.id,
-        contactId: null,
-        email: u?.email ?? null,
-        linkedinUrl: u?.linkedinUrl ?? null,
-        fullName: u?.fullName ?? r.provider.name,
-        company: u?.company ?? null,
-      };
-    }
-    const c = contactById.get(r.provider.id);
-    return {
-      userId: null,
-      contactId: r.provider.id,
-      email: c?.email ?? null,
-      linkedinUrl: c?.linkedinUrl ?? null,
-      fullName: c?.fullName ?? r.provider.name,
-      company: c?.company ?? null,
-    };
-  };
-
-  const parent = new Map<string, string>();
-  const find = (k: string): string => {
-    const p = parent.get(k);
-    if (!p || p === k) {
-      parent.set(k, k);
-      return k;
-    }
-    const root = find(p);
-    parent.set(k, root);
-    return root;
-  };
-  const union = (a: string, b: string) => {
-    const ra = find(a);
-    const rb = find(b);
-    if (ra !== rb) parent.set(ra, rb);
-  };
-
-  const resultKeys = results.map((r) => targetDedupeKeys(identityFor(r)));
-  for (const keys of resultKeys) {
-    if (!keys.length) continue;
-    for (const k of keys) find(k);
-    for (let i = 1; i < keys.length; i++) union(keys[0], keys[i]);
-  }
-
-  // Walk results in score-desc order; keep the first occurrence of each group.
-  // Prefer User rows over Contact rows when both belong to the same group at
-  // the same score (richer profile).
-  const dedupedByRoot = new Map<string, typeof results[number]>();
-  for (let i = 0; i < results.length; i++) {
-    const keys = resultKeys[i];
-    const root = keys.length ? find(keys[0]) : `anon:${i}`;
-    const existing = dedupedByRoot.get(root);
-    if (!existing) {
-      dedupedByRoot.set(root, results[i]);
-      continue;
-    }
-    // Prefer User row when scores are tied (already sorted desc).
-    if (
-      existing.score === results[i].score &&
-      existing.type === 'contact' &&
-      results[i].type === 'user'
-    ) {
-      dedupedByRoot.set(root, results[i]);
-    }
-  }
-  const dedupedResults = Array.from(dedupedByRoot.values()).sort(
-    (a, b) => b.score - a.score || b.confidence - a.confidence,
-  );
-
-  const topResults = dedupedResults.slice(0, 50);
-
-  logger.info('Advanced scoring complete', {
-    scored: results.length,
-    deduped: dedupedResults.length,
-    kept: topResults.length,
-  });
+  logger.info('Advanced scoring complete', { scored: results.length, kept: topResults.length });
 
   // 7. Generate LLM explanations for top matches
-  const llmService = new LLMService('You are a senior analyst briefing a busy founder on a candidate match. Specific, evidence-led, no marketing language. Cite concrete artifacts (skills, sectors, roles, markets, stages) — never generic praise. Always respond with valid JSON.');
+  const llmService = new LLMService('You are a professional networking match analyst. You explain why two professionals are a good match for collaboration. Be specific, concise, and professional. Always respond with valid JSON.');
   const llmExplanations: Map<number, { reasons: string[]; summary: string; suggestedMessage: string }> = new Map();
 
   if (llmService.isAvailable() && topResults.length > 0) {
@@ -449,7 +348,7 @@ export async function advancedFindMatches(
           const pCompany = r.provider.description || '';
           const pType = r.provider.counterpartType.toLowerCase().replace('_', ' ');
 
-          const prompt = `Brief the project owner on whether this person is worth reaching out to.
+          const prompt = `Analyze this project-to-person match and explain why they are a good fit.
 
 PROJECT:
 - Title: "${projectProfile.projectTitle}"
@@ -465,31 +364,27 @@ MATCHED PERSON:
 - Background: ${pCompany}
 - Their sectors: ${(r.provider.sectors || []).join(', ')}
 - Their skills: ${(r.provider.skills || []).join(', ')}
-- Match type (inferred): ${pType}
+- Match type: ${pType}
 
-MATCH DATA (engine signals — for your reasoning, NOT to be repeated verbatim):
+MATCH DATA:
+- Overall score: ${r.score}/100
 - Shared sectors: ${r.matchedSectors.join(', ') || 'none'}
 - Shared skills: ${r.matchedSkills.join(', ') || 'none'}
+- Confidence: ${Math.round(r.confidence * 100)}%
 - Match level: ${r.matchLevel}
 
-Respond with JSON exactly in this shape:
+Respond with JSON:
 {
-  "reasons": ["...", "...", "...", "..."],
-  "summary": "Two sentences as described below.",
-  "suggestedMessage": "Two-sentence outreach as described below."
+  "reasons": ["reason1", "reason2", "reason3", "reason4"],
+  "summary": "A 2-3 sentence explanation of why this is a good match, mentioning the score and what makes this person valuable for the project.",
+  "suggestedMessage": "A personalized 2-sentence outreach message from the project owner to this person."
 }
 
 RULES:
-- "summary" is exactly TWO sentences. It MUST NOT restate the numeric score, percentage, "match level", or words like "weak/partial/good/excellent match" (the UI already shows the score and band).
-  - Sentence 1: name the strongest concrete fit between this person and this project (e.g. a specific shared skill applied to a specific need; a shared sector; a recent role that maps to the project's stage).
-  - Sentence 2: name the most important gap or thing to verify before reaching out. If the person's inferred match type does not match the project's "Looking for" list, say that explicitly (e.g. "Profile reads as TALENT signals; an investor track record or check-size detail isn't visible.").
-- Each of the four "reasons":
-  - cites ONE concrete artifact (a specific skill name, sector, role, market, stage, or shared experience),
-  - ties it to ONE specific project need from the prompt,
-  - is under 25 words,
-  - does NOT start with the person's name.
-- "suggestedMessage" references one specific shared signal (a skill or sector by name, or a specific aspect of the project) — not generic openers like "your background caught my attention".
-- Do NOT use any of these phrases anywhere in the output: "could be valuable", "potential for collaboration", "valuable expertise", "valuable perspective", "would bring", "great fit", "strong potential", "caught my attention", "valuable potential partner".`;
+- Each reason should be specific and mention concrete skills, experience, or qualifications
+- Explain WHY the score is what it is (what contributed positively and what might be missing)
+- Be honest about the match quality - don't oversell weak matches
+- The summary should mention the ${r.score}% score and explain what it means`;
 
           const response = await llmService.callLLM(prompt, undefined, { maxTokens: 400, temperature: 0.3 });
           if (response) {
@@ -532,97 +427,29 @@ RULES:
       summary = llmExpl.summary;
       suggestedMessage = llmExpl.suggestedMessage;
     } else {
-      // Deterministic fallback — used when the LLM is unavailable. Produces
-      // the same shape as the LLM (2-sentence summary, 4 evidence-led
-      // reasons, 1 outreach line) without restating the numeric score.
-      const components: Record<string, number> =
-        r.breakdown?.componentScoreMap ??
-        (Array.isArray(r.breakdown?.componentScores)
-          ? Object.fromEntries(
-              r.breakdown.componentScores.map((c: any) => [c.name, c.score]),
-            )
-          : (r.breakdown?.componentScores as any) || {});
-      const isMeta = (k: string) => ['lookingForFit', 'counterpartFit', 'completenessFit'].includes(k);
-      const sortedComponents = Object.entries(components)
-        .filter(([k]) => !isMeta(k))
-        .sort(([, a], [, b]) => (b as number) - (a as number));
-      const topComponent = sortedComponents[0];
-      const weakestComponent = sortedComponents.length
-        ? sortedComponents[sortedComponents.length - 1]
-        : null;
-      const humanize = (k: string) =>
-        k.replace(/Fit$|Coverage$|Precision$/, '').replace(/([A-Z])/g, ' $1').trim().toLowerCase();
-      const projectAskedFor = projectProfile.lookingFor || [];
-      const counterpartIsAsked = projectAskedFor
-        .map((x: string) => String(x).toUpperCase())
-        .includes(String(r.provider.counterpartType).toUpperCase());
-
-      // Reasons — each cites one artifact tied to a project need.
+      // Fallback template reasons
       reasons = [];
-      const projectSkill = (projectProfile.skillsNeeded || [])[0];
-      const projectSector = (projectProfile.industrySectors || [])[0];
+      if (pTitle) {
+        reasons.push(`${pName}'s role as ${pTitle} aligns with your search for a ${pType}.`);
+      } else {
+        reasons.push(`${pName} is identified as a potential ${pType} for your project.`);
+      }
       if (r.matchedSkills.length > 0) {
-        const sk = r.matchedSkills.slice(0, 2).join(', ');
-        reasons.push(
-          projectSkill
-            ? `Shares ${sk} — a skill the project lists under "${projectSkill}".`
-            : `Shares ${sk} with the project's stated skill needs.`,
-        );
+        reasons.push(`Shared skills: ${r.matchedSkills.slice(0, 4).join(', ')}${r.matchedSkills.length > 4 ? ` and ${r.matchedSkills.length - 4} more` : ''}.`);
       }
       if (r.matchedSectors.length > 0) {
-        const sc = r.matchedSectors[0];
-        reasons.push(
-          projectSector && projectSector.toLowerCase() !== sc.toLowerCase()
-            ? `Sector experience in ${sc} adjacent to the project's ${projectSector} focus.`
-            : `Sector experience in ${sc} matches the project domain.`,
-        );
+        reasons.push(`Industry alignment in ${r.matchedSectors.slice(0, 3).join(', ')}.`);
       }
-      if (pTitle) {
-        reasons.push(
-          `Recent role as ${pTitle} maps to the project's ${projectProfile.projectStage || 'current'} stage.`,
-        );
-      }
+      const components = r.breakdown?.componentScores || {};
+      const topComponent = Object.entries(components)
+        .filter(([k]) => !['lookingForFit', 'counterpartFit', 'completenessFit'].includes(k))
+        .sort(([, a], [, b]) => (b as number) - (a as number))[0];
       if (topComponent && (topComponent[1] as number) > 50) {
-        reasons.push(`Strong ${humanize(topComponent[0])} signal (${Math.round(topComponent[1] as number)}%).`);
-      } else if (counterpartIsAsked) {
-        reasons.push(`Profile aligns with the "${pType}" role the project asked for.`);
+        const label = (topComponent[0] as string).replace(/([A-Z])/g, ' $1').trim().toLowerCase();
+        reasons.push(`Strong ${label} (${Math.round(topComponent[1] as number)}%).`);
       }
-      // If we still don't have 4, pad with a generic-but-specific sector/skill mention.
-      while (reasons.length < 4 && (r.matchedSkills.length || r.matchedSectors.length)) {
-        if (r.matchedSkills.length > reasons.length) {
-          const sk = r.matchedSkills[reasons.length];
-          if (sk && !reasons.some((x) => x.includes(sk))) {
-            reasons.push(`Hands-on with ${sk}, relevant to the project's technical needs.`);
-            continue;
-          }
-        }
-        break;
-      }
-      reasons = reasons.slice(0, 4);
-
-      // Summary — 2 sentences, no score restating.
-      const leadParts: string[] = [];
-      if (r.matchedSkills.length) leadParts.push(`overlap on ${r.matchedSkills.slice(0, 2).join(', ')}`);
-      if (r.matchedSectors.length) leadParts.push(`sector experience in ${r.matchedSectors[0]}`);
-      const lead = leadParts.length
-        ? `Strongest fit is ${leadParts.join(' and ')}.`
-        : `Limited concrete overlap with the project's stated needs.`;
-      let gap = '';
-      if (!counterpartIsAsked) {
-        const askedShort = projectAskedFor.length
-          ? projectAskedFor.map((x: string) => String(x).toLowerCase().replace(/_/g, ' ')).slice(0, 2).join(' or ')
-          : 'the requested role';
-        gap = ` Profile reads as ${pType} signals; this project explicitly asked for ${askedShort}.`;
-      } else if (weakestComponent && (weakestComponent[1] as number) < 30) {
-        gap = ` What to verify before reaching out: ${humanize(weakestComponent[0])}.`;
-      }
-      summary = `${lead}${gap}`;
-
-      // Outreach — references one specific shared signal.
-      const hook = r.matchedSkills[0] || r.matchedSectors[0] || projectSkill || projectSector;
-      suggestedMessage = hook
-        ? `Hi ${pName.split(' ')[0]}, I'm building "${projectProfile.projectTitle}" and want to compare notes on ${hook}. Open to a 20-minute conversation this week?`
-        : `Hi ${pName.split(' ')[0]}, I'm building "${projectProfile.projectTitle}" and would value 20 minutes of your perspective. Open to connecting this week?`;
+      summary = `${pName} is a ${r.matchLevel.replace('_', ' ').toLowerCase()} match as ${pType} with a score of ${r.score}% and ${Math.round(r.confidence * 100)}% confidence.`;
+      suggestedMessage = `Hi ${pName.split(' ')[0]}, I'm working on "${projectProfile.projectTitle}" and your background in ${r.matchedSectors[0] || r.matchedSkills[0] || pType} caught my attention. Would you be interested in connecting?`;
     }
 
     const match = await prisma.projectMatch.create({

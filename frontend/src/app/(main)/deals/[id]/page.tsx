@@ -31,11 +31,8 @@ import {
   getDealResults,
   calculateDealMatches,
   updateDealMatchStatus,
-  getDisplayScore,
-  getMatchLevelLabel,
   Deal,
   DealMatchResult,
-  DealHelperMatchResult,
   DealMatchStatus,
   DealMatchCategory,
   getCategoryLabel,
@@ -47,20 +44,14 @@ import CollaborateButton from '@/components/features/collaboration/CollaborateBu
 import { MatchActionBar, EditableIceBreakers, MatchCard as SharedMatchCard, type MatchCardData } from '@/components/features/matches';
 import TeamMembersList from '@/components/features/collaboration/TeamMembersList';
 
-/**
- * Map DealMatchResult to MatchCardData for the shared MatchCard.
- *
- * v4.1: prefer `finalScore` (the post-AI score). Fall back to legacy
- * `score` so old saved matches still render. Card / badge / detail must
- * always agree — they all derive from this same getDisplayScore() call.
- */
+/** Map DealMatchResult to MatchCardData for the shared MatchCard */
 function dealMatchToCardData(result: DealMatchResult, dealTitle: string): MatchCardData {
   const contact = result.contact;
   return {
     id: result.id,
     source: 'deal',
     sourceTitle: dealTitle,
-    score: getDisplayScore(result) || 0,
+    score: result.score || 0,
     contactId: contact.id || '',
     name: contact.fullName || contact.name || 'Unknown',
     company: contact.company || undefined,
@@ -97,57 +88,6 @@ function DealMatchCard({
   return (
     <div className={`animate-deal-card-enter ${staggerClass} ${result.status === 'IGNORED' ? 'opacity-50' : ''}`}>
       <SharedMatchCard match={cardData} onClick={onClick} onStatusChange={onStatusChange} hideSource t={t} />
-    </div>
-  );
-}
-
-/**
- * Helper / introducer match card — distinct from direct match.
- * Renders "why this person can help" instead of buyer/seller fit.
- * v4.1: helperType + helperExplanation come from the engine; the FE
- * never recomputes the band — `matchLevel` is the source of truth.
- */
-function DealHelperCard({ result, index }: { result: DealHelperMatchResult; index: number }) {
-  const staggerClass = `stagger-${Math.min(index + 1, 10)}`;
-  const score = result.finalScore;
-  const bandLabel = getMatchLevelLabel(result.matchLevel as any) || 'Match';
-  const bandTone =
-    result.matchLevel === 'EXCELLENT' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-    : result.matchLevel === 'VERY_GOOD' ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25'
-    : result.matchLevel === 'GOOD' ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/25'
-    : result.matchLevel === 'PARTIAL' ? 'bg-amber-500/15 text-amber-300 border-amber-500/25'
-    : 'bg-neutral-500/15 text-th-text-t border-neutral-500/25';
-  const helperTypeColor: Record<string, string> = {
-    INSIDER: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
-    INTRODUCER: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/25',
-    INFLUENCER: 'bg-violet-500/15 text-violet-300 border-violet-500/25',
-    ADVOCATE: 'bg-blue-500/15 text-blue-300 border-blue-500/25',
-    BROKER: 'bg-orange-500/15 text-orange-300 border-orange-500/25',
-  };
-  const typeTone = helperTypeColor[result.helperType] || 'bg-neutral-500/15 text-th-text-t border-neutral-500/25';
-
-  return (
-    <div className={`animate-deal-card-enter ${staggerClass} bg-th-surface backdrop-blur-sm border border-th-border rounded-xl p-4 hover:border-emerald-500/30 transition-colors`}>
-      <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-300 font-semibold">
-          {result.helperName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-medium text-th-text truncate">{result.helperName}</span>
-            <span className={`text-xs px-2 py-0.5 rounded-md border ${typeTone}`}>{result.helperTypeLabel || result.helperType}</span>
-            <span className={`text-xs px-2 py-0.5 rounded-md border ${bandTone}`}>{score}/100 · {bandLabel}</span>
-          </div>
-          {(result.helperTitle || result.helperOrganization) && (
-            <p className="text-sm text-th-text-t truncate">
-              {[result.helperTitle, result.helperOrganization].filter(Boolean).join(' · ')}
-            </p>
-          )}
-          {result.helperExplanation && (
-            <p className="text-sm text-th-text-s mt-2 leading-snug">{result.helperExplanation}</p>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
@@ -320,7 +260,6 @@ export default function DealDetailPage() {
   const router = useRouter();
   const [deal, setDeal] = useState<Deal | null>(null);
   const [results, setResults] = useState<DealMatchResult[]>([]);
-  const [helperResults, setHelperResults] = useState<DealHelperMatchResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCalculating, setIsCalculating] = useState(false);
   const [summary, setSummary] = useState<{ totalMatches: number; avgScore: number; topCategory: DealMatchCategory | null } | null>(null);
@@ -335,7 +274,6 @@ export default function DealDetailPage() {
       const data = await getDealResults(params.id);
       setDeal(data.deal);
       setResults(data.results);
-      setHelperResults(data.helperResults || []);
       setSummary(data.summary);
 
       // If still processing, poll for updates
@@ -585,7 +523,7 @@ export default function DealDetailPage() {
                   ))}
                 </div>
 
-                {/* Direct match results */}
+                {/* Results */}
                 {filteredResults.length > 0 ? (
                   <div className="space-y-2">
                     {filteredResults.map((result, index) => (
@@ -607,7 +545,7 @@ export default function DealDetailPage() {
                       />
                     ))}
                   </div>
-                ) : deal.status !== 'PROCESSING' && helperResults.length === 0 && (
+                ) : deal.status !== 'PROCESSING' && (
                   <div className="relative overflow-hidden bg-gradient-to-br from-neutral-900/50 to-neutral-900/80 backdrop-blur-sm border border-th-border rounded-xl p-12 text-center">
                     <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 ${heroGlow} rounded-full blur-3xl opacity-50`} />
                     <div className="relative">
@@ -619,26 +557,6 @@ export default function DealDetailPage() {
                         {t.deals?.noMatchesDesc || 'Try adding more contacts or adjusting your criteria'}
                       </p>
                     </div>
-                  </div>
-                )}
-
-                {/* v4.1 Helper / Connector matches — separate section.
-                    Answers "who can help me reach the counterparty", not "who IS the counterparty". */}
-                {matchStatusFilter === 'active' && helperResults.length > 0 && (
-                  <div className="space-y-2 mt-4">
-                    <div className="flex items-center gap-2 mt-2">
-                      <People24Regular className="w-5 h-5 text-emerald-400" />
-                      <h3 className="text-base font-semibold text-th-text">
-                        {isSell ? 'Connectors who can help reach buyers' : 'Connectors who can help reach providers'}
-                      </h3>
-                      <span className="text-xs text-th-text-m">({helperResults.length})</span>
-                    </div>
-                    <p className="text-xs text-th-text-m -mt-1 mb-1">
-                      People in your network who may introduce, recommend, or open doors for this deal.
-                    </p>
-                    {helperResults.map((h, i) => (
-                      <DealHelperCard key={h.id} result={h} index={i} />
-                    ))}
                   </div>
                 )}
               </>

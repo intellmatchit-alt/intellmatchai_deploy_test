@@ -653,108 +653,9 @@ export interface ScrapInProfile {
 }
 
 /**
- * v2 API response envelope (shared by /v2/fetch/persons, /v2/search/persons, etc.)
- */
-interface ScrapInV2Envelope<T = any> {
-  success: boolean;
-  data: T | null;
-  error: { code?: string; message?: string; details?: any } | null;
-  quotas?: {
-    creditsConsumed?: number;
-    workspace?: { credits?: { left?: number; used?: number; total?: number } };
-  };
-  metadata?: { requestId?: string; updatedAt?: string; executionTimeMs?: number };
-}
-
-/**
- * Convert v2 ISO date string to v1 {month, year} object.
- */
-function isoToMonthYear(iso?: string | null): { month: number; year: number } | undefined {
-  if (!iso) return undefined;
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return undefined;
-  return { month: d.getUTCMonth() + 1, year: d.getUTCFullYear() };
-}
-
-/**
- * Adapt v2 /v2/fetch/persons response → v1 ScrapInProfile shape so existing
- * consumers (enrich(), backend services, route handlers) keep working unchanged.
- */
-function adaptV2PersonToV1(v2: ScrapInV2Envelope<any>): ScrapInProfile {
-  const p = v2.data || {};
-  const adaptPosition = (pos: any) => ({
-    title: pos?.title,
-    companyName: pos?.companyName,
-    linkedInId: pos?.companyLinkedinId,
-    linkedInUrl: pos?.companyUrl,
-    companyLogo: pos?.companyLogoUrl,
-    companyLocation: pos?.companyLocation,
-    description: pos?.description,
-    contractType: pos?.contractType,
-    startEndDate: pos?.startEndDate
-      ? {
-          start: isoToMonthYear(pos.startEndDate.start),
-          end: pos.startEndDate.end ? isoToMonthYear(pos.startEndDate.end) : null,
-        }
-      : undefined,
-  });
-
-  const positionHistory = Array.isArray(p.experience) ? p.experience.map(adaptPosition) : [];
-  const educationHistory = Array.isArray(p.education)
-    ? p.education.map((edu: any) => ({
-        schoolName: edu?.schoolName,
-        degreeName: edu?.degreeName,
-        fieldOfStudy: edu?.fieldOfStudy,
-        description: edu?.description,
-        linkedInUrl: edu?.schoolUrl,
-        schoolLogo: edu?.schoolLogoUrl,
-        startEndDate: edu?.startEndDate
-          ? {
-              start: isoToMonthYear(edu.startEndDate.start),
-              end: edu.startEndDate.end ? isoToMonthYear(edu.startEndDate.end) : undefined,
-            }
-          : undefined,
-      }))
-    : [];
-
-  return {
-    success: true,
-    credits_consumed: v2.quotas?.creditsConsumed,
-    credits_left: v2.quotas?.workspace?.credits?.left,
-    metadata: {
-      source: 'v2',
-      request_id: v2.metadata?.requestId,
-      updatedAt: v2.metadata?.updatedAt,
-    },
-    person: {
-      publicIdentifier: p.publicId,
-      memberIdentifier: p.memberId,
-      linkedInUrl: p.linkedinUrl,
-      firstName: p.firstName,
-      lastName: p.lastName,
-      headline: p.headline,
-      location: p.location,
-      summary: p.summary,
-      photoUrl: p.photoUrl,
-      backgroundUrl: p.backgroundUrl,
-      openToWork: p.isOpenToWork,
-      premium: p.hasPremium,
-      connectionsCount: p.connectionsCount,
-      followerCount: p.followersCount,
-      positions: { positionsCount: positionHistory.length, positionHistory },
-      schools: { educationsCount: educationHistory.length, educationHistory },
-      skills: Array.isArray(p.skills) ? p.skills : [],
-      languages: Array.isArray(p.languages)
-        ? p.languages.map((l: any) => (typeof l === 'string' ? l : l?.name)).filter(Boolean)
-        : [],
-    },
-  };
-}
-
-/**
  * Search for LinkedIn profiles by name using ScrapIn Person Search API.
- * Returns multiple results, fuzzy matching. 1 credit per search (free on 404).
- * Endpoint: POST https://api.scrapin.io/v2/search/persons
+ * Returns multiple results, fuzzy matching, only 0.1 credits per search.
+ * Endpoint: POST https://api.scrapin.io/v1/enrichment/persons/search?apikey=
  */
 export interface ScrapInPersonResult {
   publicIdentifier?: string;
@@ -796,42 +697,27 @@ export async function searchPersonsWithScrapIn(
   try {
     console.log(`[ScrapIn] Person search: ${firstName} ${lastName || ''}${companyName ? ` at ${companyName}` : ''}`);
 
-    const body: any = { firstName };
+    const apiUrl = `https://api.scrapin.io/v1/enrichment/persons/search?apikey=${scrapInApiKey}`;
+
+    const body: any = { page: 1, firstName };
     if (lastName) body.lastName = lastName;
     if (companyName) body.companyName = companyName;
 
-    const response = await fetch('https://api.scrapin.io/v2/search/persons', {
+    const response = await fetch(apiUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${scrapInApiKey}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
 
-    const v2 = (await response.json()) as ScrapInV2Envelope<{ data?: any[]; metadata?: any }>;
+    const data: ScrapInSearchResponse = await response.json();
 
-    if (!v2.success || !v2.data?.data?.length) {
-      console.log('[ScrapIn] Person search: no results for', firstName, lastName || '', v2.error ? `| ${v2.error.message}` : '');
-      return [];
+    if (data.success && data.persons && data.persons.length > 0) {
+      console.log(`[ScrapIn] Person search found ${data.persons.length} results (${data.pagination?.totalResults} total) | Credits left: ${data.credits_left}`);
+      return data.persons;
     }
 
-    const persons: ScrapInPersonResult[] = v2.data.data.map((p: any) => ({
-      publicIdentifier: p.publicId,
-      linkedInUrl: p.linkedinUrl,
-      firstName: p.firstName,
-      lastName: p.lastName,
-      headline: p.headline,
-      currentPositionTitle: p.currentPositionTitle,
-      currentCompanyName: p.currentCompanyName,
-      currentCompanyLinkedinId: p.currentCompanyLinkedinId,
-      updateDate: p.updateDate,
-    }));
-
-    console.log(
-      `[ScrapIn] Person search found ${persons.length} results (${v2.data.metadata?.total ?? '?'} total) | Credits left: ${v2.quotas?.workspace?.credits?.left}`
-    );
-    return persons;
+    console.log('[ScrapIn] Person search: no results for', firstName, lastName || '');
+    return [];
   } catch (error) {
     console.error('[ScrapIn] Person search failed:', error);
     return [];
@@ -839,19 +725,66 @@ export async function searchPersonsWithScrapIn(
 }
 
 /**
- * Match a LinkedIn profile by name (v2 endpoint /v2/resolve/persons/name).
- * Disabled: v2 resolve endpoint is PAYG-only and async (webhook-based) — no Trial equivalent.
- * Has no external callers in the codebase; stubbed to keep the export surface stable.
+ * Match a LinkedIn profile by name using ScrapIn Match API.
+ * Returns 0 or 1 exact match. Used as fallback after person search.
+ * Endpoint: POST https://api.scrapin.io/v1/enrichment/match?apikey=
  */
 export async function matchWithScrapIn(firstName: string, lastName: string, companyName?: string): Promise<ScrapInProfile | null> {
-  console.warn('[ScrapIn] matchWithScrapIn is unavailable: /v2/resolve/persons/name requires PAYG plan + webhook receiver', { firstName, lastName, companyName });
-  return null;
+  const scrapInApiKey = process.env.SCRAPIN_API_KEY;
+
+  if (!scrapInApiKey) {
+    console.log('[ScrapIn] SCRAPIN_API_KEY not configured');
+    return null;
+  }
+
+  try {
+    console.log(`[ScrapIn] Matching profile: ${firstName} ${lastName}${companyName ? ` at ${companyName}` : ''}`);
+
+    const apiUrl = `https://api.scrapin.io/v1/enrichment/match?apikey=${scrapInApiKey}`;
+
+    const body: any = {
+      firstName,
+      lastName,
+      includes: {
+        includeCompany: true,
+        includeSummary: true,
+        includeFollowersCount: true,
+        includeSkills: true,
+        includeExperience: true,
+        includeEducation: true,
+      },
+      cacheDuration: '7d',
+    };
+
+    if (companyName) {
+      body.companyName = companyName;
+    }
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    const data: ScrapInProfile = await response.json();
+
+    if (data.success && data.person) {
+      console.log('[ScrapIn] Match found:', data.person.firstName, data.person.lastName, '| LinkedIn:', data.person.linkedInUrl);
+      console.log('[ScrapIn] Credits left:', data.credits_left, '| Cache:', data.metadata?.source);
+      return data;
+    }
+
+    console.log('[ScrapIn] No match found for:', firstName, lastName, '| Response:', JSON.stringify({ success: data.success, error: (data as any).error, credits_left: data.credits_left }));
+    return null;
+  } catch (error) {
+    console.error('[ScrapIn] Match failed:', error);
+    return null;
+  }
 }
 
 /**
- * Scrape LinkedIn profile using ScrapIn API (PRIMARY SOURCE).
- * Endpoint: POST https://api.scrapin.io/v2/fetch/persons (cached/Datalake — Trial-OK).
- * Response is adapted to the legacy v1 ScrapInProfile shape so consumers don't change.
+ * Scrape LinkedIn profile using ScrapIn API (PRIMARY SOURCE)
+ * Endpoint: POST https://api.scrapin.io/v1/enrichment/profile?apikey=
  */
 export async function scrapeWithScrapIn(linkedInUrl: string): Promise<ScrapInProfile | null> {
   const scrapInApiKey = process.env.SCRAPIN_API_KEY;
@@ -864,31 +797,44 @@ export async function scrapeWithScrapIn(linkedInUrl: string): Promise<ScrapInPro
   try {
     console.log('[ScrapIn] Scraping LinkedIn profile:', linkedInUrl);
 
-    const response = await fetch('https://api.scrapin.io/v2/fetch/persons', {
+    // ScrapIn v1 API - API key as query parameter
+    const apiUrl = `https://api.scrapin.io/v1/enrichment/profile?apikey=${scrapInApiKey}`;
+
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${scrapInApiKey}`,
       },
-      body: JSON.stringify({ url: linkedInUrl }),
+      body: JSON.stringify({
+        linkedInUrl,
+        includes: {
+          includeCompany: true,
+          includeSummary: true,
+          includeFollowersCount: true,
+          includeSkills: true,
+          includeLanguages: true,
+          includeExperience: true,
+          includeEducation: true,
+          includeCertifications: true,
+        },
+        cacheDuration: '7d', // Use ScrapIn's built-in 7-day cache
+      }),
     });
 
-    const v2 = (await response.json()) as ScrapInV2Envelope<any>;
+    const data: ScrapInProfile = await response.json();
 
-    if (!v2.success || !v2.data) {
-      console.log('[ScrapIn] API returned error:', v2.error?.message || 'No profile data');
-      return null;
+    if (data.success && data.person) {
+      console.log('[ScrapIn] Successfully scraped profile for:', data.person.firstName, data.person.lastName);
+      console.log('[ScrapIn] Credits left:', data.credits_left, '| Cache:', data.metadata?.source);
+      return data;
     }
 
-    const adapted = adaptV2PersonToV1(v2);
-    console.log(
-      '[ScrapIn] Successfully scraped profile for:',
-      adapted.person?.firstName,
-      adapted.person?.lastName,
-      '| Credits left:',
-      adapted.credits_left
-    );
-    return adapted;
+    if (!data.success) {
+      console.log('[ScrapIn] API returned error:', data.msg || data.title || 'Unknown error');
+    } else {
+      console.log('[ScrapIn] No profile data returned');
+    }
+    return null;
   } catch (error) {
     console.error('[ScrapIn] Scrape failed:', error);
     return null;
@@ -926,11 +872,31 @@ export interface ScrapInPostsResponse {
 }
 
 export async function fetchPostsWithScrapIn(linkedInUrl: string): Promise<ScrapInPost[]> {
-  // v2 equivalent (/v2/fetch/persons/posts/live) is PAYG-only and webhook-based.
-  // No Trial-accessible endpoint exists for activity posts. Returning [] keeps
-  // callers (explorer, deep-search routes) functional with empty post lists.
-  console.warn('[ScrapIn] fetchPostsWithScrapIn unavailable: /v2/fetch/persons/posts/live requires PAYG + webhook receiver', { linkedInUrl });
-  return [];
+  const scrapInApiKey = process.env.SCRAPIN_API_KEY;
+
+  if (!scrapInApiKey) {
+    return [];
+  }
+
+  try {
+    console.log('[ScrapIn] Fetching posts for:', linkedInUrl);
+
+    const apiUrl = `https://api.scrapin.io/v1/enrichment/persons/activities/posts?apikey=${scrapInApiKey}&linkedInUrl=${encodeURIComponent(linkedInUrl)}&page=1`;
+
+    const response = await fetch(apiUrl, { method: 'GET' });
+    const data: ScrapInPostsResponse = await response.json();
+
+    if (data.success && data.posts && data.posts.length > 0) {
+      console.log(`[ScrapIn] Found ${data.posts.length} posts | Credits left: ${data.credits_left}`);
+      return data.posts;
+    }
+
+    console.log('[ScrapIn] No posts found for:', linkedInUrl);
+    return [];
+  } catch (error) {
+    console.error('[ScrapIn] Fetch posts failed:', error);
+    return [];
+  }
 }
 
 /**

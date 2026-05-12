@@ -81,12 +81,6 @@ export interface PitchResponseDTO {
   processedAt: string | null;
   sectionsCount?: number;
   needsCount?: number;
-  /**
-   * Pitch metadata blob (matchIntent, businessModel, supportNeededTags, etc.).
-   * Required so the frontend can validate that the user has at least one
-   * Match Target selected before triggering find-matches.
-   */
-  metadata?: Record<string, unknown> | null;
 }
 
 export interface PitchProgressDTO {
@@ -164,23 +158,6 @@ export interface PitchMatchDTO {
   angleCategory: MatchAngleCategory | null;
   outreachDraft: string | null;
   status: PitchMatchStatus;
-  // Per-LookingFor / matchIntent persistence (populated after the controller's
-  // enrichment writes them back). Fields are nullable so older saved matches
-  // hydrate safely with the existing fallbacks.
-  totalScore?: number | null;
-  finalScore?: number | null;
-  deterministicScore?: number | null;
-  aiScore?: number | null;
-  bestMatchTarget?: string | null;
-  selectedIntent?: string | null;
-  matchLevel?: string | null;
-  confidence?: number | null;
-  hardFilterStatus?: string | null;
-  matchTargetScores?: any[] | null;
-  overallExplanation?: any | null;
-  // Spec-mandated aliases — same data as the matchTarget* fields above.
-  lookingForScores?: any[] | null;
-  bestLookingFor?: string | null;
 }
 
 export interface PitchSectionWithMatchesDTO extends PitchSectionDTO {

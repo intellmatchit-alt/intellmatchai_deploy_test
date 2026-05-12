@@ -18,7 +18,6 @@ import {
   createPassResult, createFailResult, createReviewResult, combineHardFilterResults,
   calculateTagOverlap, textSimilarity, clampScore,
 } from './common';
-import { NetworkContext, calculateNetworkRelevanceScore } from './network.utils';
 
 // ============================================================================
 // REQUIREMENT CONCEPT GROUPS — v4: expanded to 25+ groups
@@ -372,9 +371,7 @@ export function calculateSemanticScore(b: BuyRequest, s: SellOffering): { compon
 // ============================================================================
 
 export function calculateDealMatchScore(
-  b: BuyRequest, s: SellOffering,
-  weights: DealScoringWeights = DEFAULT_DEAL_WEIGHTS,
-  networkContext: NetworkContext | null = null,
+  b: BuyRequest, s: SellOffering, weights: DealScoringWeights = DEFAULT_DEAL_WEIGHTS,
 ): { finalScore: number; breakdown: ScoreBreakdown; fieldMatches: FieldMatch[]; semanticSubScores: { field: string; score: number; explanation: string }[] } {
   const { component: semanticComponent, subScores: semanticSubScores } = calculateSemanticScore(b, s);
   const components: ScoringComponent[] = [
@@ -384,11 +381,6 @@ export function calculateDealMatchScore(
     calculateLocationScore(b, s), calculateDeliveryScore(b, s),
     semanticComponent,
     calculateProviderTypeScore(b, s), calculateBuyerPersonaScore(b, s),
-    // v4.1: networkRelevanceScore — neutral-low when no graph context provided
-    calculateNetworkRelevanceScore(networkContext ?? {
-      isFirstDegree: false, isSecondDegree: false, sameOrganization: false,
-      mutualConnections: 0, relationshipStrength: 0, interactionCount: 0, lastInteractionDays: null,
-    }),
   ];
   let totalScore = 0; let totalWeight = 0;
   const allPenalties: { reason: string; points: number }[] = [];
